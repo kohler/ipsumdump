@@ -9,11 +9,13 @@
 #include <click/driver.hh>
 #include <click/straccum.hh>
 #include <click/handlercall.hh>
+#include <click/master.hh>
 #include "aggcounter.hh"
 
-#include <cstdio>
-#include <cstdlib>
-#include <csignal>
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include <click/standard/drivermanager.hh>
 
@@ -64,7 +66,7 @@
 #define SPLIT_PACKETS_OPT	605
 #define SPLIT_BYTES_OPT		606
 
-#define CLP_TIMEVAL_TYPE	(Clp_MaxDefaultType + 1)
+#define CLP_TIMEVAL_TYPE	(Clp_FirstUserType)
 
 static Clp_Option options[] = {
 
@@ -218,7 +220,7 @@ catch_signal(int sig)
 	kill(getpid(), sig);
     else {
 	DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
-	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+	router->set_runcount(dm->stopped_count() - stop_driver_count);
     }
 }
 
@@ -262,7 +264,7 @@ stop_handler(const String &s, Element *, void *, ErrorHandler *)
 {
     int n = 1;
     (void) cp_integer(cp_uncomment(s), &n);
-    router->adjust_driver_reservations(-n);
+    router->adjust_runcount(-n);
     return 0;
 }
 
@@ -846,8 +848,9 @@ particular purpose.\n");
 	exit(1);
     
     // run driver
+    router->activate(errh);
     started = true;
-    router->thread(0)->driver();
+    router->master()->thread(0)->driver();
 
     // exit
     delete router;
