@@ -354,6 +354,57 @@ AggregateTree::posterize()
 
 
 //
+// SAMPLING
+//
+
+void
+AggregateTree::node_sample(Node *n, uint32_t taking)
+{
+    if (n->count) {
+	for (uint32_t i = n->count; i > 0; i--)
+	    if (((uint32_t)random()) >= taking)
+		n->count--;
+	if (!n->count)
+	    _num_nonzero--;
+    }
+    if (n->child[0]) {
+	node_sample(n->child[0], taking);
+	node_sample(n->child[1], taking);
+    }
+}
+
+void
+AggregateTree::sample(double sample_prob)
+{
+    assert(sample_prob >= 0);
+    if (sample_prob < 1) {
+	uint32_t taking = (uint32_t)(((uint32_t)RAND_MAX + 1) * sample_prob);
+	node_sample(_root, taking);
+    }
+}
+
+
+void
+AggregateTree::node_cut_smaller(Node *n, uint32_t smallest)
+{
+    if (n->count && n->count < smallest) {
+	n->count = 0;
+	_num_nonzero--;
+    }
+    if (n->child[0]) {
+	node_cut_smaller(n->child[0], smallest);
+	node_cut_smaller(n->child[1], smallest);
+    }
+}
+
+void
+AggregateTree::cut_smaller(uint32_t smallest)
+{
+    node_cut_smaller(_root, smallest);
+}
+
+
+//
 // PREFIXES
 //
 
@@ -518,13 +569,11 @@ write_batch(FILE *f, bool binary, uint32_t *buffer, int pos,
 	    fprintf(f, "%u %u\n", buffer[i], buffer[i+1]);
 }
 
-uint32_t
+void
 AggregateTree::write_nodes(Node *n, FILE *f, bool binary,
 			   uint32_t *buffer, int &pos, int len,
 			   ErrorHandler *errh)
 {
-    uint32_t nnz;
-    
     if (n->count > 0) {
 	buffer[pos++] = n->aggregate;
 	buffer[pos++] = n->count;
@@ -532,37 +581,26 @@ AggregateTree::write_nodes(Node *n, FILE *f, bool binary,
 	    write_batch(f, binary, buffer, pos, errh);
 	    pos = 0;
 	}
-	nnz = 1;
-    } else
-	nnz = 0;
+    }
 
     if (n->child[0])
-	nnz += write_nodes(n->child[0], f, binary, buffer, pos, len, errh);
+	write_nodes(n->child[0], f, binary, buffer, pos, len, errh);
     if (n->child[1])
-	nnz += write_nodes(n->child[1], f, binary, buffer, pos, len, errh);
-
-    return nnz;
+	write_nodes(n->child[1], f, binary, buffer, pos, len, errh);
 }
 
 int
 AggregateTree::write_file(FILE *f, bool binary, ErrorHandler *errh) const
 {
-    bool seekable = (fseek(f, 0, SEEK_SET) >= 0);
-    if (seekable)
-	fprintf(f, "$num_nonzero            \n");
+    fprintf(f, "$num_nonzero %u\n", _num_nonzero);
     if (binary)
 	fprintf(f, "$packed\n");
     
     uint32_t buf[1024];
     int pos = 0;
-    uint32_t nnz = write_nodes(_root, f, binary, buf, pos, 1024, errh);
+    write_nodes(_root, f, binary, buf, pos, 1024, errh);
     if (pos)
 	write_batch(f, binary, buf, pos, errh);
-
-    if (seekable) {
-	fseek(f, 0, SEEK_SET);
-	fprintf(f, "$num_nonzero %u", nnz);
-    }
 
     if (ferror(f))
 	return errh->error("file error");

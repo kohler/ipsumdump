@@ -22,6 +22,8 @@
 #define FIRST_ACT		400
 #define PREFIX_ACT		400
 #define POSTERIZE_ACT		401
+#define SAMPLE_ACT		402
+#define CUT_SMALLER_ACT		403
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -52,7 +54,10 @@ static Clp_Option options[] = {
   { "posterize", 'P', POSTERIZE_ACT, 0, 0 },
   { "average-and-variance", 0, AVG_VAR_ACT, 0, 0 },
   { "avg-var", 0, AVG_VAR_ACT, 0, 0 },
+  { "average-and-variance-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   { "avg-var-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
+  { "sample", 0, SAMPLE_ACT, Clp_ArgUnsigned, 0 },
+  { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
   
 };
 
@@ -90,8 +95,13 @@ Actions: (Results of final action sent to output.)\n\
                              discriminating prefix p for all p.\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
+      --sample N             Reduce counts by randomly sampling 1 in N.\n\
+      --cut-smaller N        Zero counts less than N.\n\
       --average-and-variance, --avg-var\n\
-                             Average and variance of nonzero aggregates.\n\
+                             Average and variance of nonzero 32-aggregates.\n\
+      --average-and-variance-by-prefix, --avg-var-by-prefix\n\
+                             Average and variance of nonzero p-aggregates for\n\
+                             all p.\n\
 \n\
 Other options:\n\
   -r, --read FILE            Read summary from FILE (default stdin).\n\
@@ -182,6 +192,11 @@ particular purpose.\n");
 	    add_action(opt, clp->val.u);
 	    break;
 
+	  case SAMPLE_ACT:
+	  case CUT_SMALLER_ACT:
+	    add_action(opt, clp->val.u);
+	    break;
+
 	  case Clp_NotOption:
 	    files.push_back(clp->arg);
 	    break;
@@ -247,6 +262,14 @@ particular purpose.\n");
 	      case POSTERIZE_ACT:
 		tree.posterize();
 		break;
+
+	      case SAMPLE_ACT:
+		tree.sample(1. / action_extra);
+		break;
+		
+	      case CUT_SMALLER_ACT:
+		tree.cut_smaller(action_extra);
+		break;
 		
 	    }
 	}
@@ -305,6 +328,8 @@ particular purpose.\n");
 
 	  case PREFIX_ACT:
 	  case POSTERIZE_ACT:
+	  case SAMPLE_ACT:
+	  case CUT_SMALLER_ACT:
 	    tree.write_file(out, true, errh);
 	    break;
 	  

@@ -24,6 +24,9 @@ class AggregateTree { public:
     
     void mask_data_to_prefix(int prefix_len);
     void make_prefix(int prefix_len, AggregateTree &);
+
+    void sample(double);
+    void cut_smaller(uint32_t);
     
     void nnz_in_prefixes(Vector<uint32_t> &) const;
     void nnz_in_left_prefixes(Vector<uint32_t> &) const;
@@ -64,8 +67,10 @@ class AggregateTree { public:
     void collapse_subtree(Node *);
     void node_to_prefix(Node *, int);
     uint32_t node_to_discriminated_by(Node *, const AggregateTree &, uint32_t, bool);
+    void node_sample(Node *, uint32_t);
+    void node_cut_smaller(Node *, uint32_t);
 
-    static uint32_t write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);
+    static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);
     
 };
 
