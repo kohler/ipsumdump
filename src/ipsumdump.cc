@@ -584,7 +584,7 @@ particular purpose.\n");
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
     if (interval_packets && timerisset(&interval)) {
 	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL stop_cold)\n";
-	if (log_contents.size() > 1 && !collate) {
+	if (files.size() > 1 && !collate) {
 	    p_errh->warning("`--collate' missing");
 	    p_errh->message("(`--interval' works best with `--collate' when you have\nmultiple data sources.)");
 	}
