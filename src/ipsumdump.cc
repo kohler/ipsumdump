@@ -704,9 +704,13 @@ particular purpose.\n");
     signal(SIGHUP, catch_sighup);
     // do NOT catch SIGPIPE; it kills us immediately
 
+    Router::add_write_handler(0, "record_counts", record_drops_hook, 0);
+    Router::add_write_handler(0, "stop", stop_hook, 0);
+
     // lex configuration
     BailErrorHandler berrh(errh);
-    ErrorHandler *click_errh = (verbose ? errh : &berrh);
+    VerboseFilterErrorHandler verrh(&berrh, ErrorHandler::ERRVERBOSITY_CONTEXT + 1);
+    ErrorHandler *click_errh = (verbose ? errh : &verrh);
     Lexer *lexer = new Lexer;
     click_export_elements(lexer);
     int cookie = lexer->begin_parse(sa.take_string(), "<internal>", 0, click_errh);
@@ -714,9 +718,7 @@ particular purpose.\n");
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
-    router->add_write_handler(0, "record_counts", record_drops_hook, 0);
-    router->add_write_handler(0, "stop", stop_hook, 0);
-    if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
+    if (errh->nerrors() > 0 || router->initialize(click_errh) < 0)
 	exit(1);
     
     // output sample probability if appropriate
