@@ -682,9 +682,8 @@ particular purpose.\n");
 	    errh->warning("no dump content options, so I'm not creating a summary dump");
 	    sa << "  -> Discard;\n";
 	}
+	output = "";		// we're not using the normal output file
     } else {
-	if (!output)
-	    output = "-";
 	sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
 	for (int i = 0; i < log_contents.size(); i++)
 	    sa << ' ' << cp_quote(FromIPSummaryDump::unparse_content(log_contents[i]));
