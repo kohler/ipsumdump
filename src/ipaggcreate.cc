@@ -737,7 +737,7 @@ particular purpose.\n");
     
     // elements to aggregate
     if (agg_flows)
-	sa << "  -> AggregateFlows(" << agg_flows << ")\n";
+	sa << "  -> AggregateIPFlows(" << agg_flows << ")\n";
     else {
 	if (agg == "src" || agg == "dst" || agg == "ip src" || agg == "ip dst")
 	    agg_is_ip = true;
