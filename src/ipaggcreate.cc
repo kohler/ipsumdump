@@ -269,13 +269,13 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     if (multi_output >= 0)
 	multi_output++;		// files start from 1
     
-    String tr_range = HandlerCall::call_read(router, "tr", "range");
-    String tr_interval = HandlerCall::call_read(router, "tr", "interval");
+    String tr_range = HandlerCall::call_read("tr.range", router);
+    String tr_interval = HandlerCall::call_read("tr.interval", router);
     StringAccum bsa;
     bsa << banner_sa << "!times " << cp_uncomment(tr_range) << " " << cp_uncomment(tr_interval) << "\n";
     if (multi_output >= 0)
 	bsa << "!section " << multi_output << "\n";
-    (void) HandlerCall::call_write(router, "ac", "banner", bsa.take_string());
+    (void) HandlerCall::call_write("ac.banner " + cp_quote(bsa.take_string()), router);
 
     String cur_output = output;
     if (multi_output >= 0) {
@@ -290,17 +290,17 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     AggregateCounter *ac = (AggregateCounter *)(router->find("ac"));
     int result = 0;
     if (multi_output < 0 || !ac->empty()) {
-	result = HandlerCall::call_write(router, "ac", (binary ? "write_file" : (agg_is_ip ? "write_ip_file" : "write_ascii_file")), cp_quote(cur_output), errh);
+	result = HandlerCall::call_write(ac, (binary ? "write_file" : (agg_is_ip ? "write_ip_file" : "write_ascii_file")), cp_quote(cur_output), errh);
 	if (result < 0)		// file errors are fatal
 	    catch_signal(SIGINT);
     } else if (multi_output >= 0) // skip empty files
 	multi_output--;
 
-    (void) HandlerCall::call_write(router, "ac", "clear");
-    (void) HandlerCall::call_write(router, "tr", "reset");
+    (void) HandlerCall::call_write(ac, "clear");
+    (void) HandlerCall::call_write("tr.reset", router);
 
     if (output_call_str)
-	(void) HandlerCall::call_write(router, output_call_str, errh);
+	(void) HandlerCall::call_write(output_call_str, router, errh);
     
     return result;
 }
@@ -829,8 +829,8 @@ particular purpose.\n");
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
-    router->add_global_write_handler("stop", stop_handler, 0);
-    router->add_global_write_handler("output", output_handler, 0);
+    router->add_write_handler(0, "stop", stop_handler, 0);
+    router->add_write_handler(0, "output", output_handler, 0);
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
     
