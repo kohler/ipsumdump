@@ -21,6 +21,9 @@
 #define OUTPUT_OPT		303
 #define BINARY_OPT		304
 #define ASCII_OPT		305
+#define AND_OPT			306
+#define OR_OPT			307
+#define EACH_OPT		308
 
 #define FIRST_ACT		400
 #define NO_ACT			400
@@ -36,9 +39,6 @@
 #define CUT_LARGER_AGG_ACT	410
 #define CUT_SMALLER_HOST_AGG_ACT 411
 #define CUT_LARGER_HOST_AGG_ACT	412
-
-#define AND_ACT			450
-#define OR_ACT			451
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -64,6 +64,9 @@ static Clp_Option options[] = {
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "binary", 'B', BINARY_OPT, 0, Clp_Negate },
   { "ascii", 0, ASCII_OPT, 0, Clp_Negate },
+  { "and", '&', AND_OPT, 0, 0 },
+  { "or", '|', OR_OPT, 0, 0 },
+  { "each", 'e', EACH_OPT, 0, 0 },
 
   { "num", 'n', NNZ_ACT, 0, 0 },
   { "num-nonzero", 'n', NNZ_ACT, 0, 0 },
@@ -95,8 +98,6 @@ static Clp_Option options[] = {
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
-  { "and", '&', AND_ACT, 0, 0 },
-  { "or", '|', OR_ACT, 0, 0 },
   
 };
 
@@ -126,6 +127,10 @@ standard output.\n\
 Usage: %s ACTION [ACTIONS...] [FILES] > OUTPUT\n\
 \n\
 Actions: (Results of final action sent to output.)\n\
+  -|, --or                   Combine all packets from FILES.\n\
+  -&, --and                  Combine FILES, but drop any host not present in\n\
+                             every file.\n\
+  -e, --each                 Output result for each FILE separately.\n\
   -n, --num-nonzero          Number of nonzero hosts.\n\
       --nnz-in-prefixes      Number of nonzero p-aggregates for all p.\n\
       --nnz-in-left-prefixes Number nonzero left-hand p-aggregates for all p.\n\
@@ -183,6 +188,8 @@ write_vector(const Vector<uint32_t> &v, FILE *f)
 static Vector<int> actions;
 static Vector<uint32_t> extras;
 static Vector<uint32_t> extras2;
+static FILE *out;
+static bool output_binary = true;
 
 static void
 add_action(int action, uint32_t extra = 0, uint32_t extra2 = 0)
@@ -219,8 +226,8 @@ parse_two_uints(Clp_Parser *clp, const char *arg, int complain, void *)
 	return 0;
 }
 
-static FILE *
-open_read(String &name, ErrorHandler *errh)
+static void
+read_aggregates(AggregateTree &tree, String &name, ErrorHandler *errh)
 {
     FILE *f;
     if (name == "-") {
@@ -230,194 +237,16 @@ open_read(String &name, ErrorHandler *errh)
 	f = fopen(name, "rb");
     if (!f)
 	errh->fatal("%s: %s", name.cc(), strerror(errno));
-    return f;
-}
-
-static void
-close_read(FILE *f)
-{
+    tree.read_file(f, errh);
     if (f != stdin)
 	fclose(f);
 }
 
-int
-main(int argc, char *argv[])
+static void
+process_actions(AggregateTree &tree, ErrorHandler *errh)
 {
-    Clp_Parser *clp = Clp_NewParser
-	(argc, argv, sizeof(options) / sizeof(options[0]), options);
-    program_name = Clp_ProgramName(clp);
-    Clp_AddType(clp, CLP_TWO_UINTS_TYPE, 0, parse_two_uints, 0);
-    
-    String::static_initialize();
-    cp_va_static_initialize();
-    ErrorHandler *errh = new FileErrorHandler(stderr, "");
-    ErrorHandler::static_initialize(errh);
-    //ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
-
-    Vector<String> files;
-    String output;
-    bool output_binary = true;
-    
-    while (1) {
-	int opt = Clp_Next(clp);
-	switch (opt) {
-
-	  case OUTPUT_OPT:
-	    if (output)
-		die_usage("`--output' already specified");
-	    output = clp->arg;
-	    break;
-
-	  case BINARY_OPT:
-	    output_binary = !clp->negated;
-	    break;
-	    
-	  case ASCII_OPT:
-	    output_binary = clp->negated;
-	    break;
-	    
-	  case READ_FILE_OPT:
-	    files.push_back(clp->arg);
-	    break;
-
-	  case HELP_OPT:
-	    usage();
-	    exit(0);
-	    break;
-
-	  case VERSION_OPT:
-	    printf("aciri-aggmanip %s (libclick-%s)\n", "0.0", CLICK_VERSION);
-	    printf("Copyright (C) 2001 International Computer Science Institute\n\
-This is free software; see the source for copying conditions.\n\
-There is NO warranty, not even for merchantability or fitness for a\n\
-particular purpose.\n");
-	    exit(0);
-	    break;
-
-	  case NNZ_ACT:
-	  case NNZ_PREFIX_ACT:
-	  case NNZ_LEFT_PREFIX_ACT:
-	  case NNZ_DISCRIM_ACT:
-	  case POSTERIZE_ACT:
-	  case AVG_VAR_ACT:
-	  case AVG_VAR_PREFIX_ACT:
-	  case HAAR_WAVELET_ENERGY_ACT:
-	  case SIZES_ACT:
-	  case SORTED_SIZES_ACT:
-	  case AND_ACT:
-	  case OR_ACT:
-	    add_action(opt);
-	    break;
-
-	  case PREFIX_ACT:
-	    if (clp->val.u > 32)
-		die_usage("`--prefix' must be between 0 and 32");
-	    add_action(opt, clp->val.u);
-	    break;
-
-	  case BALANCE_ACT:
-	    if (clp->val.u > 31)
-		die_usage("`--balance' must be between 0 and 31");
-	    add_action(opt, clp->val.u);
-	    break;
-
-	  case CUT_SMALLER_AGG_ACT:
-	  case CUT_LARGER_AGG_ACT:
-	  case CUT_SMALLER_HOST_AGG_ACT:
-	  case CUT_LARGER_HOST_AGG_ACT:
-	  case BALANCE_HISTOGRAM_ACT:
-	    if (clp->val.us[0] > 31)
-		die_usage("`" + String(Clp_CurOptionName(clp)) + "' prefix must be between 0 and 31");
-	    add_action(opt, clp->val.us[0], clp->val.us[1]);
-	    break;
-
-	  case SAMPLE_ACT:
-	  case CUT_SMALLER_ACT:
-	  case CUT_LARGER_ACT:
-	  case CULL_HOSTS_ACT:
-	  case CULL_HOSTS_BY_PACKETS_ACT:
-	  case CULL_PACKETS_ACT:
-	    add_action(opt, clp->val.u);
-	    break;
-
-	  case Clp_NotOption:
-	    files.push_back(clp->arg);
-	    break;
-	    
-	  case Clp_BadOption:
-	    die_usage();
-	    break;
-
-	  case Clp_Done:
-	    goto done;
-
-	  default:
-	    assert(0);
-	    break;
-	    
-	}
-    }
-  
-  done:
-    // check file usage
-    if (files.size() == 0)
-	files.push_back("-");
-    if (actions.size() == 0)
-	actions.push_back(NO_ACT);
-    if (!output)
-	output = "-";
-
-    FILE *out;
-    if (output == "-")
-	out = stdout;
-    else
-	out = fopen(output, "w");
-    if (!out)
-	errh->fatal("%s: %s", output.cc(), strerror(errno));
-
-    // read files
-    AggregateTree tree;
-    int actno = 0;
-
-    switch (actions[actno]) {
-
-      case AND_ACT: {
-	  FILE *f = open_read(files[0], errh);
-	  tree.read_file(f, errh);
-	  close_read(f);
-	  for (int i = 1; i < files.size(); i++) {
-	      f = open_read(files[i], errh);
-	      AggregateTree tree2;
-	      tree2.read_file(f, errh);
-	      close_read(f);
-	      tree.keep_common_hosts(tree2); // , true ?
-	  }
-	  actno++;
-	  break;
-      }
-
-      case OR_ACT:
-	for (int i = 0; i < files.size(); i++) {
-	    FILE *f = open_read(files[i], errh);
-	    tree.read_file(f, errh);
-	    close_read(f);
-	}
-	actno++;
-	break;
-
-      default: {
-	  if (files.size() > 1)
-	      errh->fatal("supply `--and' or `--or' to combine multiple files");
-	  FILE *f = open_read(files[0], errh);
-	  tree.read_file(f, errh);
-	  close_read(f);
-	  break;
-      }
-
-    }
-    
     // go through earlier actions
-    for (int j = actno; j < actions.size(); j++) {
+    for (int j = 0; j < actions.size(); j++) {
 	int action = actions[j];
 	uint32_t action_extra = extras[j];
 	uint32_t action_extra2 = extras2[j];
@@ -498,11 +327,6 @@ particular purpose.\n");
 	      break;
 	  }
 
-	  case AND_ACT:
-	  case OR_ACT:
-	    errh->error("`--and' and `--or' must be the first action");
-	    break;
-	    
 	}
     }
 
@@ -613,12 +437,200 @@ particular purpose.\n");
       case CUT_LARGER_AGG_ACT:
       case CUT_SMALLER_HOST_AGG_ACT:
       case CUT_LARGER_HOST_AGG_ACT:
-      case AND_ACT:
-      case OR_ACT:
 	tree.write_file(out, output_binary, errh);
 	break;
 	
     }
+}
+
+int
+main(int argc, char *argv[])
+{
+    Clp_Parser *clp = Clp_NewParser
+	(argc, argv, sizeof(options) / sizeof(options[0]), options);
+    program_name = Clp_ProgramName(clp);
+    Clp_AddType(clp, CLP_TWO_UINTS_TYPE, 0, parse_two_uints, 0);
+    
+    String::static_initialize();
+    cp_va_static_initialize();
+    ErrorHandler *errh = new FileErrorHandler(stderr, "");
+    ErrorHandler::static_initialize(errh);
+    //ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
+
+    Vector<String> files;
+    String output;
+    int combiner = 0;
+    
+    while (1) {
+	int opt = Clp_Next(clp);
+	switch (opt) {
+
+	  case OUTPUT_OPT:
+	    if (output)
+		die_usage("`--output' already specified");
+	    output = clp->arg;
+	    break;
+
+	  case BINARY_OPT:
+	    output_binary = !clp->negated;
+	    break;
+	    
+	  case ASCII_OPT:
+	    output_binary = clp->negated;
+	    break;
+	    
+	  case AND_OPT:
+	  case OR_OPT:
+	  case EACH_OPT:
+	    if (combiner)
+		die_usage("combiner option already specified");
+	    combiner = opt;
+	    break;
+	    
+	  case READ_FILE_OPT:
+	    files.push_back(clp->arg);
+	    break;
+
+	  case HELP_OPT:
+	    usage();
+	    exit(0);
+	    break;
+
+	  case VERSION_OPT:
+	    printf("aciri-aggmanip %s (libclick-%s)\n", "0.0", CLICK_VERSION);
+	    printf("Copyright (C) 2001 International Computer Science Institute\n\
+This is free software; see the source for copying conditions.\n\
+There is NO warranty, not even for merchantability or fitness for a\n\
+particular purpose.\n");
+	    exit(0);
+	    break;
+
+	  case NNZ_ACT:
+	  case NNZ_PREFIX_ACT:
+	  case NNZ_LEFT_PREFIX_ACT:
+	  case NNZ_DISCRIM_ACT:
+	  case POSTERIZE_ACT:
+	  case AVG_VAR_ACT:
+	  case AVG_VAR_PREFIX_ACT:
+	  case HAAR_WAVELET_ENERGY_ACT:
+	  case SIZES_ACT:
+	  case SORTED_SIZES_ACT:
+	    add_action(opt);
+	    break;
+
+	  case PREFIX_ACT:
+	    if (clp->val.u > 32)
+		die_usage("`--prefix' must be between 0 and 32");
+	    add_action(opt, clp->val.u);
+	    break;
+
+	  case BALANCE_ACT:
+	    if (clp->val.u > 31)
+		die_usage("`--balance' must be between 0 and 31");
+	    add_action(opt, clp->val.u);
+	    break;
+
+	  case CUT_SMALLER_AGG_ACT:
+	  case CUT_LARGER_AGG_ACT:
+	  case CUT_SMALLER_HOST_AGG_ACT:
+	  case CUT_LARGER_HOST_AGG_ACT:
+	  case BALANCE_HISTOGRAM_ACT:
+	    if (clp->val.us[0] > 31)
+		die_usage("`" + String(Clp_CurOptionName(clp)) + "' prefix must be between 0 and 31");
+	    add_action(opt, clp->val.us[0], clp->val.us[1]);
+	    break;
+
+	  case SAMPLE_ACT:
+	  case CUT_SMALLER_ACT:
+	  case CUT_LARGER_ACT:
+	  case CULL_HOSTS_ACT:
+	  case CULL_HOSTS_BY_PACKETS_ACT:
+	  case CULL_PACKETS_ACT:
+	    add_action(opt, clp->val.u);
+	    break;
+
+	  case Clp_NotOption:
+	    files.push_back(clp->arg);
+	    break;
+	    
+	  case Clp_BadOption:
+	    die_usage();
+	    break;
+
+	  case Clp_Done:
+	    goto done;
+
+	  default:
+	    assert(0);
+	    break;
+	    
+	}
+    }
+  
+  done:
+    // check file usage
+    if (files.size() == 0)
+	files.push_back("-");
+    if (actions.size() == 0)
+	actions.push_back(NO_ACT);
+    if (!output)
+	output = "-";
+
+    if (output == "-")
+	out = stdout;
+    else
+	out = fopen(output, "w");
+    if (!out)
+	errh->fatal("%s: %s", output.cc(), strerror(errno));
+
+    // read files
+    switch (combiner) {
+
+      case AND_OPT: {
+	  AggregateTree tree;
+	  read_aggregates(tree, files[0], errh);
+	  for (int i = 1; i < files.size(); i++) {
+	      AggregateTree tree2;
+	      read_aggregates(tree2, files[i], errh);
+	      tree.keep_common_hosts(tree2, true);
+	  }
+	  process_actions(tree, errh);
+	  break;
+      }
+
+      case OR_OPT: {
+	  AggregateTree tree;
+	  for (int i = 0; i < files.size(); i++)
+	      read_aggregates(tree, files[i], errh);
+	  process_actions(tree, errh);
+	  break;
+      }
+
+      case EACH_OPT:
+	if (actions.back() < FIRST_END_ACT)
+	    errh->fatal("last action must not produce a tree with `--each'");
+	if (files.size() == 1)
+	    goto normal;
+	for (int i = 0; i < files.size(); i++) {
+	    AggregateTree tree;
+	    read_aggregates(tree, files[i], errh);
+	    fprintf(out, (i ? "\n%s\n" : "%s\n"), files[i].cc());
+	    process_actions(tree, errh);
+	}
+	break;
+
+      normal:
+      default: {
+	  if (files.size() > 1)
+	      errh->fatal("supply `--and', `--or', or `--each' with multiple files");
+	  AggregateTree tree;
+	  read_aggregates(tree, files[0], errh);
+	  process_actions(tree, errh);
+	  break;
+      }
+
+    }
+    
     
     exit(0);
 }
