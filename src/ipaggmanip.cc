@@ -111,7 +111,7 @@ static Clp_Option options[] = {
   { "avg-var", 0, AVG_VAR_ACT, 0, 0 },
   { "average-and-variance-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   { "avg-var-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
-  { "sample", 0, SAMPLE_ACT, Clp_ArgUnsigned, 0 },
+  { "sample", 0, SAMPLE_ACT, Clp_ArgDouble, 0 },
   { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller-aggregates", 0, CUT_SMALLER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-smaller-host-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
@@ -478,7 +478,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	    break;
 
 	  case SAMPLE_ACT:
-	    tree.sample(1. / action_extra);
+	    tree.sample(action_extra / (double)DOUBLE_FACTOR);
 	    break;
 	    
 	  case CUT_SMALLER_ACT:
@@ -816,6 +816,7 @@ main(int argc, char *argv[])
     
     while (1) {
 	int opt = Clp_Next(clp);
+	String optname = String(Clp_CurOptionName(clp));
 	switch (opt) {
 
 	  case OUTPUT_OPT:
@@ -883,20 +884,20 @@ particular purpose.\n");
 	  case AGG_ADDRS_ACT:
 	  case CORR_SIZE_AGG_ADDR_ACT:
 	    if (clp->val.u > 32)
-		die_usage("`" + String(Clp_CurOptionName(clp)) + "' must be between 0 and 32");
+		die_usage("`" + optname + "' must be between 0 and 32");
 	    add_action(opt, clp->val.u);
 	    break;
 
 	  case BALANCE_ACT:
 	  case ALL_BRANCHING_ACT:
 	    if (clp->val.u > 31)
-		die_usage("`" + String(Clp_CurOptionName(clp)) + "' must be between 0 and 31");
+		die_usage("`" + optname + "' must be between 0 and 31");
 	    add_action(opt, clp->val.u);
 	    break;
 
 	  case FAKE_BY_BRANCHING_ACT:
 	    if (clp->val.u == 0 || clp->val.u > 4)
-		die_usage("`" + String(Clp_CurOptionName(clp)) + "' must be between 1 and 4");
+		die_usage("`" + optname + "' must be between 1 and 4");
 	    add_action(opt, clp->val.u);
 	    break;
 
@@ -912,17 +913,22 @@ particular purpose.\n");
 	  case CUT_LARGER_ADDR_AGG_ACT:
 	  case BALANCE_HISTOGRAM_ACT:
 	    if (clp->val.us[0] > 31)
-		die_usage("`" + String(Clp_CurOptionName(clp)) + "' prefix must be between 0 and 31");
+		die_usage("`" + optname + "' prefix must be between 0 and 31");
 	    add_action(opt, clp->val.us[0], clp->val.us[1]);
 	    break;
 
 	  case BRANCHING_ACT:
 	    if (clp->val.us[1] < 1 || clp->val.us[0] + clp->val.us[1] > 32)
-		die_usage("bad `" + String(Clp_CurOptionName(clp)) + "' args");
+		die_usage("bad `" + optname + "' args");
 	    add_action(opt, clp->val.us[0], clp->val.us[1]);
 	    break;
 
 	  case SAMPLE_ACT:
+	    if (clp->val.d < 0 || clp->val.d > 1)
+		die_usage("`" + optname + "' prob should be between 0 and 1");
+	    add_action(opt, (uint32_t) (clp->val.d * DOUBLE_FACTOR));
+	    break;
+	    
 	  case CUT_SMALLER_ACT:
 	  case CUT_LARGER_ACT:
 	  case CULL_ADDRS_ACT:
@@ -935,7 +941,7 @@ particular purpose.\n");
 	    if (!clp->have_arg)
 		clp->val.d = 1;	// random
 	    else if (clp->val.d < 0 || clp->val.d > 1)
-		die_usage("`" + String(Clp_CurOptionName(clp)) + "' arg should be between 0 and 1");
+		die_usage("`" + optname + "' arg should be between 0 and 1");
 	    add_action(opt, (uint32_t) (clp->val.d * DOUBLE_FACTOR));
 	    break;
 	    
