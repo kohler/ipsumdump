@@ -51,7 +51,7 @@
 #define FAKE_BY_DISCRIM_ACT	413
 #define FAKE_BY_BRANCHING_ACT	414
 #define FAKE_BY_DIRICHLET_ACT	415
-#define REMAP_ACT		416
+#define REMAP_PREFIXES_ACT	416
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -111,7 +111,7 @@ static Clp_Option options[] = {
   { "conditional-split-counts", 0, COND_SPLIT_ACT, Clp_ArgUnsigned, 0 },
   { "prefix", 'p', PREFIX_ACT, Clp_ArgUnsigned, 0 },
   { "posterize", 'P', POSTERIZE_ACT, 0, 0 },
-  { "remap", 0, REMAP_ACT, Clp_ArgString, 0 },
+  { "remap-prefixes", 0, REMAP_PREFIXES_ACT, Clp_ArgString, 0 },
   { "average-and-variance", 0, AVG_VAR_ACT, 0, 0 },
   { "avg-var", 0, AVG_VAR_ACT, 0, 0 },
   { "average-and-variance-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
@@ -229,7 +229,7 @@ Actions: (Results of final action sent to output.)\n\
                              sharing this data's --all-discriminating-prefix.\n\
                              TYP is a randomness factor between 0 and 1.\n\
       --fake-by-dirichlet\n\
-      --remap\n\
+      --remap-prefixes FOO\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of active addresses.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
@@ -592,7 +592,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      break;
 	  }
 
-	  case REMAP_ACT: {
+	  case REMAP_PREFIXES_ACT: {
 	      // parse the string
 	      const char *s = str_extras[j].data();
 	      const char *ends = s + str_extras[j].length();
@@ -603,14 +603,14 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 		  while (s < ends && (*s == '0' || *s == '1'))
 		      v1 = (v1 << 1) + (*s - '0'), p1++, s++;
 		  if (s >= ends || (*s != '=' && *s != '>' && *s != ':') || p1 == 0 || p1 > 31)
-		      errh->fatal("syntax error 1 in --remap argument (%c)", *s);
+		      errh->fatal("syntax error 1 in --remap-prefixes argument (%c)", *s);
 		  s++;
 		  
 		  int v2 = 0, p2 = 0;
 		  while (s < ends && (*s == '0' || *s == '1'))
 		      v2 = (v2 << 1) + (*s - '0'), p2++, s++;
 		  if ((s < ends && *s != ',') || p2 != p1)
-		      errh->fatal("syntax error 2 in --remap argument (%c)", *s);
+		      errh->fatal("syntax error 2 in --remap-prefixes argument (%c)", *s);
 		  s++;
 		  
 		  x1.push_back(v1);
@@ -631,7 +631,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 		      uint32_t v1 = (x1[i] << pdiff) | k;
 		      uint32_t v2 = (x2[i] << pdiff) | k;
 		      if (map_used[v1])
-			  errh->error("prefix `%s/%d' mapped twice in --remap", IPAddress(htonl(v1 << (32 - max_p))).s().cc(), max_p);
+			  errh->error("prefix `%s/%d' mapped twice in --remap-prefixes", IPAddress(htonl(v1 << (32 - max_p))).s().cc(), max_p);
 		      map_used[v1]++;
 		      map[v1] = v2;
 		  }
@@ -641,7 +641,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      map_used.assign(1 << max_p, 0);
 	      for (uint32_t i = 0; i < (1 << max_p); i++) {
 		  if (map_used[i] == 1)
-		      errh->warning("prefix `%s/%d' repeatedly mapped to in --remap", IPAddress(htonl(i << (32 - max_p))).s().cc(), max_p);
+		      errh->warning("prefix `%s/%d' repeatedly mapped to in --remap-prefixes", IPAddress(htonl(i << (32 - max_p))).s().cc(), max_p);
 		  map_used[i]++;
 	      }
 
@@ -857,7 +857,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case FAKE_BY_DISCRIM_ACT:
       case FAKE_BY_BRANCHING_ACT:
       case FAKE_BY_DIRICHLET_ACT:
-      case REMAP_ACT:
+      case REMAP_PREFIXES_ACT:
       case NO_ACT:
 	tree.write_file(out, output_format, errh);
 	break;
@@ -1017,7 +1017,7 @@ particular purpose.\n");
 	    add_action(opt, (uint32_t) (clp->val.d * DOUBLE_FACTOR));
 	    break;
 
-	  case REMAP_ACT:
+	  case REMAP_PREFIXES_ACT:
 	    add_action(opt, 0, 0, clp->arg);
 	    break;
 	    
