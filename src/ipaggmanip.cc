@@ -20,6 +20,7 @@
 #define READ_FILE_OPT		302
 #define OUTPUT_OPT		303
 #define BINARY_OPT		304
+#define ASCII_OPT		305
 
 #define FIRST_ACT		400
 #define PREFIX_ACT		400
@@ -57,7 +58,8 @@ static Clp_Option options[] = {
 
   { "read-file", 'r', READ_FILE_OPT, Clp_ArgString, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
-  { "binary", 0, BINARY_OPT, 0, Clp_Negate },
+  { "binary", 'B', BINARY_OPT, 0, Clp_Negate },
+  { "ascii", 0, ASCII_OPT, 0, Clp_Negate },
 
   { "num", 'n', NNZ_ACT, 0, 0 },
   { "num-nonzero", 'n', NNZ_ACT, 0, 0 },
@@ -241,6 +243,10 @@ main(int argc, char *argv[])
 
 	  case BINARY_OPT:
 	    output_binary = !clp->negated;
+	    break;
+	    
+	  case ASCII_OPT:
+	    output_binary = clp->negated;
 	    break;
 	    
 	  case READ_FILE_OPT:

@@ -23,19 +23,30 @@
 #define FILTER_OPT	305
 #define VERBOSE_OPT	306
 #define ANONYMIZE_OPT	307
-#define MAP_PREFIX_OPT	308
 #define MULTIPACKET_OPT	309
 #define SAMPLE_OPT	310
 #define COLLATE_OPT	311
 #define RANDOM_SEED_OPT	312
-#define PROMISCUOUS_OPT	313
-#define WRITE_DROPS_OPT	314
+#define INTERVAL_OPT	315
+#define TIME_OFFSET_OPT	316
+#define BINARY_OPT	317
+#define ASCII_OPT	318
 
 // data sources
-#define INTERFACE_OPT	400
 #define READ_DUMP_OPT	401
 #define READ_NETFLOW_SUMMARY_OPT 402
 #define READ_IPSUMDUMP_OPT 403
+
+// aggregates
+#define AGG_SRC_OPT	500
+#define AGG_DST_OPT	501
+#define AGG_LENGTH_OPT	502
+
+#define AGG_BYTES_OPT	600
+#define AGG_PACKETS_OPT	601
+#define AGG_LIMIT_OPT	602
+
+#define CLP_TIMEVAL_TYPE	(Clp_MaxDefaultType + 1)
 
 static Clp_Option options[] = {
 
@@ -43,7 +54,6 @@ static Clp_Option options[] = {
     { "version", 'v', VERSION_OPT, 0, 0 },
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
 
-    { "interface", 'i', INTERFACE_OPT, 0, 0 },
     { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
     { "read-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
@@ -54,17 +64,25 @@ static Clp_Option options[] = {
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
-    { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
-    { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
+    { "binary", 'B', BINARY_OPT, 0, Clp_Negate },
+    { "ascii", 0, ASCII_OPT, 0, Clp_Negate },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
     { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
-    { "promiscuous", 0, PROMISCUOUS_OPT, 0, Clp_Negate },
-    { "record-counts", 0, WRITE_DROPS_OPT, Clp_ArgString, 0 },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
+
+    { "interval", 't', INTERVAL_OPT, CLP_TIMEVAL_TYPE, 0 },
+    { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMEVAL_TYPE, 0 },
+
+    { "src", 's', AGG_SRC_OPT, 0, 0 },
+    { "dst", 'd', AGG_DST_OPT, 0, 0 },
+    { "length", 'l', AGG_LENGTH_OPT, 0, 0 },
+    { "bytes", 'b', AGG_BYTES_OPT, 0, 0 },
+    { "packets", 'p', AGG_PACKETS_OPT, 0, 0 },
+    { "limit-aggregates", 0, AGG_LIMIT_OPT, Clp_ArgUnsigned, 0 },
 
 };
 
@@ -89,32 +107,24 @@ void
 usage()
 {
   printf("\
-`Ipsumdump' reads IP packets from the tcpdump(1) files, or network interfaces,\n\
-and summarizes their contents in an ASCII log.\n\
+`Aciri-aggcreate' reads IP packets from the tcpdump(1) files, or other related\n\
+files, and aggregates their contents into a simple file.\n\
 \n\
-Usage: %s [CONTENT OPTIONS] [-i DEVNAMES | FILES] > LOGFILE\n\
+Usage: %s [OPTIONS] [FILES] > AGGFILE\n\
 \n\
-Options that determine summary dump contents (can give multiple options):\n\
-  -t, --timestamp            Include packet timestamps.\n\
-  -s, --src                  Include IP source addresses.\n\
-  -d, --dst                  Include IP destination addresses.\n\
-  -S, --sport                Include TCP/UDP source ports.\n\
-  -D, --dport                Include TCP/UDP destination ports.\n\
-  -l, --length               Include IP lengths.\n\
-  -p, --protocol             Include IP protocols.\n\
-      --id                   Include IP IDs.\n\
-  -g, --fragment             Include IP fragment flags (`F' or `.').\n\
-  -G, --fragment-offset      Include IP fragment offsets.\n\
-  -Q, --tcp-seq              Include TCP sequence numbers.\n\
-  -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
-  -F, --tcp-flags            Include TCP flags words.\n\
-  -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
-  -c, --packet-count         Include packet count (usually 1).\n\
-Default contents option is `-sd' (log source and destination addresses).\n\
+Aggregate options (give exactly one):\n\
+  -s, --src                  Aggregate by IP source address.\n\
+  -d, --dst                  Aggregate by IP destination address (default).\n\
+  -l, --length               Aggregate by IP length.\n\
+\n\
+Other aggregate options:\n\
+  -p, --packets              Count number of packets (default).\n\
+  -b, --bytes                Count number of bytes.\n\
+  -T, --time-offset TIME     Ignore first TIME in input.\n\
+  -t, --interval TIME        Output TIME worth of packets. Example: `1hr'.\n\
+      --limit-aggregates K   Stop once K aggregates are encountered.\n\
 \n\
 Data source options (give exactly one):\n\
-  -i, --interface            Read packets from network devices DEVNAMES until\n\
-                             interrupted.\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
       --ipsumdump            Read from existing ipsumdump FILES.\n\
@@ -124,15 +134,13 @@ Other options:\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
-      --no-promiscuous       Do not put interfaces into promiscuous mode.\n\
       --sample PROB          Sample packets with PROB probability.\n\
       --multipacket          Produce multiple entries for a flow identifier\n\
                              representing multiple packets (NetFlow only).\n\
       --collate              Collate packets from data sources by timestamp.\n\
-      --map-address ADDRS    When done, print to stderr the anonymized IP\n\
-                             addresses and/or prefixes corresponding to ADDRS.\n\
-      --record-counts TIME   Record packet counts every TIME seconds in output.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
+  -B, --binary               Output aggregate file in binary.\n\
+      --ascii                Output aggregate file in ASCII (default).\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
@@ -154,7 +162,46 @@ catch_signal(int sig)
     router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
 }
 
+static int
+parse_timeval(Clp_Parser *clp, const char *arg, int complain, void *)
+{
+    if (cp_timeval(arg, (struct timeval *)&clp->val))
+	return 1;
+    else if (complain)
+	return Clp_OptionError(clp, "`%O' expects a time value, not `%s'", arg);
+    else
+	return 0;
+}
+
 extern void export_elements(Lexer *);
+
+static String
+source_output_port(bool collate, int i)
+{
+    if (collate)
+	return "[" + String(i) + "]collate";
+    else
+	return "shunt";
+}
+
+static StringAccum banner_sa;
+
+static int
+complete_banner_handler(const String &, Element *, void *, ErrorHandler *errh)
+{
+    Element* tr = router->find("tr", errh);
+    int tr_range_hi = router->find_handler(tr, "range");
+    int tr_interval_hi = router->find_handler(tr, "interval");
+    String tr_range = router->handler(tr_range_hi).call_read(tr);
+    String tr_interval = router->handler(tr_interval_hi).call_read(tr);
+    banner_sa << "!times " << cp_uncomment(tr_range) << " " << cp_uncomment(tr_interval) << "\n";
+
+    Element* ac = router->find("ac", errh);
+    int ac_banner_hi = router->find_handler(ac, "banner");
+    (void) router->handler(ac_banner_hi).call_write(banner_sa.take_string(), ac, errh);
+
+    return 0;
+}
 
 int
 main(int argc, char *argv[])
@@ -162,6 +209,7 @@ main(int argc, char *argv[])
     Clp_Parser *clp = Clp_NewParser
 	(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
+    Clp_AddType(clp, CLP_TIMEVAL_TYPE, 0, parse_timeval, 0);
     
     String::static_initialize();
     cp_va_static_initialize();
@@ -172,6 +220,10 @@ main(int argc, char *argv[])
     String write_dump;
     String output;
     String filter;
+    String agg_ip;
+    bool agg_len = false;
+    String aggctr_pb;
+    uint32_t aggctr_limit_nnz = 0;
     bool config = false;
     bool verbose = false;
     bool anonymize = false;
@@ -181,9 +233,12 @@ main(int argc, char *argv[])
     bool collate = false;
     int action = 0;
     bool do_seed = true;
-    bool promisc = true;
+    bool binary = false;
+    struct timeval time_offset;
+    struct timeval interval;
     Vector<String> files;
-    const char *record_drops = 0;
+    timerclear(&time_offset);
+    timerclear(&interval);
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -195,7 +250,6 @@ main(int argc, char *argv[])
 	    output = clp->arg;
 	    break;
 	    
-	  case INTERFACE_OPT:
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
@@ -224,11 +278,12 @@ main(int argc, char *argv[])
 	    multipacket = !clp->negated;
 	    break;
 
-	  case PROMISCUOUS_OPT:
-	    promisc = !clp->negated;
+	  case BINARY_OPT:
+	    binary = !clp->negated;
+	    break;
 
-	  case WRITE_DROPS_OPT:
-	    record_drops = clp->arg;
+	  case ASCII_OPT:
+	    binary = clp->negated;
 	    break;
 
 	  case SAMPLE_OPT:
@@ -249,6 +304,43 @@ main(int argc, char *argv[])
 	  case RANDOM_SEED_OPT:
 	    do_seed = false;
 	    srandom(clp->val.u);
+	    break;
+
+	  case TIME_OFFSET_OPT:
+	    time_offset = *((const struct timeval *)&clp->val);
+	    break;
+	    
+	  case INTERVAL_OPT:
+	    interval = *((const struct timeval *)&clp->val);
+	    break;
+
+	  case AGG_SRC_OPT:
+	    if (agg_ip || agg_len)
+		die_usage("aggregate specified twice");
+	    agg_ip = "ip src";
+	    break;
+	    
+	  case AGG_DST_OPT:
+	    if (agg_ip || agg_len)
+		die_usage("aggregate specified twice");
+	    agg_ip = "ip dst";
+	    break;
+	    	    
+	  case AGG_LENGTH_OPT:
+	    if (agg_ip || agg_len)
+		die_usage("aggregate specified twice");
+	    agg_len = true;
+	    break;
+
+	  case AGG_BYTES_OPT:
+	  case AGG_PACKETS_OPT:
+	    if (aggctr_pb)
+		die_usage("`--bytes' or `--packets' specified twice");
+	    aggctr_pb = "BYTES " + cp_unparse_bool(opt == AGG_BYTES_OPT);
+	    break;
+
+	  case AGG_LIMIT_OPT:
+	    aggctr_limit_nnz = clp->val.u;
 	    break;
 	    
 	  case CONFIG_OPT:
@@ -302,41 +394,35 @@ particular purpose.\n");
     if (do_seed && (do_sample || anonymize))
 	click_random_srandom();
 
-    // define shunt
+    // figure out time argument
+    StringAccum time_config_sa;
+    if (timerisset(&time_offset))
+	time_config_sa << ", START_AFTER " << time_offset;
+    if (timerisset(&interval))
+	time_config_sa << ", INTERVAL " << interval;
+    String time_config = (time_config_sa ? time_config_sa.take_string().substring(2) : String());
+    
+    // other setup
     String shunt_internals = "";
     StringAccum psa;
     String sample_elt;
     int snaplen = (write_dump ? 2000 : 68);
+    if (collate && files.size() < 2)
+	collate = false;
     
     // elements to read packets
     if (action == 0)
 	action = READ_DUMP_OPT;
-    if (action == INTERFACE_OPT) {
-	if (files.size() == 0)
-	    p_errh->fatal("`-i' option takes at least one DEVNAME");
-	if (collate)
-	    p_errh->fatal("`--collate' may not be used with `--interface' yet");
-	String config = ", SNAPLEN " + String(snaplen) + ", FORCE_IP true";
-	if (promisc)
-	    config += ", PROMISC true";
-#if FROMDEVICE_PCAP
-	if (filter)
-	    config += ", BPF_FILTER " + cp_quote(filter);
-	filter = String();
-#endif
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromDevice(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
-	if (do_sample) {
-	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
-	    sample_elt = "shunt/samp";
-	}
-	
-    } else if (action == READ_DUMP_OPT) {
+    if (action == READ_DUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
 	String config = ", FORCE_IP true, STOP true";
 	if (do_sample)
 	    config += ", SAMPLE " + String(sample);
+	if (time_config && files.size() == 1) {
+	    config += ", " + time_config;
+	    time_config = String();
+	}
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";
@@ -380,6 +466,8 @@ particular purpose.\n");
     
     // possible elements to filter and/or anonymize
     sa << "shunt\n";
+    if (time_config)
+	sa << "  -> TimeFilter(" << time_config << ", SIMPLE true, STOP true)\n";
     if (filter)
 	sa << "  -> IPFilter(0 " << filter << ")\n";
     if (anonymize)
@@ -393,30 +481,37 @@ particular purpose.\n");
 	sa << ", SNAPLEN " << snaplen << ") }\n";
     }
     
-    // elements to dump summary log
+    // elements to aggregate
+    if (!agg_ip && !agg_len)
+	agg_ip = "ip dst";
+    if (agg_ip)
+	sa << "  -> AggregateIP(" << agg_ip << ")\n";
+    else if (agg_len)
+	sa << "  -> AggregateLength(IP true)\n";
+
+    // elements to count aggregates
+    sa << "  -> ac :: AggregateCounter(";
+    sa << (aggctr_pb ? aggctr_pb : "BYTES false") << ", IP_BYTES true";
+    if (aggctr_limit_nnz)
+	sa << ", STOP_AFTER_AGG " << aggctr_limit_nnz;
+    sa << ")\n";
+
+    // remains
+    sa << "  -> tr :: TimeRange\n";
+    sa << "  -> d :: Discard;\n";
+    sa << "ac[1] -> d;\n";
+
+    // DriverManager
     if (!output)
 	output = "-";
-    sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
-    sa << ", VERBOSE true, BANNER ";
-    // create banner
-    StringAccum banner;
-    for (int i = 0; i < argc; i++)
-	banner << argv[i] << ' ';
-    banner.pop_back();
-    sa << cp_quote(banner.take_string()) << ");\n";
-
-    // record drops
-    if (record_drops)
-	sa << "PokeHandlers(" << record_drops << ", record_counts '', loop);\n";
-
+    
     sa << "DriverManager(";
-    if ((files.size() > 1 && action != INTERFACE_OPT) || collate) {
+    if (files.size() > 1 || collate) {
 	sa << "wait_stop " << (files.size() - 1) + (collate ? 1 : 0);
 	stop_driver_count = files.size() + (collate ? 1 : 0);
     }
     // print `!counts' message if appropriate
-    if (action == INTERFACE_OPT)
-	sa << ", wait_stop, write record_counts ''";
+    sa << ", wait_stop, write complete_banner, write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output);
     sa << ");\n";
 
     // output config if required
@@ -433,6 +528,16 @@ particular purpose.\n");
 #endif
     // do NOT catch SIGPIPE; it kills us immediately
 
+    // initialize banner
+    {
+	StringAccum bsa;
+	for (int i = 0; i < argc; i++)
+	    bsa << argv[i] << ' ';
+	bsa.pop_back();
+	banner_sa << "!creator " << cp_quote(bsa.take_string()) << "\n";
+	banner_sa << "!counts " << (aggctr_pb == "BYTES false" ? "packets\n" : "bytes\n");
+    }
+
     // lex configuration
     BailErrorHandler berrh(errh);
     ErrorHandler *click_errh = (verbose ? errh : &berrh);
@@ -443,7 +548,7 @@ particular purpose.\n");
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
-    router->add_global_write_handler("record_counts", record_drops_hook, 0);
+    router->add_global_write_handler("complete_banner", complete_banner_handler, 0);
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
     
