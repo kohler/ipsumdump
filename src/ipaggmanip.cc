@@ -59,6 +59,7 @@
 #define ALL_NNZ_DISCRIM_ACT	511
 #define COND_SPLIT_ACT		512
 #define BRANCHING_ACT		513
+#define ALL_BRANCHING_ACT	514
 
 #define CLP_TWO_UINTS_TYPE	(Clp_MaxDefaultType + 1)
 
@@ -121,6 +122,7 @@ static Clp_Option options[] = {
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "all-branching-counts", 0, ALL_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
   { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, 0, 0 },
   
 };
@@ -206,6 +208,7 @@ Actions: (Results of final action sent to output.)\n\
       --balance N\n\
       --balance-histogram N,NBUCKETS\n\
       --branching-counts P,STEP\n\
+      --all-branching-counts STEP\n\
       --conditional-split-counts P\n\
 \n\
 Other options:\n\
@@ -610,6 +613,15 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  break;
       }
       
+      case ALL_BRANCHING_ACT: {
+	  Vector<uint32_t> v;
+	  for (uint32_t i = 0; i <= 32 - action_extra; i++) {
+	      tree.branching_counts(i, action_extra, v);
+	      write_vector(v, out);
+	  }
+	  break;
+      }
+      
       case BALANCE_HISTOGRAM_ACT: {
 	  Vector<uint32_t> sizes;
 	  tree.balance_histogram(action_extra, action_extra2, sizes);
@@ -734,8 +746,9 @@ particular purpose.\n");
 	    break;
 
 	  case BALANCE_ACT:
+	  case ALL_BRANCHING_ACT:
 	    if (clp->val.u > 31)
-		die_usage("`--balance' must be between 0 and 31");
+		die_usage("`" + String(Clp_CurOptionName(clp)) + "' must be between 0 and 31");
 	    add_action(opt, clp->val.u);
 	    break;
 
