@@ -398,26 +398,52 @@ AggregateTree::sum_and_sum_sq(double *sum, double *sum_sq) const
 
 
 static uint32_t *
-node_nonzero_sizes(AggregateTree::Node *n, uint32_t *vec)
+node_active_counts(AggregateTree::Node *n, uint32_t *vec)
 {
     if (n->count)
 	*vec++ = n->count;
     if (n->child[0]) {
-	vec = node_nonzero_sizes(n->child[0], vec);
-	vec = node_nonzero_sizes(n->child[1], vec);
+	vec = node_active_counts(n->child[0], vec);
+	vec = node_active_counts(n->child[1], vec);
     }
     return vec;
 }
 
 void
-AggregateTree::nonzero_sizes(Vector<uint32_t> &vec) const
+AggregateTree::active_counts(Vector<uint32_t> &vec) const
 {
     vec.resize(_num_nonzero);
     if (_num_nonzero) {
-	uint32_t *end_vec = node_nonzero_sizes(_root, &vec[0]);
+	uint32_t *end_vec = node_active_counts(_root, &vec[0]);
 	assert((uint32_t)(end_vec - &vec[0]) == _num_nonzero);
 	(void) end_vec;
     }
+}
+
+
+void
+AggregateTree::node_randomly_assign_counts(Node *n, Vector<uint32_t> &v)
+{
+    if (n->count) {
+	int which = random() % v.size();
+	n->count = v[which];
+	if (!n->count)
+	    _num_nonzero--;
+	v[which] = v.back();
+	v.pop_back();
+    }
+    if (n->child[0]) {
+	node_randomly_assign_counts(n->child[0], v);
+	node_randomly_assign_counts(n->child[1], v);
+    }
+}
+
+void
+AggregateTree::randomly_assign_counts(const Vector<uint32_t> &vec)
+{
+    assert((uint32_t) vec.size() == _num_nonzero);
+    Vector<uint32_t> v(vec);
+    node_randomly_assign_counts(_root, v);
 }
 
 

@@ -40,7 +40,8 @@ class AggregateTree { public:
 
     void haar_wavelet_energy_coeff(Vector<double> &) const;
 
-    void nonzero_sizes(Vector<uint32_t> &) const;
+    void active_counts(Vector<uint32_t> &) const;
+    void randomly_assign_counts(const Vector<uint32_t> &);
     
     void sum_and_sum_sq(double *, double *) const;
 
@@ -101,6 +102,7 @@ class AggregateTree { public:
     void node_drop_common_hosts(Node *, const Node *[], int &);
     void node_drop_common_unequal_hosts(Node *, const Node *[], int &);
     void node_take_nonzero_sizes(Node *, const Node *[], int &, uint32_t);
+    void node_randomly_assign_counts(Node *, Vector<uint32_t> &);
 
     static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);

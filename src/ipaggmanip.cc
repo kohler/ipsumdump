@@ -30,6 +30,7 @@
 #define AND_LIST_OPT		309
 #define MINUS_OPT		310
 #define XOR_OPT			311
+#define ASSIGN_COUNTS_OPT	312
 
 #define FIRST_ACT		400
 #define NO_ACT			400
@@ -86,6 +87,7 @@ static Clp_Option options[] = {
   { "xor", '^', XOR_OPT, 0, 0 },
   { "each", 'e', EACH_OPT, 0, 0 },
   { "and-list", 0, AND_LIST_OPT, 0, 0 },
+  { "assign-counts", 0, ASSIGN_COUNTS_OPT, 0, 0 },
 
   { "num", 'n', NNZ_ACT, 0, 0 },
   { "num-nonzero", 'n', NNZ_ACT, 0, 0 },
@@ -177,6 +179,8 @@ Actions: (Results of final action sent to output.)\n\
   -^, --xor                  Combine FILES, but drop any address present in\n\
                              more than one FILE.\n\
   -e, --each                 Output result for each FILE separately.\n\
+      --assign-counts        Two FILEs with same -N. Assign address counts from\n\
+                             FILE1 randomly to addresses in FILE2.\n\
   Also say \"'(+' FILE FILE ... ')'\" to --or particular files, or\n\
   \"'(&' FILE ... ')'\" for --and, \"'(-' FILE ... ')'\" for --minus,\n\
   \"'(^' FILE ... ')'\" for --xor.\n\
@@ -450,8 +454,10 @@ correlation_coefficient(const Vector<uint32_t> &a, const Vector<uint32_t> &b)
 }
 
 static void
-process_actions(AggregateTree &tree, ErrorHandler *errh)
+process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 {
+    (void) errh;
+    
     // go through earlier actions
     for (int j = 0; j < actions.size(); j++) {
 	int action = actions[j];
@@ -569,7 +575,13 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 
 	}
     }
+}
 
+static void
+process_actions(AggregateTree &tree, ErrorHandler *errh)
+{
+    process_tree_actions(tree, errh);
+    
     // output result of final action
     int action = actions.back();
     uint32_t action_extra = extras.back();
@@ -650,7 +662,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case SIZES_ACT:
       case SORTED_SIZES_ACT: {
 	  Vector<uint32_t> sizes;
-	  tree.nonzero_sizes(sizes);
+	  tree.active_counts(sizes);
 	  if (action == SORTED_SIZES_ACT && sizes.size())
 	      qsort(&sizes[0], sizes.size(), sizeof(uint32_t), uint32_rev_compar);
 	  write_vector(sizes, out);
@@ -665,21 +677,21 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  agg_tree.prefixize(action_extra);
 	  tree.take_nonzero_sizes(agg_tree, prefix_to_mask(action_extra));
 	  Vector<uint32_t> sizes;
-	  tree.nonzero_sizes(sizes);
+	  tree.active_counts(sizes);
 	  write_vector(sizes, out);
 	  break;
       }
 
       case CORR_SIZE_AGG_ADDR_ACT: {
 	  Vector<uint32_t> sizes;
-	  tree.nonzero_sizes(sizes);
+	  tree.active_counts(sizes);
 	  
 	  AggregateTree agg_tree(tree);
 	  agg_tree.posterize();
 	  agg_tree.prefixize(action_extra);
 	  tree.take_nonzero_sizes(agg_tree, prefix_to_mask(action_extra));
 	  Vector<uint32_t> agg_addrs;
-	  tree.nonzero_sizes(agg_addrs);
+	  tree.active_counts(agg_addrs);
 
 	  fprintf(out, "%.20g\n", correlation_coefficient(sizes, agg_addrs));
 	  //fprintf(out, "# bar %.20g %.20g\n# var %.20g %.20g\n# covar %.20g\n", a_avg, b_avg, a_varx, b_varx, ab_covarx);
@@ -688,7 +700,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 
       case SIZE_COUNTS_ACT: {
 	  Vector<uint32_t> sizes;
-	  tree.nonzero_sizes(sizes);
+	  tree.active_counts(sizes);
 	  if (sizes.size())
 	      qsort(&sizes[0], sizes.size(), sizeof(uint32_t), uint32_compar);
 	  uint32_t count = 0;
@@ -813,6 +825,7 @@ main(int argc, char *argv[])
 	  case AND_LIST_OPT:
 	  case MINUS_OPT:
 	  case XOR_OPT:
+	  case ASSIGN_COUNTS_OPT:
 	    if (combiner)
 		die_usage("combiner option already specified");
 	    combiner = opt;
@@ -1023,6 +1036,30 @@ particular purpose.\n");
 	      process_actions(tree, errh);
 	      ndone++;
 	  }
+	  break;
+      }
+
+      case ASSIGN_COUNTS_OPT: {
+	  if (actions.back() >= FIRST_END_ACT)
+	      errh->fatal("last action must produce a tree with `--assign-counts'");
+	  AggregateTree tree1, tree2;
+	  read_next_file(tree1, errh);
+	  process_tree_actions(tree1, errh);
+	  if (!more_files())
+	      tree2 = tree1;
+	  else {
+	      read_next_file(tree2, errh);
+	      process_tree_actions(tree2, errh);
+	  }
+	  if (more_files())
+	      errh->fatal("`--assign-counts' takes exactly two trees");
+	  if (tree1.nnz() != tree2.nnz())
+	      errh->fatal("`--assign-counts' trees have different -N (%u vs. %u)", tree1.nnz(), tree2.nnz());
+
+	  Vector<uint32_t> sizes;
+	  tree1.active_counts(sizes);
+	  tree2.randomly_assign_counts(sizes);
+	  tree2.write_file(out, output_binary, errh);
 	  break;
       }
 
