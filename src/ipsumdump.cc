@@ -69,28 +69,31 @@
 #define READ_IPSUMDUMP_OPT	403
 #define READ_ASCII_TCPDUMP_OPT	404
 #define IPSUMDUMP_FORMAT_OPT	405
+#define READ_NLANR_DUMP_OPT	406
+#define READ_DAG_DUMP_OPT	407
 
 // options for logging
 #define FIRST_LOG_OPT	1000
 #define TIMESTAMP_OPT	(1000 + ToIPSummaryDump::W_TIMESTAMP)
 #define FIRST_TIMESTAMP_OPT (1000 + ToIPSummaryDump::W_FIRST_TIMESTAMP)
-#define SRC_OPT		(1000 + ToIPSummaryDump::W_SRC)
-#define DST_OPT		(1000 + ToIPSummaryDump::W_DST)
+#define SRC_OPT		(1000 + ToIPSummaryDump::W_IP_SRC)
+#define DST_OPT		(1000 + ToIPSummaryDump::W_IP_DST)
 #define SPORT_OPT	(1000 + ToIPSummaryDump::W_SPORT)
 #define DPORT_OPT	(1000 + ToIPSummaryDump::W_DPORT)
-#define LENGTH_OPT	(1000 + ToIPSummaryDump::W_LENGTH)
-#define IPID_OPT	(1000 + ToIPSummaryDump::W_IPID)
-#define PROTO_OPT	(1000 + ToIPSummaryDump::W_PROTO)
+#define LENGTH_OPT	(1000 + ToIPSummaryDump::W_IP_LEN)
+#define IPID_OPT	(1000 + ToIPSummaryDump::W_IP_ID)
+#define PROTO_OPT	(1000 + ToIPSummaryDump::W_IP_PROTO)
 #define TCP_SEQ_OPT	(1000 + ToIPSummaryDump::W_TCP_SEQ)
 #define TCP_ACK_OPT	(1000 + ToIPSummaryDump::W_TCP_ACK)
 #define TCP_FLAGS_OPT	(1000 + ToIPSummaryDump::W_TCP_FLAGS)
 #define TCP_OPT_OPT	(1000 + ToIPSummaryDump::W_TCP_OPT)
 #define TCP_SACK_OPT	(1000 + ToIPSummaryDump::W_TCP_SACK)
-#define PAYLOAD_LEN_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD_LENGTH)
+#define PAYLOAD_LEN_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD_LEN)
 #define COUNT_OPT	(1000 + ToIPSummaryDump::W_COUNT)
-#define FRAG_OPT	(1000 + ToIPSummaryDump::W_FRAG)
-#define FRAGOFF_OPT	(1000 + ToIPSummaryDump::W_FRAGOFF)
+#define FRAG_OPT	(1000 + ToIPSummaryDump::W_IP_FRAG)
+#define FRAGOFF_OPT	(1000 + ToIPSummaryDump::W_IP_FRAGOFF)
 #define PAYLOAD_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD)
+#define IPCAPLEN_OPT	(1000 + ToIPSummaryDump::W_IP_CAPTURE_LEN)
 
 #define CLP_TIMEVAL_TYPE	(Clp_FirstUserType)
 
@@ -105,6 +108,8 @@ static Clp_Option options[] = {
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
     { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
+    { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
+    { "dag", 0, READ_DAG_DUMP_OPT, 0, 0 },
     { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -146,7 +151,8 @@ static Clp_Option options[] = {
     { "fragment", 'g', FRAG_OPT, 0, 0 },
     { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
     { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
-    { "payload", 0, PAYLOAD_OPT, 0, 0 }
+    { "payload", 0, PAYLOAD_OPT, 0, 0 },
+    { "capture-length", 0, IPCAPLEN_OPT, 0, 0 }
 
 };
 
@@ -195,6 +201,7 @@ Options that determine summary dump contents (can give multiple options):\n\
       --tcp-sack             Include TCP selective acknowledgement options.\n\
   -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
       --payload              Include packet payloads as quoted strings.\n\
+      --capture-length       Include lengths of captured IP data.\n\
   -c, --packet-count         Include packet counts (usually 1).\n\
 \n", program_name);
   printf("\
@@ -204,6 +211,8 @@ Data source options (give exactly one):\n\
       --ipsumdump            Read from existing ipsumdump FILES.\n\
       --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
       --tcpdump-text         Read packets from tcpdump(1) text output FILES.\n\
+      --nlanr                Read packets from NLANR-format FILES (fr/fr+/tsh).\n\
+      --dag                  Read packets from DAG-format FILES.\n\
   -i, --interface            Read packets from network devices DEVNAMES until\n\
                              interrupted.\n\
 \n\
@@ -409,6 +418,8 @@ main(int argc, char *argv[])
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
 	  case READ_ASCII_TCPDUMP_OPT:
+	  case READ_DAG_DUMP_OPT:
+	  case READ_NLANR_DUMP_OPT:
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
@@ -604,7 +615,9 @@ particular purpose.\n");
 	}
 	quiet = true;		// does not support filepos handlers
 	
-    } else if (action == READ_DUMP_OPT) {
+    } else if (action == READ_DUMP_OPT || action == READ_NLANR_DUMP_OPT
+	       || action == READ_DAG_DUMP_OPT) {
+	String eclass = (action == READ_DUMP_OPT ? "FromDump" : (action == READ_NLANR_DUMP_OPT ? "FromNLANRDump" : "FromDAGDump"));
 	if (files.size() == 0)
 	    files.push_back("-");
 	String config = ", FORCE_IP true, STOP true";
@@ -613,7 +626,7 @@ particular purpose.\n");
 	if (mmap >= 0)
 	    config += ", MMAP " + String(mmap);
 	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
+	    psa << "src" << i << " :: " << eclass << "(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";
 	
     } else if (action == READ_ASCII_TCPDUMP_OPT) {

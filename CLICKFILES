@@ -18,6 +18,10 @@ elements/analysis/fromnetflowsumdump.cc:s{"elements/userlevel/}{"}
 elements/analysis/fromnetflowsumdump.hh:s{"elements/userlevel/}{"}
 elements/analysis/fromtcpdump.cc:s{"elements/userlevel/}{"}
 elements/analysis/fromtcpdump.hh:s{"elements/userlevel/}{"}
+elements/analysis/fromnlanrdump.cc:s{"elements/userlevel/}{"}
+elements/analysis/fromnlanrdump.hh:s{"elements/userlevel/}{"}
+elements/analysis/fromdagdump.cc:s{"elements/userlevel/}{"}
+elements/analysis/fromdagdump.hh:s{"elements/userlevel/}{"}
 elements/analysis/ipsumdumpinfo.cc
 elements/analysis/ipsumdumpinfo.hh
 elements/analysis/timesortedsched.cc

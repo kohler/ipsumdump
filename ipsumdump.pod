@@ -13,7 +13,7 @@ then summarizes those packets into a line-based ASCII file. The resulting
 summary dump is easy to process with text-based tools. (But see the
 B<--binary> option, which generates a smaller binary file.)
 
-Here are a couple lines of B<ipsumdump> output, from `ipsumdump -sd
+Here are a couple lines of B<ipsumdump> output, from 'ipsumdump -sd
 /home/kohler/largedump.gz':
 
   !IPSummaryDump 1.1
@@ -24,11 +24,11 @@ Here are a couple lines of B<ipsumdump> output, from `ipsumdump -sd
   64.55.139.202 209.247.204.242
   18.26.4.9 64.55.139.202
 
-The `B<-sd>' option, which is equivalent to `B<--src --dst>', tells
+The 'B<-sd>' option, which is equivalent to 'B<--src --dst>', tells
 B<ipsumdump> to log I<s>ource and I<d>estination IP addresses.
-`F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file. Each data
+'F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file. Each data
 line represents a packet; a space separates the two addresses. The
-`C<!data>' comment describes the contents of each data line.
+'C<!data>' comment describes the contents of each data line.
 
 =head1 OPTIONS
 
@@ -41,8 +41,8 @@ B<ipsumdump> output files (B<--ipsumdump>), or files containing
 B<tcpdump>'s textual output (B<--tcpdump-text>).
 
 Non-option arguments specify the files, or interfaces, to read. For
-example, `ipsumdump B<-r> eth0 eth1' will read two tcpdump(1) files, named
-"eth0" and "eth1"; `ipsumdump B<-i> eth0 eth1' will read from two live
+example, 'ipsumdump B<-r> eth0 eth1' will read two tcpdump(1) files, named
+"eth0" and "eth1"; 'ipsumdump B<-i> eth0 eth1' will read from two live
 network interfaces, "eth0" and "eth1".
 
 Options that read files -- B<--tcpdump>, B<--netflow-summary>,
@@ -69,8 +69,8 @@ packets were dropped by the kernel before output.
 =item B<--netflow-summary>
 
 Read from one or more NetFlow summary files. These are line-oriented ASCII
-files; blank lines, and lines starting with `!' or `#', are ignored. Other
-lines should contain 15 or more fields separated by vertical bars `|'.
+files; blank lines, and lines starting with '!' or '#', are ignored. Other
+lines should contain 15 or more fields separated by vertical bars '|'.
 B<Ipsumdump> pays attention to some of these fields:
 
   Field  Meaning                       Example
@@ -105,13 +105,23 @@ much better to use the binary files produced by 'tcpdump B<-w>', but if
 someone threw those file away and all you have is the ASCII output, you can
 still make do.
 
+=item B<--nlanr>
+
+Read from one or more NLANR-formatted trace files (fr, fr+, or tsh
+format). See L<http://pma.nlanr.net/Traces/>.
+
+=item B<--dag>
+
+Read from one or more DAG-formatted trace files. See
+L<http://dag.cs.waikato.ac.nz/>.
+
 =back
 
 =head2 Dump Contents
 
 These options determine what actually goes in the dump; supply an arbitrary
 number of them. In the output, fields are separated by spaces. If you say
-`B<-sd>', for example -- or the equivalent `B<--src --dst>' -- the dump's
+'B<-sd>', for example -- or the equivalent 'B<--src --dst>' -- the dump's
 data lines will contain an IP source address, a space, and an IP
 destination address:
 
@@ -210,18 +220,18 @@ Include TCP options in the dump. Single TCP option fields have the
 following representations:
 
     EOL, NOP        No representation
-    MSS             `mss1400'
-    Window scale    `wscale10'
-    SACK permitted  `sackok'
-    SACK            `sack95:98'; each SACK block
+    MSS             'mss1400'
+    Window scale    'wscale10'
+    SACK permitted  'sackok'
+    SACK            'sack95:98'; each SACK block
                     is listed separately
-    Timestamp       `ts669063908:38382731'
-    Other options   `98' (option 98, no data),
-                    `99=0:5:10' (option with data, data
+    Timestamp       'ts669063908:38382731'
+    Other options   '98' (option 98, no data),
+                    '99=0:5:10' (option with data, data
 		    octets separated by colons)
 
 Multiple options are separated by commas. Any invalid option causes the entire
-field to be replaced by a single question mark `C<?>'. A period `C<.>' is used
+field to be replaced by a single question mark 'C<?>'. A period 'C<.>' is used
 for packets with no options (except possibly EOL and NOP).
 
 =item B<--tcp-sack>
@@ -241,6 +251,12 @@ Include the actual packet payload in the dump. This is the TCP or UDP
 payload, for TCP or UDP packets, or the IP payload, for other IP packets.
 Output as a double-quoted C string; non-ASCII characters, and double-quotes
 and backslashes, appear as C backslash escapes. Example: C<",25\r\n\000">.
+
+=item B<--capture-length>
+
+Include the length of captured IP data in the dump. This can be less than
+the full IP length (see B<--length>), since many packet capture programs
+will store only part of each packet's data.
 
 =item B<--packet-count>, B<-c>
 
@@ -272,16 +288,16 @@ Write the summary dump in binary format. See below for more information.
 =item B<--filter>=I<filter>, B<-f> I<filter>
 
 Only include packets and flows matching a tcpdump(1) filter. For example,
-`ipsumdump B<-f> "tcp && src net 18/8"' will summarize data only for TCP
+'ipsumdump B<-f> "tcp && src net 18/8"' will summarize data only for TCP
 packets from net 18. (The syntax for I<filter> is currently a subset of
 tcpdump's syntax.)
 
 =item B<--bad-packets>
 
-Print lines like `C<!bad IP header length 4>' for packets with no IP
+Print lines like 'C<!bad IP header length 4>' for packets with no IP
 headers, bad IP headers, or bad TCP/UDP headers. (A bad header has an
 incorrect length or unexpected version, or is spread across multiple
-fragments.) Default is to print a normal line, but with a dash `C<->' for
+fragments.) Default is to print a normal line, but with a dash 'C<->' for
 any piece of information that came from a bad header.
 
 =item B<--anonymize>, B<-A>
@@ -291,7 +307,7 @@ and class. This means, first, that two anonymized addresses will share the
 same prefix when their non-anonymized counterparts share the same prefix;
 and second, that anonymized addresses will be in the same class (A, B, C,
 or D) as their non-anonymized counterparts. The anonymization algorithm
-comes from tcpdpriv(1); it works like `tcpdpriv B<-A50 -C4>'.
+comes from tcpdpriv(1); it works like 'tcpdpriv B<-A50 -C4>'.
 
 If B<--anonymize> and B<--write-tcpdump> are both on, the B<tcpdump> output
 file will have anonymized IP addresses. However, the file will contain
@@ -307,7 +323,7 @@ default.
 Sample packets with probability I<p>. That is, I<p> is the chance that a
 packet will cause output to be generated. The actual probability may differ
 from the specified probability, due to fixed point arithmetic; check the
-output for a `C<!sampling_prob>' comment to see the real probability.
+output for a 'C<!sampling_prob>' comment to see the real probability.
 Strictly speaking, this option samples records, not packets; so for NetFlow
 summaries without B<--multipacket>, it will sample flows.
 
@@ -328,7 +344,7 @@ overlapping tcpdump(1) files into a single, sorted tcpdump(1) file.
 =item B<--interval>=I<time>
 
 Process packets for I<time>, an interval length in seconds (or give a
-suffix like `C<2m>' or `C<1hr>'). For B<--interface>, B<ipsumdump> will
+suffix like 'C<2m>' or 'C<1hr>'). For B<--interface>, B<ipsumdump> will
 quit after it has run for I<time>. For other options, B<ipsumdump> will
 quit before writing a packet whose timestamp is more than I<time> seconds
 later than the timestamp on the first packet it sees.
@@ -348,13 +364,13 @@ addresses to the standard error, paired with their anonymized counterparts.
 Useful when reading from interfaces. This option causes B<ipsumdump> to
 write a comment recording the cumulative number of packets output, and the
 number of packets dropped by the kernel before B<ipsumdump> could process
-them, every I<time> seconds. (Or you can say, for example, `2m' for 2
+them, every I<time> seconds. (Or you can say, for example, '2m' for 2
 minutes.) A sample comment:
 
   !counts out 0 kdrop 0
 
 This says that B<ipsumdump> has output 0 records, and the kernel reported 0
-packet drops since B<ipsumdump> began. `C<!bad>' lines are counted as
+packet drops since B<ipsumdump> began. 'C<!bad>' lines are counted as
 records.
 
 =item B<--random-seed>=I<seed>
@@ -403,9 +419,9 @@ kill it with SIGHUP.
 
 =head1 EXAMPLES
 
-The `B<-tsSdDp>' option set covers the most commonly useful information
+The 'B<-tsSdDp>' option set covers the most commonly useful information
 about each packet: timestamp, source address, source port, destination
-address, destination port, and protocol. Invoking `ipsumdump B<-i> eth1
+address, destination port, and protocol. Invoking 'ipsumdump B<-i> eth1
 B<-tsSdDp>' might produce output like this:
 
   !IPSummaryDump 1.1
@@ -437,7 +453,7 @@ Here is the same data, anonymized with B<-A>:
 =head1 BINARY FORMAT
 
 Binary ipsumdump files begin with several ASCII lines, just like regular
-ipsumdump files. The line `C<!binary>' indicates that the rest of the file,
+ipsumdump files. The line 'C<!binary>' indicates that the rest of the file,
 starting immediately after the newline, consists of binary records. Each
 record looks like this:
 
@@ -449,11 +465,11 @@ record looks like this:
 The initial word of data contains the record length in bytes. (All numbers
 in the file are stored in network byte order.) The record length includes
 the initial word itself, so the minimum valid record length is 4. The
-high-order bit `C<X>' is the metadata indicator. It is zero for regular
+high-order bit 'C<X>' is the metadata indicator. It is zero for regular
 packets and one for metadata lines.
 
 Regular packet records have binary fields stored in the order indicated by
-the `C<!data>' line, as follows:
+the 'C<!data>' line, as follows:
 
    Field Name     Length  Description
    timestamp         8    timestamp sec, usec
@@ -476,12 +492,12 @@ the `C<!data>' line, as follows:
    payload_len       4    payload length
    count             4    packet count
 
-Each field is Length bytes long. Variable-length fields have Length `C<?>' in
+Each field is Length bytes long. Variable-length fields have Length 'C<?>' in
 the table; in a packet record, these fields consist of a single length byte,
 followed by that many bytes of data.
 
 The data stored in a metadata record is just an ASCII string, ending with
-newline, same as in a regular ASCII IPSummaryDump file. `C<!bad>' records, for
+newline, same as in a regular ASCII IPSummaryDump file. 'C<!bad>' records, for
 example, are stored this way.
 
 =head1 CLICK
@@ -497,18 +513,18 @@ However, you don't need to install Click to run B<ipsumdump>; the
 F<libclick> directory contains all the relevant parts of Click, bundled
 into a library.
 
-If you're curious, try running `ipsumdump B<--config>' with some other
+If you're curious, try running 'ipsumdump B<--config>' with some other
 options to see the Click configuration B<ipsumdump> would run.
 
 This is, I think, a pleasant way to write a packet processor!
 
 =head1 COMPATIBILITY
 
-Version 1.0 of the IPSummaryDump file format expressed 'ip fragoff' fields
+Version 1.0 of the IPSummaryDump file format expressed 'ip_fragoff' fields
 in units of 8 bytes. In version 1.1 and later, these fields are expressed
 in bytes.
 
-The names of `C<!data>' fields were formerly printed in quotes, and could
+The names of 'C<!data>' fields were formerly printed in quotes, and could
 contain spaces, like the following:
 
   !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'
