@@ -198,7 +198,7 @@ particular purpose.\n");
 
 	  case NNZ_DISCRIM_ACT: {
 	      Vector<uint32_t> nnzp;
-	      tree.num_nonzero_in_prefixes(nnzp);
+	      tree.num_discriminated_by_prefix(nnzp);
 	      write_vector(nnzp, out);
 	      break;
 	  }
