@@ -783,6 +783,7 @@ particular purpose.\n");
 	write_sampling_prob_message(router, sample_elt);
     
     // run driver
+    router->activate(errh);
     started = true;
     router->master()->thread(0)->driver();
 
