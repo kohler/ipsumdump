@@ -193,7 +193,7 @@ AggregateTree::ok(ErrorHandler *errh) const
     if (errh->nerrors() == before && nnz != _num_nonzero)
 	errh->error("bad num_nonzero: nominally %u, calculated %u", _num_nonzero, nnz);
     
-    return (errh->nerrors() == before ? 0 : -1);
+    return (errh->nerrors() == before);
 }
 
 

@@ -209,7 +209,7 @@ AggregateWTree::ok(ErrorHandler *errh) const
     if (errh->nerrors() == before && nnz != _num_nonzero)
 	errh->error("bad num_nonzero: nominally %u, calculated %u", _num_nonzero, nnz);
 
-    return (errh->nerrors() == before ? 0 : -1);
+    return (errh->nerrors() == before);
 }
 
 
@@ -291,7 +291,7 @@ AggregateWTree::add(uint32_t a, int32_t delta)
 	stack[pos++] = n;
 	
 	if (n->aggregate == a) {
-	    if (!_topheavy && n->child(0) && n->child(0)->aggregate == a) {
+	    if (!_topheavy && n->child(0)) { // take left child by definition
 		n = n->child(0);
 		continue;
 	    }
