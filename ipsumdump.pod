@@ -20,7 +20,7 @@ Here are a couple lines of B<ipsumdump> output, from `ipsumdump -sd
   !creator "ipsumdump -sd /home/kohler/largedump.gz"
   !host max.lcdf.org
   !starttime 1000943858.353723 (Wed Sep 19 16:57:38 2001)
-  !data 'ip src' 'ip dst'
+  !data ip_src ip_dst
   64.55.139.202 209.247.204.242
   18.26.4.9 64.55.139.202
 
@@ -299,7 +299,7 @@ addresses to the standard error, paired with their anonymized counterparts.
 Useful when reading from interfaces. This option causes B<ipsumdump> to
 write a comment recording the cumulative number of packets output, and the
 number of packets dropped by the kernel before B<ipsumdump> could process
-them, every I<time> seconds. (But you can say, for example, `2m' for 2
+them, every I<time> seconds. (Or you can say, for example, `2m' for 2
 minutes.) A sample comment:
 
   !counts out 0 kdrop 0
