@@ -298,6 +298,7 @@ main(int argc, char *argv[])
     bool do_seed = true;
     bool promisc = true;
     bool quiet = false;
+    bool quiet_explicit = false;
     bool bad_packets = false;
     Vector<String> files;
     const char *record_drops = 0;
@@ -391,6 +392,7 @@ main(int argc, char *argv[])
 
 	  case QUIET_OPT:
 	    quiet = !clp->negated;
+	    quiet_explicit = true;
 	    break;
 
 	  case BAD_PACKETS_OPT:
@@ -577,7 +579,12 @@ particular purpose.\n");
 	for (int i = 0; i < files.size(); i++)
 	    sa << "src" << i << ".filesize ";
 	sa.pop_back();
-	sa << ", UPDATE 0.1, MINSIZE 5000);\n";
+	sa << ", UPDATE 0.1";
+	if (!quiet_explicit)
+	    sa << ", DELAY 2s";
+	if (output == "-" || write_dump == "-")
+	    sa << ", CHECK_STDOUT true";
+	sa << ");\n";
     }
     
     sa << "DriverManager(";

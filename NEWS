@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.16   30.Nov.2001
+
+* Progress bar improvements: The progress bar will not appear if normal
+  output is to the terminal, or if the invocation doesn't take very long.
+
+
 Version 1.15   28.Nov.2001
 
 * --length, --payload-length, and --payload deal with IP length, ignoring

@@ -293,7 +293,8 @@ anonymized IP addresses.
 
 =item B<--quiet>, B<-q>
 
-Do not print a progress bar to standard error.
+Do not print a progress bar to standard error. This is the default when
+B<ipsumdump> isn't running interactively.
 
 =item B<--config>
 
