@@ -179,6 +179,18 @@ catch_signal(int sig)
 }
 
 static void
+catch_sighup(int sig)
+{
+    if (!started) {
+	signal(sig, SIG_DFL);
+	kill(getpid(), sig);
+    }
+    signal(sig, catch_sighup);
+    ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(router->find("to_dump"));
+    td->flush_buffer();
+}
+
+static void
 write_sampling_prob_message(Router *r, const String &sample_elt)
 {
     Element *sample = r->find(sample_elt);
@@ -515,12 +527,12 @@ particular purpose.\n");
 
     // catch control-C
     signal(SIGINT, catch_signal);
-    signal(SIGHUP, catch_signal);
     signal(SIGTERM, catch_signal);
 #ifdef SIGTSTP
     signal(SIGTSTP, catch_signal);
 #endif
-    // do NOT ignore SIGPIPE
+    signal(SIGHUP, catch_sighup);
+    // do NOT catch SIGPIPE; it kills us immediately
 
     // lex configuration
     BailErrorHandler berrh(errh);

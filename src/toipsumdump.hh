@@ -131,6 +131,7 @@ class ToIPSummaryDump : public Element { public:
     void run_scheduled();
 
     void write_string(const String &);
+    void flush_buffer();
 
     enum Content {		// must agree with FromIPSummaryDump
 	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,

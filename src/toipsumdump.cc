@@ -347,6 +347,12 @@ ToIPSummaryDump::write_string(const String &s)
 }
 
 void
+ToIPSummaryDump::flush_buffer()
+{
+    fflush(_f);
+}
+
+void
 ToIPSummaryDump::add_handlers()
 {
     if (input_is_pull(0))
