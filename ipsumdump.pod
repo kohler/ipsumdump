@@ -264,6 +264,14 @@ sorted timestamps. When combined with the B<--write-tcpdump> option, this
 lets you collate overlapping tcpdump(1) files into a single, sorted
 tcpdump(1) file.
 
+=item B<--interval>=I<time>
+
+Process packets for I<time>, an interval length in seconds (or give a
+suffix like `C<2m>' or `C<1hr>'). For B<--interface>, B<ipsumdump> will
+quit after it has run for I<time>. For other options, B<ipsumdump> will
+quit before writing a packet whose timestamp is more than I<time> seconds
+later than the timestamp on the first packet it sees.
+
 =item B<--map-address>=I<addrs>
 
 I<addrs> is a space- or comma-separated list of IP addresses and/or

@@ -35,6 +35,7 @@
 #define WRITE_DROPS_OPT	314
 #define QUIET_OPT	315
 #define BAD_PACKETS_OPT	316
+#define INTERVAL_OPT	317
 
 // data sources
 #define INTERFACE_OPT	400
@@ -60,6 +61,8 @@
 #define FRAG_OPT	(1000 + ToIPSummaryDump::W_FRAG)
 #define FRAGOFF_OPT	(1000 + ToIPSummaryDump::W_FRAGOFF)
 #define PAYLOAD_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD)
+
+#define CLP_TIMEVAL_TYPE	(Clp_MaxDefaultType + 1)
 
 static Clp_Option options[] = {
 
@@ -87,6 +90,7 @@ static Clp_Option options[] = {
     { "record-counts", 0, WRITE_DROPS_OPT, Clp_ArgString, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "bad-packets", 0, BAD_PACKETS_OPT, 0, Clp_Negate },
+    { "interval", 0, INTERVAL_OPT, CLP_TIMEVAL_TYPE, 0 },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -156,11 +160,11 @@ Options that determine summary dump contents (can give multiple options):\n\
   -c, --packet-count         Include packet counts (usually 1).\n\
 \n\
 Data source options (give exactly one):\n\
-  -i, --interface            Read packets from network devices DEVNAMES until\n\
-                             interrupted.\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
       --ipsumdump            Read from existing ipsumdump FILES.\n\
+  -i, --interface            Read packets from network devices DEVNAMES until\n\
+                             interrupted.\n\
 \n\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
@@ -259,6 +263,23 @@ record_drops_hook(const String &, Element *, void *, ErrorHandler *)
     return 0;
 }
 
+static int
+stop_hook(const String &s, Element *, void *, ErrorHandler *)
+{
+    int n = 1;
+    (void) cp_integer(cp_uncomment(s), &n);
+    router->adjust_driver_reservations(-n);
+    return 0;
+}
+
+static int
+stop_cold_hook(const String &, Element *, void *, ErrorHandler *)
+{
+    DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
+    router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+    return 0;
+}
+
 extern void export_elements(Lexer *);
 
 static String
@@ -270,12 +291,24 @@ source_output_port(bool collate, int i)
 	return "shunt";
 }
 
+static int
+parse_timeval(Clp_Parser *clp, const char *arg, int complain, void *)
+{
+    if (cp_timeval(arg, (struct timeval *)&clp->val))
+	return 1;
+    else if (complain)
+	return Clp_OptionError(clp, "`%O' expects a time value, not `%s'", arg);
+    else
+	return 0;
+}
+
 int
 main(int argc, char *argv[])
 {
     Clp_Parser *clp = Clp_NewParser
 	(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
+    Clp_AddType(clp, CLP_TIMEVAL_TYPE, 0, parse_timeval, 0);
     
     String::static_initialize();
     cp_va_static_initialize();
@@ -304,6 +337,8 @@ main(int argc, char *argv[])
     int snaplen = -1;
     Vector<String> files;
     const char *record_drops = 0;
+    struct timeval interval;
+    timerclear(&interval);
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -400,6 +435,10 @@ main(int argc, char *argv[])
 	  case BAD_PACKETS_OPT:
 	    bad_packets = !clp->negated;
 	    break;
+
+	  case INTERVAL_OPT:
+	    interval = *reinterpret_cast<struct timeval *>(&clp->val);
+	    break;
 	    
 	  case CONFIG_OPT:
 	    config = true;
@@ -459,6 +498,7 @@ particular purpose.\n");
     String shunt_internals = "";
     StringAccum psa;
     String sample_elt;
+    bool interval_packets = true;
     if (snaplen < 0)
 	snaplen = (write_dump ? 2000 : 68);
     if (collate && files.size() < 2)
@@ -487,6 +527,7 @@ particular purpose.\n");
 	    sample_elt = "shunt/samp";
 	}
 	quiet = true;		// does not support filepos handlers
+	interval_packets = false;
 	
     } else if (action == READ_DUMP_OPT) {
 	if (files.size() == 0)
@@ -535,12 +576,19 @@ particular purpose.\n");
 	sa << "collate :: MergeByTimestamp(STOP true, NULL_IS_DEAD true) -> shunt;\n";
     sa << psa;
     
-    // possible elements to filter and/or anonymize
+    // possible elements to filter and/or anonymize and/or stop
     sa << "shunt\n";
     if (filter)
 	sa << "  -> IPFilter(0 " << filter << ")\n";
     if (anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
+    if (interval_packets && timerisset(&interval)) {
+	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL stop_cold)\n";
+	if (log_contents.size() > 1 && !collate) {
+	    p_errh->warning("`--collate' missing");
+	    p_errh->message("(`--interval' works best with `--collate' when you have\nmultiple data sources.)");
+	}
+    }
     
     // possible elements to write tcpdump file
     if (write_dump) {
@@ -591,18 +639,23 @@ particular purpose.\n");
 	    sa << ", CHECK_STDOUT true";
 	sa << ");\n";
     }
-    
+
     sa << "DriverManager(";
-    if (action != INTERFACE_OPT || collate) {
-	stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
-	sa << "wait_stop " << stop_driver_count - 1;
+    stop_driver_count = 1;
+    if (timerisset(&interval) && !interval_packets) {
+	sa << ", wait_for " << interval;
+	stop_driver_count--;
     }
+    if (action != INTERFACE_OPT || collate)
+	stop_driver_count += files.size() + (collate ? 1 : 0);
+    if (stop_driver_count > 1)
+	sa << ", wait_stop " << stop_driver_count - 1;
     // complete progress bar
     if (!quiet)
 	sa << ", write_skip progress.mark_done";
     // print `!counts' message if appropriate
     if (action == INTERFACE_OPT)
-	sa << ", wait_stop, write record_counts ''";
+	sa << ", write record_counts ''";
     sa << ");\n";
 
     // output config if required
@@ -628,6 +681,8 @@ particular purpose.\n");
     router = lexer->create_router();
     lexer->end_parse(cookie);
     router->add_global_write_handler("record_counts", record_drops_hook, 0);
+    router->add_global_write_handler("stop", stop_hook, 0);
+    router->add_global_write_handler("stop_cold", stop_cold_hook, 0);
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
     

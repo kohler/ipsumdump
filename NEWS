@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.20   8.Jan.2002
+
+* Add `--interval' option.
+
+
 Version 1.19   31.Dec.2001
 
 * Add some sanity checks on ip_len to the TCP and UDP header checks, and
