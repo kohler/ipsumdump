@@ -27,6 +27,7 @@
 #include <click/driver.hh>
 #include <click/llrpc.h>
 #include <click/handlercall.hh>
+#include <click/master.hh>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -246,7 +247,7 @@ catch_signal(int sig)
 	kill(getpid(), sig);
     else {
 	DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
-	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+	router->set_runcount(dm->stopped_count() - stop_driver_count);
     }
 }
 
@@ -318,12 +319,12 @@ stop_hook(const String &s_in, Element *, void *, ErrorHandler *errh)
     String s = cp_uncomment(s_in);
     DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
     if (!s || cp_integer(s, &n))
-	router->adjust_driver_reservations(-n);
+	router->adjust_runcount(-n);
     else if (s == "cold")
-	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+	router->set_runcount(dm->stopped_count() - stop_driver_count);
     else if (s == "switch") {
 	HandlerCall::call_write(router->find("switch/s"), "switch", "1", errh);
-	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+	router->set_runcount(dm->stopped_count() - stop_driver_count);
     } else
 	return errh->error("bad argument to `stop'");
     return 0;
@@ -783,7 +784,7 @@ particular purpose.\n");
     
     // run driver
     started = true;
-    router->thread(0)->driver();
+    router->master()->thread(0)->driver();
 
     // print result of mapping addresses &/or prefixes
     if (map_prefixes.size()) {

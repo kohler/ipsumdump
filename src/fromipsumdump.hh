@@ -76,17 +76,18 @@ C<sampling_prob> handler to find out the actual probability. If MULTIPACKET is
 true, then the sampling probability applies separately to the multiple packets
 generated per record.
 
-=item DEFAULT_CONTENTS
+=item CONTENTS
 
 String, containing a space-separated list of content names (see
 ToIPSummaryDump for the possibilities). Defines the default contents of the
 dump.
 
-=item DEFAULT_FLOWID
+=item FLOWID
 
 String, containing a space-separated flow ID (source address, source port,
 destination address, destination port, and, optionally, protocol). Defines the
-IP addresses and ports used by default.
+IP addresses and ports used by default. Any flow information in the input file
+will override this setting.
 
 =back
 
@@ -138,7 +139,6 @@ class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
 
     const char *class_name() const	{ return "FromIPSummaryDump"; }
     const char *processing() const	{ return AGNOSTIC; }
-    FromIPSummaryDump *clone() const	{ return new FromIPSummaryDump; }
     void *cast(const char *);
 
     int configure(Vector<String> &, ErrorHandler *);
