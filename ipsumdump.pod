@@ -15,7 +15,7 @@ summary dump is easy to process with text-based tools.
 Here are a couple lines of B<ipsumdump> output, from `ipsumdump -sd
 /home/kohler/largedump.gz':
 
-  !IPSummaryDump 1.0
+  !IPSummaryDump 1.1
   !creator "ipsumdump -sd /home/kohler/largedump.gz"
   !host max.lcdf.org
   !starttime 1000943858.353723 (Wed Sep 19 16:57:38 2001)
@@ -149,10 +149,10 @@ period) for nonfragments.
 
 =item B<--fragment-offset>, B<--fragoff>, B<-G>
 
-Include IP fragment offset in the dump. The MF (more fragments) flag is
-indicated by a C<+> suffix. Examples: C<0+> (fragment offset 0, more
-fragments forthcoming), C<555> (fragment offset 555, this is the last
-fragment).
+Include IP fragment offset in the dump. The field value is the fragment
+offset in bytes, possibly followed by a C<+> suffix, indicating the MF
+(more fragments) flag. Examples: C<0+> (fragment offset 0, more fragments
+forthcoming), C<552> (fragment offset 552, this is the last fragment).
 
 =item B<--tcp-seq>, B<-Q>
 
@@ -337,7 +337,7 @@ about each packet: timestamp, source address, source port, destination
 address, destination port, and protocol. Invoking `ipsumdump B<-i> eth1
 B<-tsSdDp>' might produce output like this:
 
-  !IPSummaryDump 1.0
+  !IPSummaryDump 1.1
   !creator "ipsumdump -i eth1 -tsSdDp"
   !host max.lcdf.org
   !starttime 1000967293.569808 (Wed Sep 19 23:28:13 2001)
@@ -351,7 +351,7 @@ B<-tsSdDp>' might produce output like this:
 
 Here is the same data, anonymized with B<-A>:
 
-  !IPSummaryDump 1.0
+  !IPSummaryDump 1.1
   !creator "ipsumdump --ipsumdump -A -tsSdDp"
   !host max.lcdf.org
   !starttime 1000968019.67508 (Wed Sep 19 23:40:19 2001)
@@ -380,6 +380,12 @@ If you're curious, try running `ipsumdump B<--config>' with some other
 options to see the Click configuration B<ipsumdump> would run.
 
 This is, I think, a pleasant way to write a packet processor!
+
+=head1 COMPATIBILITY
+
+Version 1.0 of the IPSummaryDump file format expressed 'ip fragoff' fields
+in units of 8 bytes. In version 1.1 and later, these fields are expressed
+in bytes.
 
 =head1 SEE ALSO
 

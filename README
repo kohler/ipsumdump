@@ -6,7 +6,7 @@ packet sockets on Linux), or from a tcpdump(1) save file, and writes an
 ASCII summary of the packet data to the standard output. Comments on the
 first couple lines describe the summary's contents; for example:
 
-!IPSummaryDump 1.0
+!IPSummaryDump 1.1
 !creator "aciri-ipsumdump -i wvlan0"
 !host no.lcdf.org
 !starttime 996022410.322317 (Tue Jul 24 17:53:30 2001)

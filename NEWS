@@ -1,5 +1,18 @@
 Ipsumdump NEWS
 
+Version 1.22   2.Jun.2002
+
+* Fragment offset fields, produced by -G, formerly were expressed in 8-byte
+  units. Starting with this version, fragment offset fields are expressed
+  in bytes. Updated the `!IPSummaryDump' file version number to `1.1' to
+  represent this change.
+
+* Fixed bug with reading ipsumdump files: incorrect IP lengths caused many
+  packets to be ignored.
+
+* Update to Click-1.2.4.
+
+
 Version 1.21   26.Mar.2002
 
 * Update endianness test (Click failed to compile on Solaris). Reported by

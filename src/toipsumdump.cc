@@ -98,12 +98,14 @@ ToIPSummaryDump::initialize(ErrorHandler *errh)
 	_filename = "<stdout>";
     }
 
-    if (input_is_pull(0))
+    if (input_is_pull(0)) {
 	ScheduleInfo::join_scheduler(this, &_task, errh);
+	_signal = Notifier::upstream_pull_signal(this, 0, &_task);
+    }
     _active = true;
 
     // magic number
-    fprintf(_f, "!IPSummaryDump 1.0\n");
+    fprintf(_f, "!IPSummaryDump %d.%d\n", FromIPSummaryDump::MAJOR_VERSION, FromIPSummaryDump::MINOR_VERSION);
 
     if (_banner)
 	fprintf(_f, "!creator %s\n", cp_quote(_banner).cc());
@@ -405,11 +407,11 @@ ToIPSummaryDump::run_scheduled()
 {
     if (!_active)
 	return;
-    Packet *p = input(0).pull();
-    if (p) {
+    if (Packet *p = input(0).pull()) {
 	write_packet(p, _multipacket);
 	p->kill();
-    }
+    } else if (!_signal)
+	return;
     _task.fast_reschedule();
 }
 
