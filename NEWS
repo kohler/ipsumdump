@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.13   4.Nov.2001
+
+* Speed improvements in --tu-summary/--ipsumdump.
+
+
 Version 1.12   31.Oct.2001
 
 * Remove default dump content options. If you don't supply any dump
