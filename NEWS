@@ -1,5 +1,21 @@
 Ipsumdump NEWS
 
+Version 1.47   12.Jan.2005
+
+* More AMD64 stuff, this time reported by Kirill Ponomarew.
+
+
+Version 1.46   10.Jan.2005
+
+* Update config.guess and config.sub within Click, hopefully addressing
+  configure errors on AMD64 reported by Sivakumar Ramagopal.
+
+
+Version 1.45   4.Jan.2005
+
+* Update with Click bug fixes.
+
+
 Version 1.44   3.Jan.2005
 
 * Timestamps now use nanosecond precision when available (such as for DAG
