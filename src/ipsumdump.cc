@@ -1,3 +1,21 @@
+// -*- mode: c++; c-basic-offset: 4 -*-
+/*
+ * ipsumdump.cc -- driver for the ipsumdump program
+ * Eddie Kohler
+ *
+ * Copyright (c) 2001-3 International Computer Science Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, subject to the conditions
+ * listed in the Click LICENSE file. These conditions include: you must
+ * preserve this copyright notice, and you cannot mention the copyright
+ * holders in advertising related to the Software without their permission.
+ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
+ * notice is a summary of the Click LICENSE file; the license in that file is
+ * legally binding.
+ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -10,9 +28,9 @@
 #include <click/llrpc.h>
 #include <click/handlercall.hh>
 
-#include <cstdio>
-#include <cstdlib>
-#include <csignal>
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
 
 #include "fromipsumdump.hh"
 #include "toipsumdump.hh"
@@ -585,7 +603,7 @@ particular purpose.\n");
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
-	String config = ", STOP true";
+	String config = ", STOP true, ZERO true";
 	if (multipacket)
 	    config += ", MULTIPACKET true";
 	for (int i = 0; i < files.size(); i++)
