@@ -38,6 +38,7 @@
 #define READ_DUMP_OPT	401
 #define READ_NETFLOW_SUMMARY_OPT 402
 #define READ_IPSUMDUMP_OPT 403
+#define READ_TUDUMP_OPT	404
 
 // aggregates
 #define AGG_SRC_OPT	500
@@ -63,6 +64,8 @@ static Clp_Option options[] = {
     { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
     { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
+    { "tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
+    { "read-tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
     
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -133,6 +136,7 @@ Data source options (give exactly one):\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
       --ipsumdump            Read from existing ipsumdump FILES.\n\
+      --tu-summary           Read TU summary dump FILES.\n\
 \n\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
@@ -309,6 +313,7 @@ main(int argc, char *argv[])
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
+	  case READ_TUDUMP_OPT:
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
@@ -505,7 +510,8 @@ particular purpose.\n");
 		p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
 	}
 	
-    } else if (action == READ_IPSUMDUMP_OPT) {
+    } else if (action == READ_IPSUMDUMP_OPT
+	       || action == READ_TUDUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
 	String config = ", STOP true, ZERO true";
@@ -513,6 +519,8 @@ particular purpose.\n");
 	    config += ", SAMPLE " + String(sample);
 	if (multipacket)
 	    config += ", MULTIPACKET true";
+	if (action == READ_TUDUMP_OPT)
+	    config += ", DEFAULT_CONTENTS timestamp 'ip src' sport 'ip dst' dport proto 'payload len'";
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromIPSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";
