@@ -152,6 +152,7 @@ Options that determine summary dump contents (can give multiple options):\n\
   -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
   -F, --tcp-flags            Include TCP flags words.\n\
   -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
+      --payload              Include packet payloads as quoted strings.\n\
   -c, --packet-count         Include packet count (usually 1).\n\
 \n\
 Data source options (give exactly one):\n\
