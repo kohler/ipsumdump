@@ -884,7 +884,7 @@ main(int argc, char *argv[])
 
     String output;
     int combiner = 0;
-    
+
     while (1) {
 	int opt = Clp_Next(clp);
 	String optname = String(Clp_CurOptionName(clp));

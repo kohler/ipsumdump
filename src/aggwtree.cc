@@ -54,7 +54,7 @@ AggregateWTree::initialize_root()
 }
 
 void
-AggregateWTree::copy_nodes(const Node *n, uint32_t mask)
+AggregateWTree::copy_nodes(const Node* n, uint32_t mask)
 {
     if (n->count)
 	add(n->aggregate & mask, n->count);

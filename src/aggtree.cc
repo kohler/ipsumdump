@@ -129,6 +129,8 @@ AggregateTree::node_ok(Node *n, int last_swivel, ErrorHandler *errh) const
     
     if (n->child[0] && n->child[1]) {
 	int swivel = ffs_msb(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	if (swivel == 0)
+	    return errh->error("%x: bad swivel 0 (%x-%x %p-%p)", n->aggregate, n->child[0]->aggregate, n->child[1]->aggregate, n->child[0], n->child[1]);
 	if (swivel <= last_swivel)
 	    return errh->error("%x: bad swivel %d <= %d (%x-%x)", n->aggregate, swivel, last_swivel, n->child[0]->aggregate, n->child[1]->aggregate);
 	
@@ -138,7 +140,7 @@ AggregateTree::node_ok(Node *n, int last_swivel, ErrorHandler *errh) const
 	if ((n->child[1]->aggregate & mask) != (n->aggregate & mask))
 	    return errh->error("%x: right child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
 
-	mask = (1 << (32 - swivel));
+	mask = (1U << (32 - swivel));
 	if ((n->child[0]->aggregate & mask) != 0)
 	    return errh->error("%x: left child swivel bit one (swivel %d)", n->aggregate, swivel);
 	if ((n->child[1]->aggregate & mask) == 0)
@@ -1150,9 +1152,10 @@ AggregateTree::read_file(FILE *f, ErrorHandler *errh)
 	if (strlen(s) == BUFSIZ - 1 && s[BUFSIZ - 2] != '\n')
 	    return errh->error("line too long");
 	if (s[0] == '$' || s[0] == '!') {
-	    if (strcmp(s + 1, "packed\n") == 0)
-		read_packed_file(f, this, CLICK_BYTE_ORDER);
-	    else if (strcmp(s + 1, "packed_le\n") == 0)
+	    if (strcmp(s + 1, "packed\n") == 0) {
+		errh->warning("file marked '$packed'; change to refer to true byte order");
+		read_packed_file(f, this, CLICK_LITTLE_ENDIAN);
+	    } else if (strcmp(s + 1, "packed_le\n") == 0)
 		read_packed_file(f, this, CLICK_LITTLE_ENDIAN);
 	    else if (strcmp(s + 1, "packed_be\n") == 0)
 		read_packed_file(f, this, CLICK_BIG_ENDIAN);
