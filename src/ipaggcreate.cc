@@ -683,9 +683,6 @@ particular purpose.\n");
     // catch control-C
     signal(SIGINT, catch_signal);
     signal(SIGTERM, catch_signal);
-#ifdef SIGTSTP
-    signal(SIGTSTP, catch_signal);
-#endif
     // do NOT catch SIGPIPE; it kills us immediately
 
     // initialize banner
