@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.50   25.Jan.2005
+
+* Add '--ip-opt' option, requested by Mark Allman.
+
+
 Version 1.49   14.Jan.2005
 
 * Add '--udp-length' option requested by Ruoming Pang.
