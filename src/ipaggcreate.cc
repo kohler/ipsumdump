@@ -228,7 +228,7 @@ parse_timeval(Clp_Parser *clp, const char *arg, int complain, void *)
 	return 0;
 }
 
-extern void export_elements(Lexer *);
+extern void click_export_elements(Lexer *);
 
 static StringAccum banner_sa;
 
@@ -821,17 +821,18 @@ particular purpose.\n");
 
     // lex configuration
     BailErrorHandler berrh(errh);
-    ErrorHandler *click_errh = (verbose ? errh : &berrh);
-    Lexer *lexer = new Lexer(click_errh);
-    export_elements(lexer);
-    int cookie = lexer->begin_parse(sa.take_string(), "<internal>", 0);
+    VerboseFilterErrorHandler verrh(&berrh, ErrorHandler::ERRVERBOSITY_CONTEXT + 1);
+    ErrorHandler *click_errh = (verbose ? errh : &verrh);
+    Lexer *lexer = new Lexer();
+    click_export_elements(lexer);
+    int cookie = lexer->begin_parse(sa.take_string(), "<internal>", 0, click_errh);
     while (lexer->ystatement())
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
     router->add_write_handler(0, "stop", stop_handler, 0);
     router->add_write_handler(0, "output", output_handler, 0);
-    if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
+    if (errh->nerrors() > 0 || router->initialize(click_errh) < 0)
 	exit(1);
     
     // run driver
