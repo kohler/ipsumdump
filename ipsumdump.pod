@@ -258,11 +258,10 @@ line per record. See also B<--packet-count>, above.
 
 =item B<--collate>
 
-Collate packets from data sources by increasing timestamp. Use this option
-when reading from multiple tcpdump(1) files to ensure that the output has
-sorted timestamps. When combined with the B<--write-tcpdump> option, this
-lets you collate overlapping tcpdump(1) files into a single, sorted
-tcpdump(1) file.
+Sort output packets by increasing timestamp. Use this option when reading
+from multiple tcpdump(1) files to ensure that the output has sorted
+timestamps. Combine B<--collate> with B<--write-tcpdump> to collate
+overlapping tcpdump(1) files into a single, sorted tcpdump(1) file.
 
 =item B<--interval>=I<time>
 
@@ -280,7 +279,8 @@ addresses to the standard error, paired with their anonymized counterparts.
 
 =item B<--record-counts>=I<time>
 
-Output a comment recording the cumulative number of packets output, and the
+Useful for when reading from interfaces. This option causes B<ipsumdump> to
+write a comment recording the cumulative number of packets output, and the
 number of packets dropped by the kernel before B<ipsumdump> could process
 them, every I<time> seconds. (But you can say, for example, `2m' for 2
 minutes.) A sample comment:

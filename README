@@ -7,7 +7,7 @@ ASCII summary of the packet data to the standard output. Comments on the
 first couple lines describe the summary's contents; for example:
 
 !IPSummaryDump 1.1
-!creator "aciri-ipsumdump -i wvlan0"
+!creator "ipsumdump -i wvlan0"
 !host no.lcdf.org
 !starttime 996022410.322317 (Tue Jul 24 17:53:30 2001)
 !data 'ip src' 'ip dst'
@@ -22,7 +22,7 @@ install'. Run `ipsumdump --help' to see what options are available.
 INSTALLATION
 ------------
 
-    Usual Autoconf standard: `./configure', with any of the usual options,
+    Standard Autoconf: `./configure', with any of the usual options,
 followed by `make' or `make install'.
 
 ABOUT CLICK
@@ -53,10 +53,10 @@ AUTHORS
 -------
 
     Eddie Kohler
-    ACIRI
-    kohler@aciri.org
+    ICIR/International Computer Science Institute
+    kohler@icir.org
 
-    Copyright (c) 2001 International Computer Science Institute
+    Copyright 2001-2002 International Computer Science Institute
 
     The anonymization algorithm was borrowed from tcpdpriv by Greg Minshall.
 
