@@ -19,15 +19,19 @@ class AggregateTree { public:
     uint32_t nnz_match(uint32_t mask, uint32_t value) const;
     
     void add(uint32_t aggregate, uint32_t count = 1);
+    void zero_aggregate(int, uint32_t);
+    void zero_masked_aggregate(uint32_t, uint32_t);
 
     void posterize();
     
-    void mask_data_to_prefix(int prefix_len);
+    void prefixize(int prefix_len);
     void make_prefix(int prefix_len, AggregateTree &) const;
 
     void sample(double);
     void cut_smaller(uint32_t);
     void cut_larger(uint32_t);
+    void cut_smaller_aggregates(int, uint32_t);
+    void cut_larger_aggregates(int, uint32_t);
     
     void nnz_in_prefixes(Vector<uint32_t> &) const;
     void nnz_in_left_prefixes(Vector<uint32_t> &) const;
@@ -74,11 +78,14 @@ class AggregateTree { public:
     Node *find_existing_node(uint32_t) const;
 
     void collapse_subtree(Node *);
-    void node_to_prefix(Node *, int);
+    void node_zero_aggregate(Node *, uint32_t, uint32_t);
+    void node_prefixize(Node *, int);
     uint32_t node_to_discriminated_by(Node *, const AggregateTree &, uint32_t, bool);
     void node_sample(Node *, uint32_t);
     void node_cut_smaller(Node *, uint32_t);
     void node_cut_larger(Node *, uint32_t);
+    void node_cut_smaller_aggregates(Node *, uint32_t, uint32_t &, uint32_t &, uint32_t);
+    void node_cut_larger_aggregates(Node *, uint32_t, uint32_t &, uint32_t &, uint32_t);
 
     static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);
@@ -119,6 +126,8 @@ prefix_to_mask(int p)
     assert(p >= 0 && p <= 32);
     return (p == 0 ? 0 : (0xFFFFFFFFU << (32 - p)));
 }
+
+extern int mask_to_prefix(uint32_t);
 
 extern int bi_ffs(uint32_t);
 

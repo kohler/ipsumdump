@@ -395,7 +395,7 @@ AggregateWTree::cull_packets(uint32_t max_np)
 //
 
 void
-AggregateWTree::node_to_prefix(WNode *n, int prefix, WNode *stack[], int pos)
+AggregateWTree::node_prefixize(WNode *n, int prefix, WNode *stack[], int pos)
 {
     uint32_t mask = prefix_to_mask(prefix);
     stack[pos++] = n;
@@ -409,8 +409,8 @@ AggregateWTree::node_to_prefix(WNode *n, int prefix, WNode *stack[], int pos)
 	//ErrorHandler::default_handler()->message("%d", swivel);
 	
 	if (swivel <= prefix) {
-	    node_to_prefix((WNode *) n->child[0], prefix, stack, pos);
-	    node_to_prefix((WNode *) n->child[1], prefix, stack, pos);
+	    node_prefixize((WNode *) n->child[0], prefix, stack, pos);
+	    node_prefixize((WNode *) n->child[1], prefix, stack, pos);
 	} else {
 	    // assert((n->child[0]->aggregate & mask) == (n->child[1]->aggregate & mask)); -- true
 	    stack[pos] = (WNode *) n->child[0];
@@ -439,12 +439,12 @@ AggregateWTree::node_to_prefix(WNode *n, int prefix, WNode *stack[], int pos)
 }
 
 void
-AggregateWTree::mask_data_to_prefix(int prefix_len)
+AggregateWTree::prefixize(int prefix_len)
 {
     assert(prefix_len >= 0 && prefix_len <= 32);
     WNode *stack[32];
     if (prefix_len < 32)
-	node_to_prefix(_root, prefix_len, stack, 0);
+	node_prefixize(_root, prefix_len, stack, 0);
 }
 
 void

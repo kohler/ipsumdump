@@ -30,6 +30,8 @@
 #define CULL_HOSTS_ACT		405
 #define CULL_HOSTS_BY_PACKETS_ACT 406
 #define CULL_PACKETS_ACT	407
+#define CUT_SMALLER_AGG_ACT	408
+#define CUT_LARGER_AGG_ACT	409
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -72,7 +74,9 @@ static Clp_Option options[] = {
   { "avg-var-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   { "sample", 0, SAMPLE_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
+  { "cut-smaller-aggregates", 0, CUT_SMALLER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger", 0, CUT_LARGER_ACT, Clp_ArgUnsigned, 0 },
+  { "cut-larger-aggregates", 0, CUT_LARGER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cull-hosts", 0, CULL_HOSTS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-hosts-by-packets", 0, CULL_HOSTS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
@@ -113,9 +117,8 @@ Actions: (Results of final action sent to output.)\n\
   -n, --num-nonzero          Number of nonzero hosts.\n\
       --nnz-in-prefixes      Number of nonzero p-aggregates for all p.\n\
       --nnz-in-left-prefixes Number nonzero left-hand p-aggregates for all p.\n\
-      --nnz-discriminated-by-prefix\n\
-                             Number of nonzero hosts with discriminating prefix\n\
-                             p for all p.\n\
+      --nnz-discriminated-by-prefix   Number of nonzero hosts with\n\
+                             discriminating prefix p for all p.\n\
       --sizes                All nonzero aggregate sizes in arbitrary order.\n\
       --sorted-sizes         All nonzero aggregate sizes in decreasing order\n\
                              by size.\n\
@@ -125,13 +128,16 @@ Actions: (Results of final action sent to output.)\n\
       --sample N             Reduce counts by randomly sampling 1 in N.\n\
       --cull-hosts N         Reduce --num-nonzero to at most N by removing\n\
                              randomly selected hosts.\n\
-      --cull-hosts-by-packets N\n\
-                             Reduce --num-nonzero to at most N by removing\n\
-                             randomly selected packets.\n\
+      --cull-hosts-by-packets N       Reduce --num-nonzero to at most N by\n\
+                             removing randomly selected packets.\n\
       --cull-packets N       Reduce total number of packets to at most N by
                              removing randomly selected packets.\n\
       --cut-smaller N        Zero counts less than N.\n\
       --cut-larger N         Zero counts greater than or equal to N.\n\
+      --cut-smaller-aggregates P,N    Zero counts for P-aggregates with size\n\
+                             less than N.
+      --cut-larger-aggregates P,N     Zero counts for P-aggregates with size\n\
+                             greater than or equal to N.
       --average-and-variance, --avg-var\n\
                              Average and variance of nonzero hosts.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
@@ -272,9 +278,11 @@ particular purpose.\n");
 	    add_action(opt, clp->val.u);
 	    break;
 
+	  case CUT_SMALLER_AGG_ACT:
+	  case CUT_LARGER_AGG_ACT:
 	  case BALANCE_HISTOGRAM_ACT:
 	    if (clp->val.us[0] > 31)
-		die_usage("`--balance-histogram' prefix must be between 0 and 31");
+		die_usage("`" + String(Clp_CurOptionName(clp)) + "' prefix must be between 0 and 31");
 	    add_action(opt, clp->val.us[0], clp->val.us[1]);
 	    break;
 
@@ -343,10 +351,11 @@ particular purpose.\n");
 	for (int j = 0; j < actions.size(); j++) {
 	    int action = actions[j];
 	    uint32_t action_extra = extras[j];
+	    uint32_t action_extra2 = extras2[j];
 	    switch (action) {
 		
 	      case PREFIX_ACT:
-		tree.mask_data_to_prefix(action_extra);
+		tree.prefixize(action_extra);
 		break;
 
 	      case POSTERIZE_ACT:
@@ -363,6 +372,32 @@ particular purpose.\n");
 
 	      case CUT_LARGER_ACT:
 		tree.cut_larger(action_extra);
+		break;
+
+	      case CUT_SMALLER_AGG_ACT:
+		tree.cut_smaller_aggregates(action_extra, action_extra2);
+#ifdef SELFTEST
+		{
+		    AggregateTree xtree;
+		    tree.make_prefix(action_extra, xtree);
+		    uint32_t nnz = xtree.nnz();
+		    xtree.cut_smaller(action_extra2);
+		    assert(xtree.nnz() == nnz);
+		}
+#endif
+		break;
+
+	      case CUT_LARGER_AGG_ACT:
+		tree.cut_larger_aggregates(action_extra, action_extra2);
+#ifdef SELFTEST
+		{
+		    AggregateTree xtree;
+		    tree.make_prefix(action_extra, xtree);
+		    uint32_t nnz = xtree.nnz();
+		    xtree.cut_larger(action_extra2);
+		    assert(xtree.nnz() == nnz);
+		}
+#endif
 		break;
 
 	      case CULL_HOSTS_ACT: {
@@ -432,7 +467,7 @@ particular purpose.\n");
 	      double avg[33], var[33];
 	      for (int i = 32; i >= 0; i--) {
 		  double sum, sum_sq;
-		  tree.mask_data_to_prefix(i);
+		  tree.prefixize(i);
 		  tree.sum_and_sum_sq(&sum, &sum_sq);
 		  uint32_t nnz = tree.nnz();
 		  avg[i] = sum / nnz;
@@ -484,6 +519,8 @@ particular purpose.\n");
 	  case CULL_HOSTS_ACT:
 	  case CULL_HOSTS_BY_PACKETS_ACT:
 	  case CULL_PACKETS_ACT:
+	  case CUT_SMALLER_AGG_ACT:
+	  case CUT_LARGER_AGG_ACT:
 	    tree.write_file(out, output_binary, errh);
 	    break;
 	  

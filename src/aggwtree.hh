@@ -25,7 +25,7 @@ class AggregateWTree { public:
 
     void cut_smaller_prefix(int p, uint32_t size);
 
-    void mask_data_to_prefix(int p);
+    void prefixize(int p);
     void make_prefix(int p, AggregateWTree &) const;
     
     int read_file(FILE *, ErrorHandler *);
@@ -66,7 +66,7 @@ class AggregateWTree { public:
 
     uint32_t node_count(WNode *) const;
 
-    void node_to_prefix(WNode *, int, WNode *stack[], int);
+    void node_prefixize(WNode *, int, WNode *stack[], int);
     
     friend class AggregateTree;
     

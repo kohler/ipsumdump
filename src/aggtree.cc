@@ -110,6 +110,16 @@ AggregateTree::kill_all_nodes()
     _root = _free = 0;
 }
 
+int
+mask_to_prefix(uint32_t mask)
+{
+    if (mask == 0xFFFFFFFFU)
+	return 32;
+    int possible_p = bi_ffs(~mask) - 1;
+    uint32_t new_mask = prefix_to_mask(possible_p);
+    return (new_mask == mask ? possible_p : -1);
+}
+
 // from tcpdpriv
 int
 bi_ffs(uint32_t value)
@@ -305,6 +315,40 @@ AggregateTree::collapse_subtree(Node *root)
     }
 }
 
+void
+AggregateTree::node_zero_aggregate(Node *n, uint32_t mask, uint32_t value)
+{
+    if ((n->aggregate & mask) == value && n->count) {
+	n->count = 0;
+	_num_nonzero--;
+    }
+    if (n->child[0]) {
+	// swivel is the first bit in which the two children differ
+	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	uint32_t swivel_mask = (swivel == 1 ? 0 : 0xFFFFFFFFU << (33 - swivel)) & mask;
+	if ((n->child[0]->aggregate & swivel_mask) == (value & swivel_mask))
+	    node_zero_aggregate(n->child[0], mask, value);
+	if ((n->child[1]->aggregate & swivel_mask) == (value & swivel_mask))
+	    node_zero_aggregate(n->child[1], mask, value);
+    }
+}
+
+void
+AggregateTree::zero_aggregate(int prefix_len, uint32_t value)
+{
+    uint32_t mask = prefix_to_mask(prefix_len);
+    assert((value & mask) == value);
+    node_zero_aggregate(_root, mask, value);
+    // assert(nnz_match(mask, value) == 0); // expensive
+}
+
+void
+AggregateTree::zero_masked_aggregate(uint32_t mask, uint32_t value)
+{
+    int p = mask_to_prefix(mask);
+    assert(p >= 0);
+    zero_aggregate(p, value);
+}
 
 //
 // COUNTING
@@ -475,12 +519,68 @@ AggregateTree::cut_larger(uint32_t largest)
 }
 
 
+void
+AggregateTree::node_cut_smaller_aggregates(Node *n, uint32_t mask, uint32_t &value, uint32_t &count, uint32_t smallest)
+{
+    if ((n->aggregate & mask) != value) {
+	assert((n->aggregate & mask) > value);
+	if (count && count < smallest)
+	    zero_masked_aggregate(mask, value);
+	count = 0;
+	value = (n->aggregate & mask);
+    }
+    count += n->count;
+    if (n->child[0]) {
+	node_cut_smaller_aggregates(n->child[0], mask, value, count, smallest);
+	node_cut_smaller_aggregates(n->child[1], mask, value, count, smallest);
+    }
+}
+
+void
+AggregateTree::cut_smaller_aggregates(int p, uint32_t smallest)
+{
+    uint32_t value = 0, count = 0;
+    uint32_t mask = prefix_to_mask(p);
+    node_cut_smaller_aggregates(_root, mask, value, count, smallest);
+    if (count && count < smallest)
+	zero_masked_aggregate(mask, value);
+}
+
+
+void
+AggregateTree::node_cut_larger_aggregates(Node *n, uint32_t mask, uint32_t &value, uint32_t &count, uint32_t largest)
+{
+    if ((n->aggregate & mask) != value) {
+	assert((n->aggregate & mask) > value);
+	if (count && count >= largest)
+	    zero_masked_aggregate(mask, value);
+	count = 0;
+	value = (n->aggregate & mask);
+    }
+    count += n->count;
+    if (n->child[0]) {
+	node_cut_larger_aggregates(n->child[0], mask, value, count, largest);
+	node_cut_larger_aggregates(n->child[1], mask, value, count, largest);
+    }
+}
+
+void
+AggregateTree::cut_larger_aggregates(int p, uint32_t largest)
+{
+    uint32_t value = 0, count = 0;
+    uint32_t mask = prefix_to_mask(p);
+    node_cut_larger_aggregates(_root, mask, value, count, largest);
+    if (count && count >= largest)
+	zero_masked_aggregate(mask, value);
+}
+
+
 //
 // PREFIXES
 //
 
 void
-AggregateTree::node_to_prefix(Node *n, int prefix)
+AggregateTree::node_prefixize(Node *n, int prefix)
 {
     uint32_t mask = prefix_to_mask(prefix);
 
@@ -493,8 +593,8 @@ AggregateTree::node_to_prefix(Node *n, int prefix)
 	//ErrorHandler::default_handler()->message("%d", swivel);
 	
 	if (swivel <= prefix) {
-	    node_to_prefix(n->child[0], prefix);
-	    node_to_prefix(n->child[1], prefix);
+	    node_prefixize(n->child[0], prefix);
+	    node_prefixize(n->child[1], prefix);
 	} else {
 	    // assert((n->child[0]->aggregate & mask) == (n->child[1]->aggregate & mask)); -- true
 	    collapse_subtree(n->child[0]);
@@ -517,11 +617,11 @@ AggregateTree::node_to_prefix(Node *n, int prefix)
 }
 
 void
-AggregateTree::mask_data_to_prefix(int prefix_len)
+AggregateTree::prefixize(int prefix_len)
 {
     assert(prefix_len >= 0 && prefix_len <= 32);
     if (prefix_len < 32)
-	node_to_prefix(_root, prefix_len);
+	node_prefixize(_root, prefix_len);
 }
 
 void
@@ -538,7 +638,7 @@ AggregateTree::nnz_in_prefixes(Vector<uint32_t> &out) const
     out.assign(33, 0);
     out[32] = nnz();
     for (int i = 31; i >= 0; i--) {
-	copy.mask_data_to_prefix(i);
+	copy.prefixize(i);
 	out[i] = copy.nnz();
     }
 }
@@ -550,7 +650,7 @@ AggregateTree::nnz_in_left_prefixes(Vector<uint32_t> &out) const
     out.assign(33, 0);
     out[32] = nnz_match(1, 0);
     for (int i = 31; i >= 0; i--) {
-	copy.mask_data_to_prefix(i);
+	copy.prefixize(i);
 	out[i] = copy.nnz_match(1 << (32 - i), 0);
     }
 }
@@ -594,7 +694,7 @@ AggregateTree::nnz_discriminated_by_prefix(Vector<uint32_t> &out) const
     out.assign(33, 0);
 
     for (int i = 32; i >= 1; i--) {
-	prefix.mask_data_to_prefix(i - 1);
+	prefix.prefixize(i - 1);
 	out[i] = copy.node_to_discriminated_by(copy._root, prefix, prefix_to_mask(i - 1), false);
     }
 }
@@ -737,7 +837,7 @@ AggregateTree::haar_wavelet_energy_coeff(Vector<double> &out) const
 	
 	out[p] = sum_sq_diff / 4294967296.0;
 	
-	copy.mask_data_to_prefix(p);
+	copy.prefixize(p);
     }
 }
 
