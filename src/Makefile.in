@@ -1,0 +1,104 @@
+SHELL = @SHELL@
+@SUBMAKE@
+
+
+top_builddir := ..
+subdir := src
+
+
+srcdir := @srcdir@
+top_srcdir := @top_srcdir@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+sbindir = @sbindir@
+libdir = @libdir@
+linuxdir = @linuxdir@
+mandir = @mandir@
+datadir = @datadir@/click
+
+CLICK_BUILDTOOL = @CLICK_BUILDTOOL@
+CLICK_COMPILE = @CLICK_COMPILE@
+
+VPATH = .:$(top_srcdir)/$(subdir):$(top_srcdir)
+
+CC = @CC@
+CPP = @CPP@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+LD = @LD@
+STRIP = @STRIP@
+AR = @AR@
+RANLIB = @RANLIB@
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL@ -m 644
+mkinstalldirs = @top_srcdir@/mkinstalldirs
+
+.SUFFIXES:
+.SUFFIXES: .c .cc .o .ko .uo .kii .uii
+
+.c.o:
+	$(COMPILE) -c $< -o $@
+.cc.o:
+	$(CXXCOMPILE) -c $< -o $@
+.cc.ii:
+	$(CXXCOMPILE) -E $< > $@
+
+
+-include elements.mk
+
+OBJS = $(ELEMENT_OBJS) elements.o aciri-ipsumdump.o
+
+CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL
+CFLAGS = @CFLAGS@
+CXXFLAGS = @CXXFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@ @CLICKLIB@ `$(CLICK_COMPILE) --libs`
+DEFS = @DEFS@ `$(CLICK_COMPILE) --defs`
+INCLUDES = @CLICKINCLUDES@ -I$(top_builddir) -I$(srcdir)
+
+CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CXXFLAGS)
+CXXLD = $(CXX)
+CXXLINK = $(CXXLD) $(CXXFLAGS) $(LDFLAGS) -o $@
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
+
+all: aciri-ipsumdump
+all-local: aciri-ipsumdump
+
+aciri-ipsumdump: $(OBJS)
+	$(CXXLINK) -rdynamic $(OBJS) $(LIBS)
+
+libelements.a: Makefile $(OBJS)
+	$(AR) cru libelements.a $(OBJS)
+	$(RANLIB) libelements.a
+
+Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+	cd $(top_builddir) && \
+	  CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+elemlist:
+	@rm -f elements.conf
+	@$(MAKE) elements.conf
+elements.conf: $(CLICK_BUILDTOOL)
+	echo $(srcdir) | $(CLICK_BUILDTOOL) findelem -r userlevel > elements.conf
+elements.mk: elements.conf $(CLICK_BUILDTOOL)
+	$(CLICK_BUILDTOOL) elem2make < elements.conf > elements.mk
+elements.cc: elements.conf $(CLICK_BUILDTOOL)
+	$(CLICK_BUILDTOOL) elem2export -S < elements.conf > elements.cc
+	@rm -f elements.d
+
+always:
+	@:
+
+DEPFILES := $(wildcard *.d)
+ifneq ($(DEPFILES),)
+include $(DEPFILES)
+endif
+
+clean:
+	-rm -f *.d *.o elements.mk elements.cc elements.conf aciri-ipsumdump
+distclean: clean
+	-rm -f Makefile
+
+.PHONY: all always clean distclean elemlist

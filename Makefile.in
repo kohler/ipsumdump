@@ -1,0 +1,84 @@
+# Warning: this file must be usable by regular make
+# (unlike the Makefiles in subdirectories).
+
+SHELL = @SHELL@
+@SUBMAKE@
+
+PACKAGE = aciri-ipsumdump
+VERSION = @VERSION@
+LIBCLICK_VERSION = @LIBCLICK_VERSION@
+libclick = libclick-$(LIBCLICK_VERSION)
+
+top_srcdir = @top_srcdir@
+srcdir = @srcdir@
+top_builddir = .
+subdir = .
+AUTOCONF = @AUTOCONF@
+INSTALL = @INSTALL@
+INSTALL_IF_CHANGED = @INSTALL_IF_CHANGED@
+INSTALL_DATA = @INSTALL@ -m 644
+INSTALL_DATA_IF_CHANGED = @INSTALL_IF_CHANGED@ -m 644
+mkinstalldirs = @top_srcdir@/mkinstalldirs
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+
+CLICK_BUILDTOOL = @CLICK_BUILDTOOL@
+CLICKINCLUDES = @CLICKINCLUDES@
+CLICKLIB = @CLICKLIB@
+
+all: @LIBCLICK_TARGET@ src Makefile
+
+$(libclick):
+	@cd $(libclick) && $(MAKE) all
+src:
+	@cd src && $(MAKE) all-local
+
+install: stamp-h
+	@for d in @TARGETS@ tools; do (cd $$d && $(MAKE) install) || exit 1; done
+	@$(MAKE) install-local install-doc install-include
+install-libclick:
+	@cd $(libclick) && $(MAKE) install
+
+elemlist elemlists:
+	for dir in @TARGETS@; do \
+	  echo $$dir @element_groups@ | (cd $(top_srcdir); ./click-buildtool findelem -r "@provisions@") > $$dir/elements.conf; \
+	done
+
+always:
+	@:
+
+$(srcdir)/configure: $(srcdir)/configure.in
+	cd $(srcdir) && $(AUTOCONF)
+config.status: $(srcdir)/configure
+	$(SHELL) $(srcdir)/configure @ac_configure_args@
+Makefile: config.status $(srcdir)/Makefile.in
+	cd $(top_builddir) && \
+	  CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+config.h: stamp-h
+stamp-h: $(srcdir)/config.h.in config.status
+	cd $(top_builddir) \
+	  && CONFIG_FILES= CONFIG_HEADERS='include/click/config.h:config.h.in include/click/pathvars.h:pathvars.h.in' $(SHELL) ./config.status
+	echo > stamp-h
+
+clean:
+	@-for d in $(libclick) src; do (cd $$d && $(MAKE) clean); done
+	-rm -f elementmap
+distclean:
+	@-for d in $(libclick) src; do (cd $$d && $(MAKE) distclean); done
+	-rm -f config.h Makefile config.status
+	-rm -f config.cache config.log click-compile stamp-h
+
+
+clicksrcdir = @clicksrcdir@
+clickbuilddir = @clickbuilddir@
+fetch-click:
+	cd $(clickbuilddir)/etc/libclick; $(MAKE) $(libclick).tar.gz
+	tar xzf $(clickbuilddir)/etc/libclick/$(libclick).tar.gz
+
+
+.PHONY: all always $(libclick) src elemlist elemlists \
+	clean distclean dist distdir \
+	install install-doc install-man install-local install-include \
+	fetch-click

@@ -1,0 +1,5 @@
+libclick-*
+stamp-h Makefile
+configure
+config.h config.log config.cache config.status
+conftest.*

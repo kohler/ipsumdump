@@ -1,0 +1,3 @@
+Makefile *.d
+elements.cc elements.mk elements.conf
+aciri-ipsumdump
