@@ -271,6 +271,10 @@ F</dev/random>, if it exists, combined with other data. The random seed
 indirectly determines which packets are sampled, and the values of
 anonymized IP addresses.
 
+=item B<--quiet>, B<-q>
+
+Do not print a progress bar to standard error.
+
 =item B<--config>
 
 Do not produce a summary. Instead, write the Click configuration that

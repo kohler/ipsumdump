@@ -1,3 +1,4 @@
+// -*- mode: c++; c-basic-offset: 4 -*-
 #ifndef CLICK_FROMIPSUMDUMP_HH
 #define CLICK_FROMIPSUMDUMP_HH
 #include <click/element.hh>
@@ -73,6 +74,12 @@ C<sampling_prob> handler to find out the actual probability. If MULTIPACKET is
 true, then the sampling probability applies separately to the multiple packets
 generated per record.
 
+=item DEFAULT_CONTENTS
+
+String, containing a space-separated list of content names (see
+ToIPSummaryDump for the possibilities). Defines the default contents of the
+dump.
+
 =back
 
 Only available in user-level processes.
@@ -95,6 +102,19 @@ Value is a Boolean.
 =h encap read-only
 
 Returns `IP'. Useful for ToDump's USE_ENCAP_FROM option.
+
+=h filesize read-only
+
+Returns the length of the FromIPSummaryDump file, in bytes, or "-" if that
+length cannot be determined.
+
+=h filepos read-only
+
+Returns FromIPSummaryDump's position in the file, in bytes.
+
+=h stop write-only
+
+When written, sets `active' to false and stops the driver.
 
 =a
 
@@ -124,6 +144,10 @@ class FromIPSummaryDump : public Element { public:
 	W_PAYLOAD_LENGTH, W_COUNT, W_FRAG, W_FRAGOFF,
 	W_LAST
     };
+    static int parse_content(const String &);
+    static const char *unparse_content(int);
+
+    static const char * const tcp_flags_word = "FSRPAUXY";
 
   private:
 
@@ -138,7 +162,7 @@ class FromIPSummaryDump : public Element { public:
     Vector<int> _contents;
     uint16_t _default_proto;
     uint32_t _sampling_prob;
-    
+
     bool _stop : 1;
     bool _format_complaint : 1;
     bool _zero;
@@ -152,6 +176,7 @@ class FromIPSummaryDump : public Element { public:
     struct timeval _time_offset;
     String _filename;
     FILE *_pipe;
+    off_t _file_offset;
 
     int error_helper(ErrorHandler *, const char *);
     int read_buffer(ErrorHandler *);

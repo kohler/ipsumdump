@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
+#include "fromipsumdump.hh"
 #include "toipsumdump.hh"
 #include "fromdevice.hh"
 #include <click/standard/drivermanager.hh>
@@ -32,6 +33,7 @@
 #define RANDOM_SEED_OPT	312
 #define PROMISCUOUS_OPT	313
 #define WRITE_DROPS_OPT	314
+#define QUIET_OPT	315
 
 // data sources
 #define INTERFACE_OPT	400
@@ -81,6 +83,7 @@ static Clp_Option options[] = {
     { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
     { "promiscuous", 0, PROMISCUOUS_OPT, 0, Clp_Negate },
     { "record-counts", 0, WRITE_DROPS_OPT, Clp_ArgString, 0 },
+    { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -169,6 +172,7 @@ Other options:\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
       --record-counts TIME   Record packet counts every TIME seconds in output.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
+  -q, --quiet                Do not print progress bar.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
@@ -287,6 +291,7 @@ main(int argc, char *argv[])
     int action = 0;
     bool do_seed = true;
     bool promisc = true;
+    bool quiet = false;
     Vector<String> files;
     const char *record_drops = 0;
     
@@ -376,6 +381,10 @@ main(int argc, char *argv[])
 	    do_seed = false;
 	    srandom(clp->val.u);
 	    break;
+
+	  case QUIET_OPT:
+	    quiet = !clp->negated;
+	    break;
 	    
 	  case CONFIG_OPT:
 	    config = true;
@@ -429,11 +438,13 @@ particular purpose.\n");
     if (do_seed && (do_sample || anonymize))
 	click_random_srandom();
 
-    // define shunt
+    // setup
     String shunt_internals = "";
     StringAccum psa;
     String sample_elt;
     int snaplen = (write_dump ? 2000 : 68);
+    if (collate && files.size() < 2)
+	collate = false;
     
     // elements to read packets
     if (action == 0)
@@ -457,6 +468,7 @@ particular purpose.\n");
 	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
 	    sample_elt = "shunt/samp";
 	}
+	quiet = true;		// does not support filepos handlers
 	
     } else if (action == READ_DUMP_OPT) {
 	if (files.size() == 0)
@@ -482,6 +494,7 @@ particular purpose.\n");
 	    if (!multipacket)
 		p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
 	}
+	quiet = true;		// does not support filepos handlers
 	
     } else if (action == READ_IPSUMDUMP_OPT) {
 	if (files.size() == 0)
@@ -529,7 +542,7 @@ particular purpose.\n");
 	output = "-";
     sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
     for (int i = 0; i < log_contents.size(); i++)
-	sa << ' ' << cp_quote(ToIPSummaryDump::unparse_content(log_contents[i]));
+	sa << ' ' << cp_quote(FromIPSummaryDump::unparse_content(log_contents[i]));
     sa << ", VERBOSE true, BANNER ";
     // create banner
     StringAccum banner;
@@ -542,11 +555,27 @@ particular purpose.\n");
     if (record_drops)
 	sa << "PokeHandlers(" << record_drops << ", record_counts '', loop);\n";
 
-    sa << "DriverManager(";
-    if ((files.size() > 1 && action != INTERFACE_OPT) || collate) {
-	sa << "wait_stop " << (files.size() - 1) + (collate ? 1 : 0);
-	stop_driver_count = files.size() + (collate ? 1 : 0);
+    // progress bar
+    if (!quiet) {
+	sa << "progress :: ProgressBar(";
+	for (int i = 0; i < files.size(); i++)
+	    sa << "src" << i << ".filepos ";
+	sa.pop_back();
+	sa << ", ";
+	for (int i = 0; i < files.size(); i++)
+	    sa << "src" << i << ".filesize ";
+	sa.pop_back();
+	sa << ", UPDATE 0.1, MINSIZE 5000);\n";
     }
+    
+    sa << "DriverManager(";
+    if (action != INTERFACE_OPT || collate) {
+	stop_driver_count = files.size() + (collate ? 1 : 0);
+	sa << "wait_stop " << stop_driver_count;
+    }
+    // complete progress bar
+    if (!quiet)
+	sa << ", write_skip progress.mark_done";
     // print `!counts' message if appropriate
     if (action == INTERFACE_OPT)
 	sa << ", wait_stop, write record_counts ''";
