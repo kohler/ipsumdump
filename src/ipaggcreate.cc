@@ -491,7 +491,7 @@ particular purpose.\n");
 
     // elements to count aggregates
     sa << "  -> ac :: AggregateCounter(";
-    sa << (aggctr_pb ? aggctr_pb : "BYTES false") << ", IP_BYTES true";
+    sa << (aggctr_pb ? aggctr_pb : String("BYTES false")) << ", IP_BYTES true";
     if (aggctr_limit_nnz)
 	sa << ", STOP_AFTER_AGG " << aggctr_limit_nnz;
     sa << ")\n";
