@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.32   10.Nov.2003
+
+* Support large files (bug reported by David Loose).
+
+
 Version 1.31   6.Nov.2003
 
 * Include Unqueue element (bug reported by David Loose).
