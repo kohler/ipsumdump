@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.36   7.Jul.2004
+
+* Support 64-bit-long systems (patch directly from Click).  Reported by
+  Kirill Ponomarew.
+
+
 Version 1.35   17.Jun.2004
 
 * Add '--capture-length' option, requested by Vern Paxson.
