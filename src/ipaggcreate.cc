@@ -36,10 +36,12 @@
 #define QUIET_OPT	320
 
 // data sources
-#define READ_DUMP_OPT	401
+#define READ_DUMP_OPT		401
 #define READ_NETFLOW_SUMMARY_OPT 402
-#define READ_IPSUMDUMP_OPT 403
-#define READ_TUDUMP_OPT	404
+#define READ_IPSUMDUMP_OPT	403
+#define READ_TUDUMP_OPT		404
+#define READ_IPADDR_OPT		405
+#define IPSUMDUMP_FORMAT_OPT	450
 
 // aggregates
 #define AGG_SRC_OPT	500
@@ -70,6 +72,9 @@ static Clp_Option options[] = {
     { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
     { "tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
     { "read-tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
+    { "ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
+    { "read-ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
+    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -123,7 +128,7 @@ void
 usage()
 {
   printf("\
-`Aciri-aggcreate' reads IP packets from the tcpdump(1) files, or other related\n\
+`ipaggcreate' reads IP packets from the tcpdump(1) files, or other related\n\
 files, and aggregates their contents into a simple file.\n\
 \n\
 Usage: %s [OPTIONS] [FILES] > AGGFILE\n\
@@ -147,8 +152,10 @@ Other aggregate options:\n\
 Data source options (give exactly one):\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
-      --ipsumdump            Read from existing ipsumdump FILES.\n\
+      --ipsumdump            Read ipsumdump FILES.\n\
+      --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
       --tu-summary           Read TU summary dump FILES.\n\
+      --ip-addresses         Read a list of IP addresses, one per line.\n\
 \n\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
@@ -219,6 +226,15 @@ source_output_port(int i)
 	return "[" + String(i) + "]collate";
     else
 	return "shunt";
+}
+
+static int
+stop_handler(const String &s, Element *, void *, ErrorHandler *)
+{
+    int n = 1;
+    (void) cp_integer(cp_uncomment(s), &n);
+    router->adjust_driver_reservations(-n);
+    return 0;
 }
 
 static int
@@ -300,9 +316,9 @@ main(int argc, char *argv[])
     String write_dump;
     //String output;
     String filter;
-    String agg_ip;
-    bool agg_len = false;
+    String agg;
     String aggctr_pb;
+    String ipsumdump_format;
     uint32_t aggctr_limit_nnz = 0;
     uint32_t aggctr_limit_count = 0;
     uint32_t aggctr_limit_bytes = 0;
@@ -339,9 +355,16 @@ main(int argc, char *argv[])
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
 	  case READ_TUDUMP_OPT:
+	  case READ_IPADDR_OPT:
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
+	    break;
+
+	  case IPSUMDUMP_FORMAT_OPT:
+	    if (ipsumdump_format)
+		die_usage("`--ipsumdump-format' already specified");
+	    ipsumdump_format = clp->arg;
 	    break;
 	    
 	  case WRITE_DUMP_OPT:
@@ -405,21 +428,21 @@ main(int argc, char *argv[])
 	    break;
 
 	  case AGG_SRC_OPT:
-	    if (agg_ip || agg_len)
+	    if (agg)
 		die_usage("aggregate specified twice");
-	    agg_ip = "ip src";
+	    agg = "ip src";
 	    break;
 	    
 	  case AGG_DST_OPT:
-	    if (agg_ip || agg_len)
+	    if (agg)
 		die_usage("aggregate specified twice");
-	    agg_ip = "ip dst";
+	    agg = "ip dst";
 	    break;
 	    	    
 	  case AGG_LENGTH_OPT:
-	    if (agg_ip || agg_len)
+	    if (agg)
 		die_usage("aggregate specified twice");
-	    agg_len = true;
+	    agg = "ip len";
 	    break;
 
 	  case AGG_BYTES_OPT:
@@ -465,7 +488,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case VERSION_OPT:
-	    printf("aciri-aggcreate %s (libclick-%s)\n", "0", CLICK_VERSION);
+	    printf("ipaggcreate %s (libclick-%s)\n", "0", CLICK_VERSION);
 	    printf("Copyright (C) 2001 International Computer Science Institute\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
@@ -504,6 +527,10 @@ particular purpose.\n");
     if (output == "-" && write_dump == "-")
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
+    // determine aggregate
+    if (!agg)
+	agg = "ip dst";
+    
     // set random seed if appropriate
     if (do_seed && (do_sample || anonymize))
 	click_random_srandom();
@@ -531,7 +558,23 @@ particular purpose.\n");
     
     // elements to read packets
     if (action == 0)
-	action = READ_DUMP_OPT;
+	action = (ipsumdump_format ? READ_IPSUMDUMP_OPT : READ_DUMP_OPT);
+
+    // prepare ipsumdump format
+    if (ipsumdump_format) {
+	if (action != READ_IPSUMDUMP_OPT)
+	    die_usage("`--format' option requires `--ipsumdump'");
+    } else if (action == READ_TUDUMP_OPT) {
+	ipsumdump_format = "timestamp 'ip src' sport 'ip dst' dport proto 'payload len'";
+	action = READ_IPSUMDUMP_OPT;
+    } else if (action == READ_IPADDR_OPT) {
+	if (agg == "ip src" || agg == "ip dst")
+	    ipsumdump_format = "'" + agg + "'";
+	else
+	    die_usage("can't aggregate `" + agg + "' with `--ip-addresses'");
+	action = READ_IPSUMDUMP_OPT;
+    }
+    
     if (action == READ_DUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
@@ -565,8 +608,7 @@ particular purpose.\n");
 		p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
 	}
 	
-    } else if (action == READ_IPSUMDUMP_OPT
-	       || action == READ_TUDUMP_OPT) {
+    } else if (action == READ_IPSUMDUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
 	String config = ", STOP true, ZERO true";
@@ -574,8 +616,8 @@ particular purpose.\n");
 	    config += ", SAMPLE " + String(sample);
 	if (multipacket)
 	    config += ", MULTIPACKET true";
-	if (action == READ_TUDUMP_OPT)
-	    config += ", DEFAULT_CONTENTS timestamp 'ip src' sport 'ip dst' dport proto 'payload len'";
+	if (ipsumdump_format)
+	    config += ", DEFAULT_CONTENTS " + ipsumdump_format;
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromIPSummaryDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
 	sample_elt = "src0";
@@ -617,12 +659,7 @@ particular purpose.\n");
     }
     
     // elements to aggregate
-    if (!agg_ip && !agg_len)
-	agg_ip = "ip dst";
-    if (agg_ip)
-	sa << "  -> AggregateIP(" << agg_ip << ")\n";
-    else if (agg_len)
-	sa << "  -> AggregateLength(IP true)\n";
+    sa << "  -> AggregateIP(" << agg << ")\n";
 
     // elements to count aggregates
     sa << "  -> ac :: AggregateCounter(";
@@ -660,7 +697,10 @@ particular purpose.\n");
 	for (int i = 0; i < files.size(); i++)
 	    pb_banner << (i > 0 ? ", " : "") << files[i];
 	String banner = cp_quote(pb_banner.take_string().substring(0, 20));
-	sa << ", UPDATE .1, BANNER " << banner << ");\n";
+	sa << ", UPDATE .1, BANNER " << banner;
+	if (output == "-" || write_dump == "-")
+	    sa << ", CHECK_STDOUT true";
+	sa << ");\n";
     }
     
     // DriverManager
@@ -672,7 +712,7 @@ particular purpose.\n");
     if (progress_bar_ok)
 	sa << ", write_skip progress.mark_done";
     sa << ", write_skip output);\n";
-    sa << "// Outside of aciri-aggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "' instead of `write output'.\n";
+    sa << "// Outside of ipaggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "' instead of `write output'.\n";
 
     // output config if required
     if (config) {
@@ -706,6 +746,7 @@ particular purpose.\n");
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
+    router->add_global_write_handler("stop", stop_handler, 0);
     router->add_global_write_handler("output", output_handler, 0);
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
