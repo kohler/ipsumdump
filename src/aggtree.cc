@@ -164,6 +164,11 @@ AggregateTree::ok(ErrorHandler *errh) const
     return (errh->nerrors() == before ? 0 : -1);
 }
 
+
+//
+// TREE CONSTRUCTION
+//
+
 AggregateTree::Node *
 AggregateTree::make_peer(uint32_t a, Node *n)
 {
@@ -256,27 +261,6 @@ AggregateTree::find_existing_node(uint32_t a) const
     return 0;
 }
 
-
-void
-AggregateTree::hard_fix_children(Node *n)
-{
-    int badbit = (n->child[0] ? 1 : 0);
-    assert(!n->child[badbit]);
-
-    int swivel = bi_ffs(n->child[1-badbit]->aggregate ^ n->aggregate);
-    if (swivel == 0)
-	swivel = 32;
-    uint32_t a = n->child[1-badbit]->aggregate ^ (1 << (32 - swivel));
-
-    Node *nn = n->child[badbit] = new_node();
-    if (nn) {
-	nn->aggregate = a;
-	nn->count = 0;
-	nn->child[0] = nn->child[1] = 0;
-    }
-}
-
-
 void
 AggregateTree::collapse_subtree(Node *root)
 {
@@ -296,13 +280,42 @@ AggregateTree::collapse_subtree(Node *root)
 
 
 //
+// COUNTING
+//
+
+static uint32_t
+node_count_match(AggregateTree::Node *n, uint32_t mask, uint32_t value,
+		 bool count)
+{
+    uint32_t result;
+    if (n->count > 0 && (n->aggregate & mask) == value)
+	result = (count ? n->count : 1);
+    else
+	result = 0;
+    if (n->child[0])
+	return (result
+		+ node_count_match(n->child[0], mask, value, count)
+		+ node_count_match(n->child[1], mask, value, count));
+    else
+	return result;
+}
+
+uint32_t
+AggregateTree::nnz_match(uint32_t mask, uint32_t value) const
+{
+    assert((value & mask) == value);
+    return node_count_match(_root, mask, value, false);
+}
+    
+
+//
 // PREFIXES
 //
 
 void
 AggregateTree::node_to_prefix(Node *n, int prefix)
 {
-    uint32_t mask = (prefix == 0 ? 0 : 0xFFFFFFFFU << (32 - prefix));
+    uint32_t mask = prefix_to_mask(prefix);
 
     if ((n->aggregate & mask) != n->aggregate) {
 	collapse_subtree(n);
@@ -337,7 +350,7 @@ AggregateTree::node_to_prefix(Node *n, int prefix)
 }
 
 void
-AggregateTree::mask_to_prefix(int prefix_len)
+AggregateTree::mask_data_to_prefix(int prefix_len)
 {
     assert(prefix_len >= 0 && prefix_len <= 32);
     if (prefix_len < 32)
@@ -348,19 +361,30 @@ void
 AggregateTree::make_prefix(int prefix_len, AggregateTree &t)
 {
     assert(prefix_len >= 0 && prefix_len <= 32);
-    uint32_t mask = (prefix_len == 0 ? 0 : 0xFFFFFFFFU << (32 - prefix_len));
-    t.copy_nodes(_root, mask);
+    t.copy_nodes(_root, prefix_to_mask(prefix_len));
 }
 
 void
-AggregateTree::num_nonzero_in_prefixes(Vector<uint32_t> &out) const
+AggregateTree::nnz_in_prefixes(Vector<uint32_t> &out) const
 {
     AggregateTree copy(*this);
     out.assign(33, 0);
     out[32] = nnz();
     for (int i = 31; i >= 0; i--) {
-	copy.mask_to_prefix(i);
+	copy.mask_data_to_prefix(i);
 	out[i] = copy.nnz();
+    }
+}
+
+void
+AggregateTree::nnz_in_left_prefixes(Vector<uint32_t> &out) const
+{
+    AggregateTree copy(*this);
+    out.assign(33, 0);
+    out[32] = nnz_match(1, 0);
+    for (int i = 31; i >= 0; i--) {
+	copy.mask_data_to_prefix(i);
+	out[i] = copy.nnz_match(1 << (32 - i), 0);
     }
 }
 
@@ -396,14 +420,14 @@ AggregateTree::node_to_discriminated_by(Node *n, const AggregateTree &prefix,
 }
 
 void
-AggregateTree::num_discriminated_by_prefix(Vector<uint32_t> &out) const
+AggregateTree::nnz_discriminated_by_prefix(Vector<uint32_t> &out) const
 {
     AggregateTree copy(*this);
     AggregateTree prefix(*this);
     out.assign(33, 0);
 
     for (int i = 32; i >= 1; i--) {
-	prefix.mask_to_prefix(i - 1);
+	prefix.mask_data_to_prefix(i - 1);
 	out[i] = copy.node_to_discriminated_by(copy._root, prefix, prefix_to_mask(i - 1), false);
     }
 }

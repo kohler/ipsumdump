@@ -16,13 +16,15 @@ class AggregateTree { public:
     
     uint32_t num_nonzero() const		{ return _num_nonzero; }
     uint32_t nnz() const			{ return _num_nonzero; }
+    uint32_t nnz_match(uint32_t mask, uint32_t value) const;
     
     void add(uint32_t aggregate, uint32_t count = 1);
     
-    void mask_to_prefix(int prefix_len);
+    void mask_data_to_prefix(int prefix_len);
     void make_prefix(int prefix_len, AggregateTree &);
-    void num_nonzero_in_prefixes(Vector<uint32_t> &) const;
-    void num_discriminated_by_prefix(Vector<uint32_t> &) const;
+    void nnz_in_prefixes(Vector<uint32_t> &) const;
+    void nnz_in_left_prefixes(Vector<uint32_t> &) const;
+    void nnz_discriminated_by_prefix(Vector<uint32_t> &) const;
 
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
@@ -54,8 +56,6 @@ class AggregateTree { public:
     Node *find_node(uint32_t);
     Node *find_existing_node(uint32_t) const;
 
-    inline void fix_children(Node *);
-    void hard_fix_children(Node *);
     void collapse_subtree(Node *);
     void node_to_prefix(Node *, int);
     uint32_t node_to_discriminated_by(Node *, const AggregateTree &, uint32_t, bool);
@@ -88,13 +88,6 @@ AggregateTree::add(uint32_t aggregate, uint32_t count)
     if (Node *n = find_node(aggregate))
 	if ((n->count += count) == count)
 	    _num_nonzero++;
-}
-
-inline void
-AggregateTree::fix_children(Node *n)
-{
-    if ((n->child[0] != 0) != (n->child[1] != 0))
-	hard_fix_children(n);
 }
 
 inline uint32_t

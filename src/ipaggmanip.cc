@@ -19,10 +19,11 @@
 #define READ_FILE_OPT	302
 #define OUTPUT_OPT	303
 
-#define NNZ_ACT		400
-#define NNZ_PREFIX_ACT	401
-#define NNZ_DISCRIM_ACT	402
-#define PREFIX_ACT	403
+#define NNZ_ACT			400
+#define NNZ_PREFIX_ACT		401
+#define NNZ_LEFT_PREFIX_ACT	402
+#define NNZ_DISCRIM_ACT		403
+#define PREFIX_ACT		404
 
 static Clp_Option options[] = {
 
@@ -34,8 +35,13 @@ static Clp_Option options[] = {
 
   { "num", 'n', NNZ_ACT, 0, 0 },
   { "num-nonzero", 'n', NNZ_ACT, 0, 0 },
+  { "nnz", 'n', NNZ_ACT, 0, 0 },
   { "num-in-prefixes", 0, NNZ_PREFIX_ACT, 0, 0 },
+  { "nnz-in-prefixes", 0, NNZ_PREFIX_ACT, 0, 0 },
+  { "num-in-left-prefixes", 0, NNZ_LEFT_PREFIX_ACT, 0, 0 },
+  { "nnz-in-left-prefixes", 0, NNZ_LEFT_PREFIX_ACT, 0, 0 },
   { "num-discriminated-by-prefix", 0, NNZ_DISCRIM_ACT, 0, 0 },
+  { "nnz-discriminated-by-prefix", 0, NNZ_DISCRIM_ACT, 0, 0 },
   { "prefix", 'p', PREFIX_ACT, Clp_ArgUnsigned, 0 },
   
 };
@@ -82,7 +88,7 @@ main(int argc, char *argv[])
     cp_va_static_initialize();
     ErrorHandler *errh = new FileErrorHandler(stderr, "");
     ErrorHandler::static_initialize(errh);
-    ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
+    //ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
 
     int action = 0;
     uint32_t action_extra = 0;
@@ -119,6 +125,7 @@ particular purpose.\n");
 
 	  case NNZ_ACT:
 	  case NNZ_PREFIX_ACT:
+	  case NNZ_LEFT_PREFIX_ACT:
 	  case NNZ_DISCRIM_ACT:
 	    if (action)
 		die_usage("action already specified");
@@ -191,20 +198,27 @@ particular purpose.\n");
 
 	  case NNZ_PREFIX_ACT: {
 	      Vector<uint32_t> nnzp;
-	      tree.num_nonzero_in_prefixes(nnzp);
+	      tree.nnz_in_prefixes(nnzp);
+	      write_vector(nnzp, out);
+	      break;
+	  }
+
+	  case NNZ_LEFT_PREFIX_ACT: {
+	      Vector<uint32_t> nnzp;
+	      tree.nnz_in_left_prefixes(nnzp);
 	      write_vector(nnzp, out);
 	      break;
 	  }
 
 	  case NNZ_DISCRIM_ACT: {
 	      Vector<uint32_t> nnzp;
-	      tree.num_discriminated_by_prefix(nnzp);
+	      tree.nnz_discriminated_by_prefix(nnzp);
 	      write_vector(nnzp, out);
 	      break;
 	  }
 
 	  case PREFIX_ACT: {
-	      tree.mask_to_prefix(action_extra);
+	      tree.mask_data_to_prefix(action_extra);
 	      tree.write_file(out, true, errh);
 	      break;
 	  }
