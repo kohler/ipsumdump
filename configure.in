@@ -10,7 +10,7 @@ LIBCLICK_VERSION=1.2.1a
 AC_SUBST(LIBCLICK_VERSION)
 AC_CONFIG_AUX_DIR(libclick-$LIBCLICK_VERSION)
 
-auxprogdir='$(top_srcdir)/'"$LIBCLICK_VERSION"
+auxprogdir="\$(top_srcdir)/libclick-$LIBCLICK_VERSION"
 AC_SUBST(auxprogdir)
 
 IPSUMDUMP_VERSION=0.1
