@@ -68,34 +68,6 @@ AnonymizeIPAddr::notify_noutputs(int n)
     set_noutputs(n <= 1 ? 1 : 2);
 }
 
-static void
-install_seed()
-{
-    static const int bufsiz = 16;
-    uint32_t buf[bufsiz];
-    int pos = 0;
-    click_gettimeofday((struct timeval *)(buf + pos));
-    pos += sizeof(struct timeval) / 4;
-#ifdef CLICK_USERLEVEL
-    FILE *f = fopen("/dev/random", "rb");
-    if (f) {
-	fread(buf + pos, sizeof(uint32_t), bufsiz - pos, f);
-	fclose(f);
-	pos = bufsiz;
-    } else {
-	buf[pos++] = getpid();
-	buf[pos++] = getuid();
-    }
-#endif
-
-    uint32_t result = 0;
-    for (int i = 0; i < pos; i++) {
-	result ^= buf[i];
-	result = (result << 1) | (result >> 31);
-    }
-    srandom(result);
-}
-
 int
 AnonymizeIPAddr::configure(const Vector<String> &conf, ErrorHandler *errh)
 {
@@ -131,7 +103,7 @@ AnonymizeIPAddr::configure(const Vector<String> &conf, ErrorHandler *errh)
 
     // install seed if required
     if (seed)
-	install_seed();
+	click_random_srandom();
     
     return 0;
 }

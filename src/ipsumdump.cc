@@ -30,6 +30,7 @@
 #define MULTIPACKET_OPT	309
 #define SAMPLE_OPT	310
 #define COLLATE_OPT	311
+#define RANDOM_SEED_OPT	312
 
 // data sources
 #define INTERFACE_OPT	400
@@ -74,6 +75,7 @@ static Clp_Option options[] = {
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
+    { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -154,6 +156,7 @@ Other options:\n\
                              representing multiple packets (NetFlow only).\n\
       --sample PROB          Sample packets with PROB probability.\n\
       --collate              Collate packets from data sources by timestamp.\n\
+      --random-seed SEED     Set random seed to SEED (default is random).\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
@@ -255,6 +258,7 @@ main(int argc, char *argv[])
     bool collate = false;
     Vector<int> log_contents;
     int action = 0;
+    bool do_seed = true;
     Vector<String> files;
     
     while (1) {
@@ -331,6 +335,11 @@ main(int argc, char *argv[])
 	  case COLLATE_OPT:
 	    collate = !clp->negated;
 	    break;
+
+	  case RANDOM_SEED_OPT:
+	    do_seed = false;
+	    srandom(clp->val.u);
+	    break;
 	    
 	  case CONFIG_OPT:
 	    config = true;
@@ -380,6 +389,10 @@ particular purpose.\n");
     if (output == "-" && write_dump == "-")
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
+    // set random seed if appropriate
+    if (do_seed)
+	click_random_srandom();
+
     // define shunt
     String shunt_internals = "";
     StringAccum psa;
@@ -394,14 +407,14 @@ particular purpose.\n");
 	    p_errh->fatal("`-i' option takes at least one DEVNAME");
 	if (collate)
 	    p_errh->fatal("`--collate' may not be used with `--interface' yet");
-	String filter_extra;
+	String config = ", SNAPLEN 60, FORCE_IP true";
 #if FROMDEVICE_PCAP
 	if (filter)
-	    filter_extra = ", BPF_FILTER " + cp_quote(filter);
+	    config += ", BPF_FILTER " + cp_quote(filter);
 	filter = String();
 #endif
 	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromDevice(" << files[i] << ", SNAPLEN 60, FORCE_IP true" << filter_extra << ") -> " << source_output_port(collate, i) << ";\n";
+	    psa << "src" << i << " :: FromDevice(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	if (do_sample) {
 	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
 	    sample_elt = "shunt/samp";
@@ -458,7 +471,7 @@ particular purpose.\n");
     if (filter)
 	sa << "  -> IPClassifier(" << filter << ")\n";
     if (anonymize)
-	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4)\n";
+	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
     
     // possible elements to write tcpdump file
     if (write_dump)

@@ -226,6 +226,14 @@ Write processed packets to a tcpdump(1) I<file> -- or to the standard
 output, if I<file> is a single dash C<-> -- in addition to the usual
 summary output.
 
+=item B<--random-seed>=I<seed>
+
+Set the random seed deterministically to I<seed>, an unsigned integer. By
+default, the random seed is initialized to a random value using
+F</dev/random>, if it exists, combined with other data. The random seed
+indirectly determines which packets are sampled, and the values of
+anonymized IP addresses.
+
 =item B<--config>
 
 Do not produce a summary. Instead, write the Click configuration that
