@@ -18,7 +18,7 @@ class AggregateTree { public:
     uint32_t nnz() const			{ return _num_nonzero; }
     uint32_t nnz_match(uint32_t mask, uint32_t value) const;
     
-    void add(uint32_t aggregate, uint32_t count = 1);
+    void add(uint32_t aggregate, int32_t count = 1);
     void zero_aggregate(int, uint32_t);
     void zero_masked_aggregate(uint32_t, uint32_t);
 
@@ -47,6 +47,8 @@ class AggregateTree { public:
 
     void balance(int prefix_len, FILE *) const;
     void balance_histogram(int prefix_len, uint32_t nbuckets, Vector<uint32_t> &) const;
+
+    void keep_common_hosts(const AggregateTree &, bool add = false);
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
@@ -87,6 +89,7 @@ class AggregateTree { public:
     void node_cut_smaller(Node *, uint32_t);
     void node_cut_larger(Node *, uint32_t);
     void node_cut_aggregates(Node *, uint32_t, uint32_t &, uint32_t &, uint32_t, bool smaller, bool hosts);
+    void node_keep_common_hosts(Node *, const Node *[], int &, bool);
 
     static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);
@@ -114,11 +117,17 @@ AggregateTree::free_node(Node *n)
 }
 
 inline void
-AggregateTree::add(uint32_t aggregate, uint32_t count)
+AggregateTree::add(uint32_t aggregate, int32_t count)
 {
-    if (Node *n = find_node(aggregate))
-	if ((n->count += count) == count)
+    if (count == 0)
+	/* nada */;
+    else if (Node *n = find_node(aggregate)) {
+	n->count += count;
+	if (n->count == (uint32_t)count)
 	    _num_nonzero++;
+	else if (n->count == 0)
+	    _num_nonzero--;
+    }
 }
 
 static inline uint32_t

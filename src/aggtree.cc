@@ -848,6 +848,66 @@ AggregateTree::haar_wavelet_energy_coeff(Vector<double> &out) const
 
 
 //
+// COMBINING TREES
+//
+
+static const AggregateTree::Node *
+preorder_step(const AggregateTree::Node *other_stack[], int &other_pos)
+{
+    if (other_pos == 0)
+	return 0;
+
+    // if current node has a left child, return that
+    const AggregateTree::Node *n = other_stack[other_pos - 1]->child[0];
+    if (n) {
+	other_stack[other_pos++] = n;
+	return n;
+    }
+
+    // otherwise, back up and take a right child
+    other_pos--;
+    while (other_pos > 0 && other_stack[other_pos - 1]->child[1] == other_stack[other_pos])
+	other_pos--;
+
+    if (other_pos > 0) {
+	const AggregateTree::Node *n = other_stack[other_pos - 1]->child[1];
+	other_stack[other_pos++] = n;
+	return n;
+    } else
+	return 0;
+}
+
+void
+AggregateTree::node_keep_common_hosts(Node *n, const Node *other_stack[], int &other_pos, bool add)
+{
+    if (n->count) {
+	const Node *other = (other_pos ? other_stack[other_pos - 1] : 0);
+	while (other && other->aggregate < n->aggregate)
+	    other = preorder_step(other_stack, other_pos);
+	if (!other || other->aggregate > n->aggregate
+	    || (other->aggregate == n->aggregate && other->count == 0)) {
+	    n->count = 0;
+	    _num_nonzero--;
+	} else if (add && other->aggregate == n->aggregate)
+	    n->count += other->count;
+    }
+    if (n->child[0]) {
+	node_keep_common_hosts(n->child[0], other_stack, other_pos, add);
+	node_keep_common_hosts(n->child[1], other_stack, other_pos, add);
+    }
+}
+
+void
+AggregateTree::keep_common_hosts(const AggregateTree &other, bool add)
+{
+    const Node *other_stack[32];
+    other_stack[0] = other._root;
+    int other_pos = 1;
+    node_keep_common_hosts(_root, other_stack, other_pos, add);
+}
+
+
+//
 // READING AND WRITING
 //
 

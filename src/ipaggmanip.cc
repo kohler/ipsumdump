@@ -23,18 +23,22 @@
 #define ASCII_OPT		305
 
 #define FIRST_ACT		400
-#define PREFIX_ACT		400
-#define POSTERIZE_ACT		401
-#define SAMPLE_ACT		402
-#define CUT_SMALLER_ACT		403
-#define CUT_LARGER_ACT		404
-#define CULL_HOSTS_ACT		405
-#define CULL_HOSTS_BY_PACKETS_ACT 406
-#define CULL_PACKETS_ACT	407
-#define CUT_SMALLER_AGG_ACT	408
-#define CUT_LARGER_AGG_ACT	409
-#define CUT_SMALLER_HOST_AGG_ACT 410
-#define CUT_LARGER_HOST_AGG_ACT	411
+#define NO_ACT			400
+#define PREFIX_ACT		401
+#define POSTERIZE_ACT		402
+#define SAMPLE_ACT		403
+#define CUT_SMALLER_ACT		404
+#define CUT_LARGER_ACT		405
+#define CULL_HOSTS_ACT		406
+#define CULL_HOSTS_BY_PACKETS_ACT 407
+#define CULL_PACKETS_ACT	408
+#define CUT_SMALLER_AGG_ACT	409
+#define CUT_LARGER_AGG_ACT	410
+#define CUT_SMALLER_HOST_AGG_ACT 411
+#define CUT_LARGER_HOST_AGG_ACT	412
+
+#define AND_ACT			450
+#define OR_ACT			451
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -91,6 +95,8 @@ static Clp_Option options[] = {
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "and", '&', AND_ACT, 0, 0 },
+  { "or", '|', OR_ACT, 0, 0 },
   
 };
 
@@ -213,6 +219,27 @@ parse_two_uints(Clp_Parser *clp, const char *arg, int complain, void *)
 	return 0;
 }
 
+static FILE *
+open_read(String &name, ErrorHandler *errh)
+{
+    FILE *f;
+    if (name == "-") {
+	f = stdin;
+	name = "<stdin>";
+    } else
+	f = fopen(name, "rb");
+    if (!f)
+	errh->fatal("%s: %s", name.cc(), strerror(errno));
+    return f;
+}
+
+static void
+close_read(FILE *f)
+{
+    if (f != stdin)
+	fclose(f);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -277,6 +304,8 @@ particular purpose.\n");
 	  case HAAR_WAVELET_ENERGY_ACT:
 	  case SIZES_ACT:
 	  case SORTED_SIZES_ACT:
+	  case AND_ACT:
+	  case OR_ACT:
 	    add_action(opt);
 	    break;
 
@@ -331,14 +360,13 @@ particular purpose.\n");
   
   done:
     // check file usage
-    if (!files.size())
+    if (files.size() == 0)
 	files.push_back("-");
+    if (actions.size() == 0)
+	actions.push_back(NO_ACT);
     if (!output)
 	output = "-";
 
-    if (!actions.size())
-	die_usage("no action specified");
-    
     FILE *out;
     if (output == "-")
 	out = stdout;
@@ -346,219 +374,250 @@ particular purpose.\n");
 	out = fopen(output, "w");
     if (!out)
 	errh->fatal("%s: %s", output.cc(), strerror(errno));
-    
-    for (int i = 0; i < files.size(); i++) {
-	FILE *f;
-	if (files[i] == "-") {
-	    f = stdin;
-	    files[i] = "<stdin>";
-	} else
-	    f = fopen(files[i], "rb");
-	if (!f)
-	    errh->fatal("%s: %s", files[i].cc(), strerror(errno));
 
-	AggregateTree tree;
-	tree.read_file(f, errh);
+    // read files
+    AggregateTree tree;
+    int actno = 0;
 
-	if (f != stdin)
-	    fclose(f);
+    switch (actions[actno]) {
 
-	// go through earlier actions
-	for (int j = 0; j < actions.size(); j++) {
-	    int action = actions[j];
-	    uint32_t action_extra = extras[j];
-	    uint32_t action_extra2 = extras2[j];
-	    switch (action) {
-		
-	      case PREFIX_ACT:
-		tree.prefixize(action_extra);
-		break;
+      case AND_ACT: {
+	  FILE *f = open_read(files[0], errh);
+	  tree.read_file(f, errh);
+	  close_read(f);
+	  for (int i = 1; i < files.size(); i++) {
+	      f = open_read(files[i], errh);
+	      AggregateTree tree2;
+	      tree2.read_file(f, errh);
+	      close_read(f);
+	      tree.keep_common_hosts(tree2); // , true ?
+	  }
+	  actno++;
+	  break;
+      }
 
-	      case POSTERIZE_ACT:
-		tree.posterize();
-		break;
-
-	      case SAMPLE_ACT:
-		tree.sample(1. / action_extra);
-		break;
-		
-	      case CUT_SMALLER_ACT:
-		tree.cut_smaller(action_extra);
-		break;
-
-	      case CUT_LARGER_ACT:
-		tree.cut_larger(action_extra);
-		break;
-
-	      case CUT_SMALLER_AGG_ACT:
-		tree.cut_smaller_aggregates(action_extra, action_extra2);
-#ifdef SELFTEST
-		{
-		    AggregateTree xtree;
-		    tree.make_prefix(action_extra, xtree);
-		    uint32_t nnz = xtree.nnz();
-		    xtree.cut_smaller(action_extra2);
-		    assert(xtree.nnz() == nnz);
-		}
-#endif
-		break;
-
-	      case CUT_LARGER_AGG_ACT:
-		tree.cut_larger_aggregates(action_extra, action_extra2);
-#ifdef SELFTEST
-		{
-		    AggregateTree xtree;
-		    tree.make_prefix(action_extra, xtree);
-		    uint32_t nnz = xtree.nnz();
-		    xtree.cut_larger(action_extra2);
-		    assert(xtree.nnz() == nnz);
-		}
-#endif
-		break;
-
-	      case CUT_SMALLER_HOST_AGG_ACT:
-		tree.cut_smaller_host_aggregates(action_extra, action_extra2);
-		break;
-		
-	      case CUT_LARGER_HOST_AGG_ACT:
-		tree.cut_larger_host_aggregates(action_extra, action_extra2);
-		break;
-		
-	      case CULL_HOSTS_ACT: {
-		  AggregateWTree wtree(tree, false);
-		  wtree.cull_hosts(action_extra);
-		  tree = wtree;
-		  break;
-	      }
-	      
-	      case CULL_HOSTS_BY_PACKETS_ACT: {
-		  AggregateWTree wtree(tree, true);
-		  wtree.cull_hosts_by_packets(action_extra);
-		  tree = wtree;
-		  break;
-	      }
-	      
-	      case CULL_PACKETS_ACT: {
-		  AggregateWTree wtree(tree, true);
-		  wtree.cull_packets(action_extra);
-		  tree = wtree;
-		  break;
-	      }
-	      
-	    }
+      case OR_ACT:
+	for (int i = 0; i < files.size(); i++) {
+	    FILE *f = open_read(files[i], errh);
+	    tree.read_file(f, errh);
+	    close_read(f);
 	}
+	actno++;
+	break;
 
-	// output result of final action
-	int action = actions.back();
-	uint32_t action_extra = extras.back();
-	uint32_t action_extra2 = extras2.back();
+      default: {
+	  if (files.size() > 1)
+	      errh->fatal("supply `--and' or `--or' to combine multiple files");
+	  FILE *f = open_read(files[0], errh);
+	  tree.read_file(f, errh);
+	  close_read(f);
+	  break;
+      }
+
+    }
+    
+    // go through earlier actions
+    for (int j = actno; j < actions.size(); j++) {
+	int action = actions[j];
+	uint32_t action_extra = extras[j];
+	uint32_t action_extra2 = extras2[j];
 	switch (action) {
-	    
-	  case NNZ_ACT:
-	    fprintf(out, "%u\n", tree.num_nonzero());
+		
+	  case PREFIX_ACT:
+	    tree.prefixize(action_extra);
 	    break;
 
-	  case NNZ_PREFIX_ACT: {
-	      Vector<uint32_t> nnzp;
-	      tree.nnz_in_prefixes(nnzp);
-	      write_vector(nnzp, out);
+	  case POSTERIZE_ACT:
+	    tree.posterize();
+	    break;
+
+	  case SAMPLE_ACT:
+	    tree.sample(1. / action_extra);
+	    break;
+	    
+	  case CUT_SMALLER_ACT:
+	    tree.cut_smaller(action_extra);
+	    break;
+
+	  case CUT_LARGER_ACT:
+	    tree.cut_larger(action_extra);
+	    break;
+
+	  case CUT_SMALLER_AGG_ACT:
+	    tree.cut_smaller_aggregates(action_extra, action_extra2);
+#ifdef SELFTEST
+	    {
+		AggregateTree xtree;
+		tree.make_prefix(action_extra, xtree);
+		uint32_t nnz = xtree.nnz();
+		xtree.cut_smaller(action_extra2);
+		assert(xtree.nnz() == nnz);
+	    }
+#endif
+	    break;
+
+	  case CUT_LARGER_AGG_ACT:
+	    tree.cut_larger_aggregates(action_extra, action_extra2);
+#ifdef SELFTEST
+	    {
+		AggregateTree xtree;
+		tree.make_prefix(action_extra, xtree);
+		uint32_t nnz = xtree.nnz();
+		xtree.cut_larger(action_extra2);
+		assert(xtree.nnz() == nnz);
+	    }
+#endif
+	    break;
+
+	  case CUT_SMALLER_HOST_AGG_ACT:
+	    tree.cut_smaller_host_aggregates(action_extra, action_extra2);
+	    break;
+	    
+	  case CUT_LARGER_HOST_AGG_ACT:
+	    tree.cut_larger_host_aggregates(action_extra, action_extra2);
+	    break;
+	    
+	  case CULL_HOSTS_ACT: {
+	      AggregateWTree wtree(tree, false);
+	      wtree.cull_hosts(action_extra);
+	      tree = wtree;
+	      break;
+	  }
+	  
+	  case CULL_HOSTS_BY_PACKETS_ACT: {
+	      AggregateWTree wtree(tree, true);
+	      wtree.cull_hosts_by_packets(action_extra);
+	      tree = wtree;
+	      break;
+	  }
+	  
+	  case CULL_PACKETS_ACT: {
+	      AggregateWTree wtree(tree, true);
+	      wtree.cull_packets(action_extra);
+	      tree = wtree;
 	      break;
 	  }
 
-	  case NNZ_LEFT_PREFIX_ACT: {
-	      Vector<uint32_t> nnzp;
-	      tree.nnz_in_left_prefixes(nnzp);
-	      write_vector(nnzp, out);
-	      break;
-	  }
+	  case AND_ACT:
+	  case OR_ACT:
+	    errh->error("`--and' and `--or' must be the first action");
+	    break;
+	    
+	}
+    }
 
-	  case NNZ_DISCRIM_ACT: {
-	      Vector<uint32_t> nnzp;
-	      tree.nnz_discriminated_by_prefix(nnzp);
-	      write_vector(nnzp, out);
-	      break;
-	  }
+    // output result of final action
+    int action = actions.back();
+    uint32_t action_extra = extras.back();
+    uint32_t action_extra2 = extras2.back();
+    switch (action) {
+	
+      case NNZ_ACT:
+	fprintf(out, "%u\n", tree.num_nonzero());
+	break;
 
-	  case AVG_VAR_ACT: {
+      case NNZ_PREFIX_ACT: {
+	  Vector<uint32_t> nnzp;
+	  tree.nnz_in_prefixes(nnzp);
+	  write_vector(nnzp, out);
+	  break;
+      }
+
+      case NNZ_LEFT_PREFIX_ACT: {
+	  Vector<uint32_t> nnzp;
+	  tree.nnz_in_left_prefixes(nnzp);
+	  write_vector(nnzp, out);
+	  break;
+      }
+
+      case NNZ_DISCRIM_ACT: {
+	  Vector<uint32_t> nnzp;
+	  tree.nnz_discriminated_by_prefix(nnzp);
+	  write_vector(nnzp, out);
+	  break;
+      }
+
+      case AVG_VAR_ACT: {
+	  double sum, sum_sq;
+	  tree.sum_and_sum_sq(&sum, &sum_sq);
+	  uint32_t nnz = tree.nnz();
+	  fprintf(out, "%.20g %.20g\n", sum / nnz, (sum_sq - sum*sum/nnz) / nnz);
+	  break;
+      }
+
+      case AVG_VAR_PREFIX_ACT: {
+	  double avg[33], var[33];
+	  for (int i = 32; i >= 0; i--) {
 	      double sum, sum_sq;
+	      tree.prefixize(i);
 	      tree.sum_and_sum_sq(&sum, &sum_sq);
 	      uint32_t nnz = tree.nnz();
-	      fprintf(out, "%.20g %.20g\n", sum / nnz, (sum_sq - sum*sum/nnz) / nnz);
-	      break;
+	      avg[i] = sum / nnz;
+	      var[i] = sum_sq / nnz - avg[i] * avg[i];
 	  }
+	  for (int i = 0; i <= 32; i++)
+	      fprintf(out, "%.20g %.20g\n", avg[i], var[i]);
+	  break;
+      }
 
-	  case AVG_VAR_PREFIX_ACT: {
-	      double avg[33], var[33];
-	      for (int i = 32; i >= 0; i--) {
-		  double sum, sum_sq;
-		  tree.prefixize(i);
-		  tree.sum_and_sum_sq(&sum, &sum_sq);
-		  uint32_t nnz = tree.nnz();
-		  avg[i] = sum / nnz;
-		  var[i] = sum_sq / nnz - avg[i] * avg[i];
-	      }
-	      for (int i = 0; i <= 32; i++)
-		  fprintf(out, "%.20g %.20g\n", avg[i], var[i]);
-	      break;
-	  }
+      case HAAR_WAVELET_ENERGY_ACT: {
+	  Vector<double> energy;
+	  tree.haar_wavelet_energy_coeff(energy);
+	  for (int i = 0; i < 32; i++)
+	      fprintf(out, "%.20g ", energy[i]);
+	  fprintf(out, "\n");
+	  break;
+      }
 
-	  case HAAR_WAVELET_ENERGY_ACT: {
-	      Vector<double> energy;
-	      tree.haar_wavelet_energy_coeff(energy);
-	      for (int i = 0; i < 32; i++)
-		  fprintf(out, "%.20g ", energy[i]);
-	      fprintf(out, "\n");
-	      break;
-	  }
+      case SIZES_ACT:
+      case SORTED_SIZES_ACT: {
+	  Vector<uint32_t> sizes;
+	  tree.nonzero_sizes(sizes);
+	  if (action == SORTED_SIZES_ACT && sizes.size())
+	      qsort(&sizes[0], sizes.size(), sizeof(uint32_t), uint32_rev_compar);
+	  write_vector(sizes, out);
+	  break;
+      }
 
-	  case SIZES_ACT:
-	  case SORTED_SIZES_ACT: {
-	      Vector<uint32_t> sizes;
-	      tree.nonzero_sizes(sizes);
-	      if (action == SORTED_SIZES_ACT && sizes.size())
-		  qsort(&sizes[0], sizes.size(), sizeof(uint32_t), uint32_rev_compar);
-	      write_vector(sizes, out);
-	      break;
-	  }
+      case BALANCE_ACT:
+	tree.balance(action_extra, out);
+	break;
 
-	  case BALANCE_ACT:
-	    tree.balance(action_extra, out);
-	    break;
-
-	  case BALANCE_HISTOGRAM_ACT: {
-	      Vector<uint32_t> sizes;
-	      tree.balance_histogram(action_extra, action_extra2, sizes);
-	      
-	      // print number of aggregates to help users
-	      uint32_t total = 0;
-	      for (int i = 0; i < sizes.size(); i++)
-		  total += sizes[i];
-	      fprintf(out, "# nnz %u\n", total);
-	      
-	      fprintf(out, "0 0 %u\n", sizes[0]);
-	      double step = 1. / (double)action_extra2;
-	      for (int i = 1; i < sizes.size() - 1; i++)
-		  fprintf(out, "%g %g %u\n", (i - 1) * step, i * step, sizes[i]);
-	      fprintf(out, "1 1 %u\n", sizes.back());
-	      break;
-	  }
+      case BALANCE_HISTOGRAM_ACT: {
+	  Vector<uint32_t> sizes;
+	  tree.balance_histogram(action_extra, action_extra2, sizes);
 	  
-	  case PREFIX_ACT:
-	  case POSTERIZE_ACT:
-	  case SAMPLE_ACT:
-	  case CUT_SMALLER_ACT:
-	  case CUT_LARGER_ACT:
-	  case CULL_HOSTS_ACT:
-	  case CULL_HOSTS_BY_PACKETS_ACT:
-	  case CULL_PACKETS_ACT:
-	  case CUT_SMALLER_AGG_ACT:
-	  case CUT_LARGER_AGG_ACT:
-	  case CUT_SMALLER_HOST_AGG_ACT:
-	  case CUT_LARGER_HOST_AGG_ACT:
-	    tree.write_file(out, output_binary, errh);
-	    break;
+	  // print number of aggregates to help users
+	  uint32_t total = 0;
+	  for (int i = 0; i < sizes.size(); i++)
+	      total += sizes[i];
+	  fprintf(out, "# nnz %u\n", total);
 	  
-	}
+	  fprintf(out, "0 0 %u\n", sizes[0]);
+	  double step = 1. / (double)action_extra2;
+	  for (int i = 1; i < sizes.size() - 1; i++)
+	      fprintf(out, "%g %g %u\n", (i - 1) * step, i * step, sizes[i]);
+	  fprintf(out, "1 1 %u\n", sizes.back());
+	  break;
+      }
+      
+      case PREFIX_ACT:
+      case POSTERIZE_ACT:
+      case SAMPLE_ACT:
+      case CUT_SMALLER_ACT:
+      case CUT_LARGER_ACT:
+      case CULL_HOSTS_ACT:
+      case CULL_HOSTS_BY_PACKETS_ACT:
+      case CULL_PACKETS_ACT:
+      case CUT_SMALLER_AGG_ACT:
+      case CUT_LARGER_AGG_ACT:
+      case CUT_SMALLER_HOST_AGG_ACT:
+      case CUT_LARGER_HOST_AGG_ACT:
+      case AND_ACT:
+      case OR_ACT:
+	tree.write_file(out, output_binary, errh);
+	break;
+	
     }
     
     exit(0);
