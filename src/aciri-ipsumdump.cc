@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "toejysummarydump.hh"
+#include "toipsumdump.hh"
 #include "bailerror.hh"
 
 #define HELP_OPT	300
@@ -27,14 +27,14 @@
 
 // options for logging
 #define FIRST_LOG_OPT	1000
-#define TIMESTAMP_OPT	(1000 + ToEjySummaryDump::W_TIMESTAMP)
-#define SRC_OPT		(1000 + ToEjySummaryDump::W_SRC)
-#define DST_OPT		(1000 + ToEjySummaryDump::W_DST)
-#define SPORT_OPT	(1000 + ToEjySummaryDump::W_SPORT)
-#define DPORT_OPT	(1000 + ToEjySummaryDump::W_DPORT)
-#define LENGTH_OPT	(1000 + ToEjySummaryDump::W_LENGTH)
-#define IPID_OPT	(1000 + ToEjySummaryDump::W_IPID)
-#define PROTO_OPT	(1000 + ToEjySummaryDump::W_PROTO)
+#define TIMESTAMP_OPT	(1000 + ToIPSummaryDump::W_TIMESTAMP)
+#define SRC_OPT		(1000 + ToIPSummaryDump::W_SRC)
+#define DST_OPT		(1000 + ToIPSummaryDump::W_DST)
+#define SPORT_OPT	(1000 + ToIPSummaryDump::W_SPORT)
+#define DPORT_OPT	(1000 + ToIPSummaryDump::W_DPORT)
+#define LENGTH_OPT	(1000 + ToIPSummaryDump::W_LENGTH)
+#define IPID_OPT	(1000 + ToIPSummaryDump::W_IPID)
+#define PROTO_OPT	(1000 + ToIPSummaryDump::W_PROTO)
 
 static Clp_Option options[] = {
 
@@ -188,7 +188,11 @@ main(int argc, char *argv[])
 	    break;
 
 	  case VERSION_OPT:
-	    fprintf(stderr, "Cpyright MY BIGG FAT HAIRY ASSSS (c)\n");
+	    printf("aciri-ipsumdump %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
+	    printf("Copyright (C) 2001 International Computer Science Institute\n\
+This is free software; see the source for copying conditions.\n\
+There is NO warranty, not even for merchantability or fitness for a\n\
+particular purpose.\n");
 	    exit(0);
 	    break;
 
@@ -244,15 +248,15 @@ main(int argc, char *argv[])
     
     // elements to dump summary log
     if (log_contents < 0)
-	log_contents = (1 << ToEjySummaryDump::W_SRC) | (1 << ToEjySummaryDump::W_DST);
+	log_contents = (1 << ToIPSummaryDump::W_SRC) | (1 << ToIPSummaryDump::W_DST);
     else if (!log_contents)
 	die_usage("nothing to log! (Supply one or more log contents options.)");
     if (!output)
 	output = "-";
-    sa << "  -> ToEjySummaryDump(" << output << ", CONTENTS";
+    sa << "  -> ToIPSummaryDump(" << output << ", CONTENTS";
     for (int i = 0; i < 31; i++)
 	if (log_contents & (1 << i))
-	    sa << ' ' << cp_quote(ToEjySummaryDump::content_name(i));
+	    sa << ' ' << cp_quote(ToIPSummaryDump::content_name(i));
     sa << ", VERBOSE true, BANNER ";
     // create banner
     StringAccum banner;

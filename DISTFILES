@@ -9,5 +9,5 @@ src/Makefile.in
 src/aciri-ipsumdump.cc
 src/bailerror.cc
 src/bailerror.hh
-src/toejysummarydump.cc
-src/toejysummarydump.hh
+src/toipsumdump.cc
+src/toipsumdump.hh

@@ -5,7 +5,7 @@ SHELL = @SHELL@
 @SUBMAKE@
 
 PACKAGE = aciri-ipsumdump
-VERSION = @VERSION@
+VERSION = @IPSUMDUMP_VERSION@
 LIBCLICK_VERSION = @LIBCLICK_VERSION@
 libclick = libclick-$(LIBCLICK_VERSION)
 
@@ -35,7 +35,7 @@ $(libclick):
 src: stamp-h
 	@cd src && $(MAKE) all-local
 
-install: stamp-h
+install: $(libclick) stamp-h
 	@cd src && $(MAKE) install
 install-libclick:
 	@cd $(libclick) && $(MAKE) install

@@ -2,6 +2,7 @@
 #ifndef ACIRI_IPSUMDUMP_CONFIG_H
 #define ACIRI_IPSUMDUMP_CONFIG_H
 
-/* `aciri-ipsumdump' doesn't need any extra configuration. */
+/* Version number of package. */
+#define IPSUMDUMP_VERSION "0.1"
 
 #endif /* ACIRI_IPSUMDUMP_CONFIG_H */

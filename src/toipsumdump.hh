@@ -1,5 +1,5 @@
-#ifndef CLICK_TOEJYSUMMARYDUMP_HH
-#define CLICK_TOEJYSUMMARYDUMP_HH
+#ifndef CLICK_TOIPSUMDUMP_HH
+#define CLICK_TOIPSUMDUMP_HH
 #include <click/element.hh>
 #include <click/task.hh>
 #include <click/straccum.hh>
@@ -7,7 +7,7 @@
 /*
 =c
 
-ToEjySummaryDump(FILENAME [, I<KEYWORDS>])
+ToIPSummaryDump(FILENAME [, I<KEYWORDS>])
 
 =s sinks
 
@@ -17,15 +17,15 @@ writes packet summary information
 
 FromDump, ToDump */
 
-class ToEjySummaryDump : public Element { public:
+class ToIPSummaryDump : public Element { public:
   
-    ToEjySummaryDump();
-    ~ToEjySummaryDump();
+    ToIPSummaryDump();
+    ~ToIPSummaryDump();
   
-    const char *class_name() const	{ return "ToEjySummaryDump"; }
+    const char *class_name() const	{ return "ToIPSummaryDump"; }
     const char *processing() const	{ return AGNOSTIC; }
     const char *flags() const		{ return "S2"; }
-    ToEjySummaryDump *clone() const	{ return new ToEjySummaryDump; }
+    ToIPSummaryDump *clone() const	{ return new ToIPSummaryDump; }
   
     int configure(const Vector<String> &, ErrorHandler *);
     int initialize(ErrorHandler *);

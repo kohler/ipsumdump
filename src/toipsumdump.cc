@@ -1,5 +1,5 @@
 /*
- * toejysummarydump.{cc,hh} -- element writes packets to tcpdump-like file
+ * toipsummarydump.{cc,hh} -- element writes packet summary in ASCII
  * Eddie Kohler
  *
  * Copyright (c) 2001 International Computer Science Institute
@@ -16,7 +16,7 @@
  */
 
 #include <click/config.h>
-#include "toejysummarydump.hh"
+#include "toipsumdump.hh"
 #include <click/standard/scheduleinfo.hh>
 #include <click/confparse.hh>
 #include <click/error.hh>
@@ -26,19 +26,19 @@
 #include <time.h>
 #include <sys/time.h>
 
-ToEjySummaryDump::ToEjySummaryDump()
+ToIPSummaryDump::ToIPSummaryDump()
     : Element(1, 0), _f(0), _task(this)
 {
     MOD_INC_USE_COUNT;
 }
 
-ToEjySummaryDump::~ToEjySummaryDump()
+ToIPSummaryDump::~ToIPSummaryDump()
 {
     MOD_DEC_USE_COUNT;
 }
 
 int
-ToEjySummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
+ToIPSummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
 {
     int before = errh->nerrors();
     String save = "timestamp 'ip src'";
@@ -89,7 +89,7 @@ ToEjySummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
 }
 
 int
-ToEjySummaryDump::initialize(ErrorHandler *errh)
+ToIPSummaryDump::initialize(ErrorHandler *errh)
 {
     assert(!_f);
     if (_filename != "-") {
@@ -132,7 +132,7 @@ ToEjySummaryDump::initialize(ErrorHandler *errh)
 }
 
 void
-ToEjySummaryDump::uninitialize()
+ToIPSummaryDump::uninitialize()
 {
     if (_f && _f != stdout)
 	fclose(_f);
@@ -147,7 +147,7 @@ static const char *content_names[] = {
 };
 
 const char *
-ToEjySummaryDump::content_name(int what)
+ToIPSummaryDump::content_name(int what)
 {
     if (what < 0 || what >= (int)(sizeof(content_names) / sizeof(content_names[0])))
 	return "??";
@@ -156,7 +156,7 @@ ToEjySummaryDump::content_name(int what)
 }
 
 bool
-ToEjySummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
+ToIPSummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 {
     for (int i = 0; i < _contents.size(); i++) {
 	if (i)
@@ -225,7 +225,7 @@ ToEjySummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 }
 
 void
-ToEjySummaryDump::write_packet(Packet *p)
+ToIPSummaryDump::write_packet(Packet *p)
 {
     _sa.clear();
     if (ascii_summary(p, _sa))
@@ -233,7 +233,7 @@ ToEjySummaryDump::write_packet(Packet *p)
 }
 
 void
-ToEjySummaryDump::push(int, Packet *p)
+ToIPSummaryDump::push(int, Packet *p)
 {
     if (_active)
 	write_packet(p);
@@ -241,7 +241,7 @@ ToEjySummaryDump::push(int, Packet *p)
 }
 
 void
-ToEjySummaryDump::run_scheduled()
+ToIPSummaryDump::run_scheduled()
 {
     if (!_active)
 	return;
@@ -254,11 +254,11 @@ ToEjySummaryDump::run_scheduled()
 }
 
 void
-ToEjySummaryDump::add_handlers()
+ToIPSummaryDump::add_handlers()
 {
     if (input_is_pull(0))
 	add_task_handlers(&_task);
 }
 
 ELEMENT_REQUIRES(userlevel)
-EXPORT_ELEMENT(ToEjySummaryDump)
+EXPORT_ELEMENT(ToIPSummaryDump)
