@@ -24,6 +24,7 @@
 #define AND_OPT			306
 #define OR_OPT			307
 #define EACH_OPT		308
+#define AND_LIST_OPT		309
 
 #define FIRST_ACT		400
 #define NO_ACT			400
@@ -67,6 +68,7 @@ static Clp_Option options[] = {
   { "and", '&', AND_OPT, 0, 0 },
   { "or", '|', OR_OPT, 0, 0 },
   { "each", 'e', EACH_OPT, 0, 0 },
+  { "and-list", 0, AND_LIST_OPT, 0, 0 },
 
   { "num", 'n', NNZ_ACT, 0, 0 },
   { "num-nonzero", 'n', NNZ_ACT, 0, 0 },
@@ -130,7 +132,10 @@ Actions: (Results of final action sent to output.)\n\
   -|, --or                   Combine all packets from FILES.\n\
   -&, --and                  Combine FILES, but drop any host not present in\n\
                              every file.\n\
+      --and-list             Output results for FILE1, then FILE1 & FILE2,\n\
+                             then FILE1 & FILE2 & FILE3, and so on.\n\
   -e, --each                 Output result for each FILE separately.\n\
+\n\
   -n, --num-nonzero          Number of nonzero hosts.\n\
       --nnz-in-prefixes      Number of nonzero p-aggregates for all p.\n\
       --nnz-in-left-prefixes Number nonzero left-hand p-aggregates for all p.\n\
@@ -482,6 +487,7 @@ main(int argc, char *argv[])
 	  case AND_OPT:
 	  case OR_OPT:
 	  case EACH_OPT:
+	  case AND_LIST_OPT:
 	    if (combiner)
 		die_usage("combiner option already specified");
 	    combiner = opt;
@@ -598,6 +604,22 @@ particular purpose.\n");
 	  break;
       }
 
+      case AND_LIST_OPT: {
+	  if (actions.back() < FIRST_END_ACT)
+	      errh->fatal("last action must not produce a tree with `--and-list'");
+	  AggregateTree tree;
+	  read_aggregates(tree, files[0], errh);
+	  for (int i = 0; i < files.size(); i++) {
+	      process_actions(tree, errh);
+	      if (i < files.size() - 1) {
+		  AggregateTree tree2;
+		  read_aggregates(tree2, files[i + 1], errh);
+		  tree.keep_common_hosts(tree2, true);
+	      }
+	  }
+	  break;
+      }
+
       case OR_OPT: {
 	  AggregateTree tree;
 	  for (int i = 0; i < files.size(); i++)
@@ -614,7 +636,7 @@ particular purpose.\n");
 	for (int i = 0; i < files.size(); i++) {
 	    AggregateTree tree;
 	    read_aggregates(tree, files[i], errh);
-	    fprintf(out, (i ? "\n%s\n" : "%s\n"), files[i].cc());
+	    fprintf(out, "# %s\n", files[i].cc());
 	    process_actions(tree, errh);
 	}
 	break;
