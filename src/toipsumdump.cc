@@ -123,7 +123,8 @@ ToIPSummaryDump::initialize(ErrorHandler *errh)
     for (int i = 0; i < _contents.size(); i++)
 	fprintf(_f, (i ? " '%s'" : "'%s'"), unparse_content(_contents[i]));
     fprintf(_f, "\n");
-    
+
+    _output_count = 0;
     return 0;
 }
 
@@ -316,8 +317,10 @@ ToIPSummaryDump::write_packet(Packet *p, bool multipacket)
 	}
     } else {
 	_sa.clear();
-	if (ascii_summary(p, _sa))
+	if (ascii_summary(p, _sa)) {
 	    fwrite(_sa.data(), 1, _sa.length(), _f);
+	    _output_count++;
+	}
     }
 }
 

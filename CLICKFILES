@@ -12,6 +12,8 @@ elements/standard/classifier.cc
 elements/standard/classifier.hh
 elements/ip/ipfilter.cc
 elements/ip/ipfilter.hh:s{"elements/standard/}{"}
+elements/standard/pokehandlers.cc
+elements/standard/pokehandlers.hh
 elements/standard/randomsample.cc
 elements/standard/randomsample.hh
 elements/standard/tee.cc

@@ -130,6 +130,7 @@ class ToIPSummaryDump : public Element { public:
     void push(int, Packet *);
     void run_scheduled();
 
+    uint32_t output_count() const	{ return _output_count; }
     void write_string(const String &);
     void flush_buffer();
 
@@ -153,6 +154,7 @@ class ToIPSummaryDump : public Element { public:
     Vector<unsigned> _contents;
     bool _multipacket;
     bool _active;
+    uint32_t _output_count;
     Task _task;
     bool _verbose : 1;
     String _banner;

@@ -32,6 +32,7 @@
 #define COLLATE_OPT	311
 #define RANDOM_SEED_OPT	312
 #define PROMISCUOUS_OPT	313
+#define WRITE_DROPS_OPT	314
 
 // data sources
 #define INTERFACE_OPT	400
@@ -78,6 +79,7 @@ static Clp_Option options[] = {
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
     { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
     { "promiscuous", 0, PROMISCUOUS_OPT, 0, Clp_Negate },
+    { "record-counts", 0, WRITE_DROPS_OPT, Clp_ArgString, 0 },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -159,6 +161,7 @@ Other options:\n\
       --collate              Collate packets from data sources by timestamp.\n\
       --map-address ADDRS    When done, print to stderr the anonymized IP\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
+      --record-counts TIME   Record packet counts every TIME seconds in output.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
@@ -206,14 +209,14 @@ write_sampling_prob_message(Router *r, const String &sample_elt)
     }
 }
 
-static void
-write_drops_message(Router *r)
+static int
+record_drops_hook(const String &, Element *, void *, ErrorHandler *)
 {
     int max_drops = 0;
     bool less_than = false;
     bool all_known = true;
-    for (int i = 0; i < r->nelements(); i++) {
-	FromDevice* fd = static_cast<FromDevice*>(r->element(i)->cast("FromDevice"));
+    for (int i = 0; i < router->nelements(); i++) {
+	FromDevice* fd = static_cast<FromDevice*>(router->element(i)->cast("FromDevice"));
 	if (fd) {
 	    int md;
 	    bool known;
@@ -226,14 +229,17 @@ write_drops_message(Router *r)
 	}
     }
 
-    ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(r->find("to_dump"));
+    ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(router->find("to_dump"));
+    String head = "!counts out " + String(td->output_count()) + " kdrop ";
     assert(td);
     if (!all_known)
-	td->write_string("!drops ??\n");
+	td->write_string(head + "??\n");
     else if (less_than)
-	td->write_string("!drops <" + String(max_drops) + "\n");
+	td->write_string(head + "<" + String(max_drops) + "\n");
     else
-	td->write_string("!drops " + String(max_drops) + "\n");
+	td->write_string(head + String(max_drops) + "\n");
+
+    return 0;
 }
 
 extern void export_elements(Lexer *);
@@ -276,6 +282,7 @@ main(int argc, char *argv[])
     bool do_seed = true;
     bool promisc = true;
     Vector<String> files;
+    const char *record_drops = 0;
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -318,6 +325,10 @@ main(int argc, char *argv[])
 
 	  case PROMISCUOUS_OPT:
 	    promisc = !clp->negated;
+
+	  case WRITE_DROPS_OPT:
+	    record_drops = clp->arg;
+	    break;
 
 	  case MAP_PREFIX_OPT: {
 	      String arg(clp->arg);
@@ -521,11 +532,18 @@ particular purpose.\n");
     banner.pop_back();
     sa << cp_quote(banner.take_string()) << ");\n";
 
+    // record drops
+    if (record_drops)
+	sa << "PokeHandlers(" << record_drops << ", record_counts '', loop);\n";
+
     sa << "DriverManager(";
     if ((files.size() > 1 && action != INTERFACE_OPT) || collate) {
 	sa << "wait_stop " << (files.size() - 1) + (collate ? 1 : 0);
 	stop_driver_count = files.size() + (collate ? 1 : 0);
     }
+    // print `!counts' message if appropriate
+    if (action == INTERFACE_OPT)
+	sa << ", wait_stop, write record_counts ''";
     sa << ");\n";
 
     // output config if required
@@ -553,9 +571,10 @@ particular purpose.\n");
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
+    router->add_global_write_handler("record_counts", record_drops_hook, 0);
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
-
+    
     // output sample probability if appropriate
     if (do_sample)
 	write_sampling_prob_message(router, sample_elt);
@@ -564,10 +583,6 @@ particular purpose.\n");
     started = true;
     router->thread(0)->driver();
 
-    // print `!drops' message if appropriate
-    if (action == INTERFACE_OPT)
-	write_drops_message(router);
-    
     // print result of mapping addresses &/or prefixes
     if (map_prefixes.size()) {
 	// collect results
