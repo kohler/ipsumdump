@@ -60,6 +60,7 @@
 #define COND_SPLIT_ACT		512
 #define BRANCHING_ACT		513
 #define ALL_BRANCHING_ACT	514
+#define SIZE_COUNTS_ACT		515
 
 #define CLP_TWO_UINTS_TYPE	(Clp_MaxDefaultType + 1)
 
@@ -119,6 +120,7 @@ static Clp_Option options[] = {
   { "haar-wavelet-energy", 0, HAAR_WAVELET_ENERGY_ACT, 0, 0 },
   { "sizes", 0, SIZES_ACT, 0, 0 },
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
+  { "size-counts", 0, SIZE_COUNTS_ACT, 0, 0 },
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
@@ -177,6 +179,8 @@ Actions: (Results of final action sent to output.)\n\
       --sizes                All active aggregate sizes in arbitrary order.\n\
       --sorted-sizes         All active aggregate sizes in decreasing order\n\
                              by size.\n\
+      --size-counts          Counts of active aggregates with each size,\n\
+                             in return-separated size-count pairs.\n\
       --balance P            Print left-right balance at prefix level P.\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
@@ -251,6 +255,14 @@ add_action(int action, uint32_t extra = 0, uint32_t extra2 = 0)
     actions.push_back(action);
     extras.push_back(extra);
     extras2.push_back(extra2);
+}
+
+static int
+uint32_compar(const void *ap, const void *bp)
+{
+    uint32_t a = *(reinterpret_cast<const uint32_t *>(ap));
+    uint32_t b = *(reinterpret_cast<const uint32_t *>(bp));
+    return a - b;
 }
 
 static int
@@ -596,6 +608,26 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  break;
       }
 
+      case SIZE_COUNTS_ACT: {
+	  Vector<uint32_t> sizes;
+	  tree.nonzero_sizes(sizes);
+	  if (sizes.size())
+	      qsort(&sizes[0], sizes.size(), sizeof(uint32_t), uint32_compar);
+	  uint32_t count = 0;
+	  uint32_t size = 0;
+	  for (int i = 0; i < sizes.size(); i++) {
+	      if (sizes[i] != size && count) {
+		  fprintf(out, "%u %u\n", size, count);
+		  count = 0;
+	      }
+	      size = sizes[i];
+	      count++;
+	  }
+	  if (count)
+	      fprintf(out, "%u %u\n", size, count);
+	  break;
+      }
+
       case BALANCE_ACT:
 	tree.balance(action_extra, out);
 	break;
@@ -735,6 +767,7 @@ particular purpose.\n");
 	  case HAAR_WAVELET_ENERGY_ACT:
 	  case SIZES_ACT:
 	  case SORTED_SIZES_ACT:
+	  case SIZE_COUNTS_ACT:
 	  case ALL_NNZ_DISCRIM_ACT:
 	    add_action(opt);
 	    break;
