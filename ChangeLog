@@ -1,3 +1,29 @@
+2001-10-29 Monday 08:21  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.26): to 1.11
+
+2001-10-29 Monday 00:10  Eddie Kohler <kohler@aciri.org>
+
+	* CLICKFILES (1.8), ipsumdump.pod (1.14), src/Makefile.in (1.18),
+	src/fromipsumdump.cc (1.9), src/fromipsumdump.hh (1.6),
+	src/ipsumdump.cc (1.31), src/toipsumdump.cc (1.14),
+	src/toipsumdump.hh (1.18): add progress bar
+
+2001-10-17 Wednesday 22:26  Eddie Kohler <kohler@aciri.org>
+
+	* acclick.m4 (1.5), aclocal.m4 (1.5), src/Makefile.in (1.17),
+	src/bailerror.cc (1.2), src/bailerror.hh (1.2), src/ipsumdump.cc
+	(1.30): BailErrorHandler moved to main error.hh
+
+2001-10-11 Thursday 13:53  Eddie Kohler <kohler@aciri.org>
+
+	* CLICKFILES (1.7): nitlet
+
+2001-10-10 Wednesday 21:42  Eddie Kohler <kohler@aciri.org>
+
+	* ipsumdump.pod (1.13), src/ipsumdump.cc (1.29): update
+	documentation
+
 2001-10-10 Wednesday 15:38  Eddie Kohler <kohler@aciri.org>
 
 	* configure.in (1.25), ipsumdump.pod (1.12), src/fromipsumdump.cc
