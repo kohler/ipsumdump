@@ -32,19 +32,16 @@ all: @LIBCLICK_TARGET@ src Makefile
 
 $(libclick):
 	@cd $(libclick) && $(MAKE) all
-src:
+src: stamp-h
 	@cd src && $(MAKE) all-local
 
 install: stamp-h
-	@for d in @TARGETS@ tools; do (cd $$d && $(MAKE) install) || exit 1; done
-	@$(MAKE) install-local install-doc install-include
+	@cd src && $(MAKE) install
 install-libclick:
 	@cd $(libclick) && $(MAKE) install
 
 elemlist elemlists:
-	for dir in @TARGETS@; do \
-	  echo $$dir @element_groups@ | (cd $(top_srcdir); ./click-buildtool findelem -r "@provisions@") > $$dir/elements.conf; \
-	done
+	@cd src && $(MAKE) elemlist
 
 always:
 	@:
@@ -58,13 +55,13 @@ Makefile: config.status $(srcdir)/Makefile.in
 	  CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 config.h: stamp-h
 stamp-h: $(srcdir)/config.h.in config.status
-	cd $(top_builddir) \
-	  && CONFIG_FILES= CONFIG_HEADERS='include/click/config.h:config.h.in include/click/pathvars.h:pathvars.h.in' $(SHELL) ./config.status
+	cd $(top_builddir) && \
+	  CONFIG_FILES= CONFIG_HEADERS='config.h' $(SHELL) ./config.status
 	echo > stamp-h
 
 clean:
 	@-for d in $(libclick) src; do (cd $$d && $(MAKE) clean); done
-	-rm -f elementmap
+	-rm -f conftest.*
 distclean:
 	@-for d in $(libclick) src; do (cd $$d && $(MAKE) distclean); done
 	-rm -f config.h Makefile config.status
@@ -75,7 +72,17 @@ clicksrcdir = @clicksrcdir@
 clickbuilddir = @clickbuilddir@
 fetch-click:
 	cd $(clickbuilddir)/etc/libclick; $(MAKE) $(libclick).tar.gz
-	tar xzf $(clickbuilddir)/etc/libclick/$(libclick).tar.gz
+	cd $(top_srcdir); tar xzf $(clickbuilddir)/etc/libclick/$(libclick).tar.gz
+	@for fgroup in `cat $(top_srcdir)/CLICKFILES`; do \
+	  for f in `cd $(clicksrcdir) && eval echo $$fgroup`; do \
+	    echo $$f 1>&2; \
+	    g=`echo $$f | sed 's/.*\/\([^/]*\)$$/\1/'`; \
+	    echo $$g 1>&2; \
+	    rm -f $(top_srcdir)/src/$$g; \
+	    ln $(clicksrcdir)/$$f $(top_srcdir)/src/$$g 2>/dev/null \
+	    || cp -p $(clicksrcdir)/$$f $(top_srcdir)/src/$$g \
+	    || echo "Could not copy $(clicksrcdir)/$$f!" 1>&2; \
+	  done; done
 
 
 .PHONY: all always $(libclick) src elemlist elemlists \

@@ -36,7 +36,7 @@ else
     LIBCLICK_TARGET=
     CLICK_BUILDTOOL="${clickprefix}/bin/click-buildtool"
     CLICK_COMPILE="${clickprefix}/bin/click-compile"
-    CLICKINCLUDES="-I${clickprefix}/include"
+    CLICKINCLUDES=
     CLICKLIB="-L${clickprefix}/lib -lclick"
 fi
 

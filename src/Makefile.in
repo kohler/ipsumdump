@@ -36,7 +36,7 @@ INSTALL_DATA = @INSTALL@ -m 644
 mkinstalldirs = @top_srcdir@/mkinstalldirs
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .o .ko .uo .kii .uii
+.SUFFIXES: .c .cc .o .ii
 
 .c.o:
 	$(COMPILE) -c $< -o $@
@@ -56,9 +56,9 @@ CXXFLAGS = @CXXFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@ @CLICKLIB@ `$(CLICK_COMPILE) --libs`
 DEFS = @DEFS@ `$(CLICK_COMPILE) --defs`
-INCLUDES = @CLICKINCLUDES@ -I$(top_builddir) -I$(srcdir)
+INCLUDES = -I$(top_builddir) -I$(srcdir) @CLICKINCLUDES@
 
-CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CXXFLAGS)
+CXXCOMPILE = $(CXX) $(INCLUDES) $(DEFS) $(CPPFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(CXXFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
