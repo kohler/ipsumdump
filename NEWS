@@ -1,6 +1,6 @@
 Ipsumdump NEWS
 
-Version 1.25
+Version 1.25   21.Sep.2002
 
 * Add `--binary' option and support for binary IPSummaryDump files.
 

@@ -103,7 +103,7 @@ dist: $(distdir).tar.gz
 	-rm -rf $(distdir)
 $(distdir).tar.gz: always distdir
 	tar czf $(distdir).tar.gz $(distdir)
-distdir:
+distdir: $(srcdir)/configure
 	-rm -rf $(distdir)
 	mkdir $(distdir)
 	@-chmod 777 $(distdir)
