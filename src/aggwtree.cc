@@ -805,6 +805,61 @@ AggregateWTree::fake_by_branching_counts(int p, int depth,
 
 
 //
+// FAKING BASED ON DIRICHLET
+//
+
+void
+AggregateWTree::node_fake_dirichlet(WNode *n, WNode *stack[], int stack_pos,
+				    uint32_t randval)
+{
+    if (stack_pos == 32) {
+	assert(n->count == 0 && n->depth == 32 && !n->child(0));
+	n->count = n->full_count = 1;
+	_num_nonzero++;
+	for (int i = 0; i < stack_pos; i++)
+	    stack[i]->full_count++;
+	return;
+    }
+
+    if (!n->child(0)) {
+	assert((n->aggregate & ~prefix_to_mask(n->depth)) == 0);
+	(void) make_peer(n->aggregate | (1 << (31 - n->depth)), n);
+	if (!n->child(0))
+	    return;
+    }
+
+    WNode *a = n->child(0), *b = n->child(1);
+    assert(a->depth == b->depth);
+    uint32_t full_subtree = (1U << (32 - a->depth));
+    assert(a->full_count <= full_subtree && b->full_count <= full_subtree);
+    
+    int which;
+    if ((!a->full_count && !b->full_count) || b->full_count == full_subtree)
+	which = 0;
+    else if (a->full_count == full_subtree)
+	which = 1;
+    else if (b->full_count == 0)
+	which = ((randval % 5) >= 1);
+    else
+	which = ((randval % (a->full_count + b->full_count)) >= a->full_count);
+
+    WNode *c = (which ? b : a);
+    assert(c->full_count < full_subtree);
+    stack[stack_pos++] = n;
+    node_fake_dirichlet(c, stack, stack_pos, randval);
+}
+
+void
+AggregateWTree::fake_by_dirichlet(uint32_t nnz)
+{
+    assert(_num_nonzero == 0 && !_topheavy);
+    WNode *stack[32];
+    for (uint32_t i = 0; i < nnz; i++)
+	node_fake_dirichlet(_root, stack, 0, random());
+}
+
+
+//
 // READING AND WRITING
 //
 

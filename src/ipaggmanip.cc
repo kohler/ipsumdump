@@ -48,6 +48,7 @@
 #define CUT_LARGER_ADDR_AGG_ACT	412
 #define FAKE_BY_DISCRIM_ACT	413
 #define FAKE_BY_BRANCHING_ACT	414
+#define FAKE_BY_DIRICHLET_ACT	415
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -139,6 +140,7 @@ static Clp_Option options[] = {
   { "all-branching-counts", 0, ALL_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
   { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, Clp_ArgDouble, Clp_Optional },
   { "fake-by-branching-counts", 0, FAKE_BY_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
+  { "fake-by-dirichlet", 0, FAKE_BY_DIRICHLET_ACT, 0, 0 },
   { "correlation-size-container-addresses", 0, CORR_SIZE_AGG_ADDR_ACT, Clp_ArgUnsigned, 0 },
   
 };
@@ -221,6 +223,7 @@ Actions: (Results of final action sent to output.)\n\
       --fake-by-discriminating-prefixes[=TYP]   Create fake posterized data\n\
                              sharing this data's --all-discriminating-prefix.\n\
                              TYP is a randomness factor between 0 and 1.\n\
+      --fake-by-dirichlet\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of active addresses.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
@@ -573,6 +576,13 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      break;
 	  }
 
+	  case FAKE_BY_DIRICHLET_ACT: {
+	      AggregateWTree new_tree(AggregateWTree::COUNT_ADDRS_LEAF);
+	      new_tree.fake_by_dirichlet(tree.nnz());
+	      tree = new_tree;
+	      break;
+	  }
+
 	}
     }
 }
@@ -777,6 +787,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case CUT_LARGER_ADDR_AGG_ACT:
       case FAKE_BY_DISCRIM_ACT:
       case FAKE_BY_BRANCHING_ACT:
+      case FAKE_BY_DIRICHLET_ACT:
       case NO_ACT:
 	tree.write_file(out, output_binary, errh);
 	break;
@@ -861,6 +872,7 @@ particular purpose.\n");
 	  case SORTED_SIZES_ACT:
 	  case SIZE_COUNTS_ACT:
 	  case ALL_NNZ_DISCRIM_ACT:
+	  case FAKE_BY_DIRICHLET_ACT:
 	    add_action(opt);
 	    break;
 

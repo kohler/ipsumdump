@@ -41,6 +41,7 @@ class AggregateWTree { public:
 
     void fake_by_discriminating_prefix(int, const uint32_t[33][33], double randomness);
     void fake_by_branching_counts(int p, int depth, const Vector<uint32_t> &, bool=true);
+    void fake_by_dirichlet(uint32_t nnz);
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
@@ -88,6 +89,8 @@ class AggregateWTree { public:
     static inline uint32_t node_full_count(WNode *);
 
     void node_prefixize(WNode *, int, WNode *stack[], int);
+
+    void node_fake_dirichlet(WNode *, WNode *stack[], int, uint32_t);
     
     friend class AggregateTree;
     
