@@ -279,7 +279,7 @@ static void
 write_sampling_prob_message(Router *r, const String &sample_elt)
 {
     Element *sample = r->find(sample_elt);
-    const Router::Handler *h = Router::handler(sample, "sampling_prob");
+    const Handler *h = Router::handler(sample, "sampling_prob");
     if (sample && h) {
 	String s = h->call_read(sample);
 	ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(r->find("to_dump"));

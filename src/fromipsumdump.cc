@@ -70,7 +70,7 @@ FromIPSummaryDump::cast(const char *n)
 int
 FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
 {
-    bool stop = false, active = true, zero = false, checksum = false, multipacket = false;
+    bool stop = false, active = true, zero = true, checksum = false, multipacket = false;
     uint8_t default_proto = IP_PROTO_TCP;
     _sampling_prob = (1 << SAMPLING_SHIFT);
     String default_contents, default_flowid;
@@ -199,7 +199,7 @@ FromIPSummaryDump::bang_data(const String &line, ErrorHandler *errh)
 	    _contents.push_back(what);
 	    all_contents |= (1 << (what - W_NONE));
 	} else if (i > 0 || (word != "!data" && word != "!contents")) {
-	    _ff.warning(errh, "warning: unknown content type '%s'", word.c_str());
+	    _ff.warning(errh, "unknown content type '%s'", word.c_str());
 	    _contents.push_back(W_NONE);
 	}
     }

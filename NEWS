@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.39   10.Aug.2004
+
+* Support new-style ERF/DAG dumps.  Reported by Holger Dreger.
+
+
 Version 1.38   10.Jul.2004
 
 * Print information from partially-captured headers.  For example,
