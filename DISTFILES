@@ -11,5 +11,3 @@ ipsumdump.1
 src
 src/Makefile.in
 src/ipsumdump.cc
-src/fromnetflowsumdump.cc
-src/fromnetflowsumdump.hh
