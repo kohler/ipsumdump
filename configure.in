@@ -199,7 +199,7 @@ dnl
 dnl check for GNU make
 dnl
 
-if test ${GMAKE-NO} = NO; then
+if test "x${GMAKE-NO}" = xNO; then
   AC_CACHE_CHECK(for GNU make, ac_cv_gnu_make,
 [if /bin/sh -c 'make -f /dev/null -n --version | grep GNU' >/dev/null 2>&1; then
   ac_cv_gnu_make='make'
@@ -216,7 +216,7 @@ fi
 
 SUBMAKE=''
 AC_SUBST(SUBMAKE)
-if test $GMAKE != make; then
+if test "x$GMAKE" != xmake -a "x$GMAKE" != x; then
   AC_MSG_WARN(You must compile with GNU make ("'`'"$GMAKE').)
   SUBMAKE="MAKE = $ac_cv_gnu_make"
 fi

@@ -1,4 +1,7 @@
-elements/userlevel/fromdump.{cc,hh}
-elements/userlevel/todump.{cc,hh}
+elements/userlevel/fromdump.cc
+elements/userlevel/fromdump.hh
+elements/userlevel/todump.cc
+elements/userlevel/todump.hh
 elements/userlevel/fakepcap.h
-elements/userlevel/fromdevice.{cc,hh}
+elements/userlevel/fromdevice.cc
+elements/userlevel/fromdevice.hh
