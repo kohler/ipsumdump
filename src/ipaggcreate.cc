@@ -564,7 +564,6 @@ particular purpose.\n");
 	    if (!multipacket)
 		p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
 	}
-	progress_bar_ok = false;
 	
     } else if (action == READ_IPSUMDUMP_OPT
 	       || action == READ_TUDUMP_OPT) {

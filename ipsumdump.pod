@@ -348,10 +348,7 @@ F<libclick> directory contains all the relevant parts of Click, bundled
 into a library.
 
 If you're curious, try running `ipsumdump B<--config>' with some other
-options to see the Click configuration B<ipsumdump> would run. Only a
-handful of source files had to be written from scratch -- particularly,
-F<src/ipsumdump.cc>, F<src/toipsumdump.cc>, and F<src/toipsumdump.hh>. The
-rest came from Click itself.
+options to see the Click configuration B<ipsumdump> would run.
 
 This is, I think, a pleasant way to write a packet processor!
 
@@ -365,4 +362,5 @@ See http://www.pdos.lcs.mit.edu/click/ for more on Click.
 
 Eddie Kohler <kohler@aciri.org>, based on the Click modular router.
 
+Extensive feedback and suggestions from Vern Paxson <vern@aciri.org>.
 Anonymization algorithm from tcpdpriv(1) by Greg Minshall.

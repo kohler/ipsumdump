@@ -494,7 +494,6 @@ particular purpose.\n");
 	    if (!multipacket)
 		p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
 	}
-	quiet = true;		// does not support filepos handlers
 	
     } else if (action == READ_IPSUMDUMP_OPT) {
 	if (files.size() == 0)
