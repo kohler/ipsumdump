@@ -5,6 +5,7 @@
 #include <click/error.hh>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 void
 AggregateTree::initialize_root()
@@ -547,6 +548,58 @@ AggregateTree::nnz_discriminated_by_prefix(Vector<uint32_t> &out) const
 
 
 //
+// WAVELET STUFF
+//
+
+static double
+node_haar_energy(AggregateTree::Node *n, AggregateTree::Node **last,
+		 uint32_t prefix_mask)
+{
+    double amt = 0;
+
+    if (n->count) {
+	if (!*last)
+	    *last = n;
+	else if ((n->aggregate & prefix_mask) != ((*last)->aggregate & prefix_mask)) {
+	    amt = (*last)->count;
+	    amt *= amt;
+	    *last = n;
+	} else {
+	    amt = (double)(n->count) - (double)((*last)->count);
+	    amt *= amt;
+	    *last = 0;
+	}
+    }
+    
+
+    if (n->child[0]) {
+	amt += node_haar_energy(n->child[0], last, prefix_mask);
+	amt += node_haar_energy(n->child[1], last, prefix_mask);	
+    }
+
+    return amt;
+}
+
+void
+AggregateTree::haar_wavelet_energy_coeff(Vector<double> &out) const
+{
+    AggregateTree copy(*this);
+    out.assign(32, 0);
+    
+    for (int p = 31; p >= 0; p--) {
+	Node *last = 0;
+	double sum_sq_diff = node_haar_energy(copy._root, &last, prefix_to_mask(p));
+	if (last)
+	    sum_sq_diff += ((double)last->count) * last->count;
+	
+	out[p] = sum_sq_diff / 4294967296.0;
+	
+	copy.mask_data_to_prefix(p);
+    }
+}
+
+
+//
 // READING AND WRITING
 //
 
@@ -624,3 +677,7 @@ AggregateTree::write_file(FILE *f, bool binary, ErrorHandler *errh) const
     else
 	return 0;
 }
+
+// Vector instance
+#include <click/vector.cc>
+template class Vector<double>;

@@ -34,6 +34,8 @@ class AggregateTree { public:
     void nnz_in_left_prefixes(Vector<uint32_t> &) const;
     void nnz_discriminated_by_prefix(Vector<uint32_t> &) const;
 
+    void haar_wavelet_energy_coeff(Vector<double> &) const;
+
     void sum_and_sum_sq(double *, double *) const;
 
     int read_file(FILE *, ErrorHandler *);

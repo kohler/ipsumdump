@@ -36,6 +36,7 @@
 #define NNZ_DISCRIM_ACT		503
 #define AVG_VAR_ACT		504
 #define AVG_VAR_PREFIX_ACT	505
+#define HAAR_WAVELET_ENERGY_ACT	506
 
 static Clp_Option options[] = {
 
@@ -65,6 +66,7 @@ static Clp_Option options[] = {
   { "cull-hosts", 0, CULL_HOSTS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-hosts-by-packets", 0, CULL_HOSTS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+  { "haar-wavelet-energy", 0, HAAR_WAVELET_ENERGY_ACT, 0, 0 },
   
 };
 
@@ -116,6 +118,7 @@ Actions: (Results of final action sent to output.)\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
                              Average and variance of nonzero p-aggregates for\n\
                              all p.\n\
+      --haar-wavelet-energy  Haar wavelet energy coefficients.\n\
 \n\
 Other options:\n\
   -r, --read FILE            Read summary from FILE (default stdin).\n\
@@ -197,6 +200,7 @@ particular purpose.\n");
 	  case POSTERIZE_ACT:
 	  case AVG_VAR_ACT:
 	  case AVG_VAR_PREFIX_ACT:
+	  case HAAR_WAVELET_ENERGY_ACT:
 	    add_action(opt);
 	    break;
 
@@ -361,6 +365,15 @@ particular purpose.\n");
 	      }
 	      for (int i = 0; i <= 32; i++)
 		  fprintf(out, "%.20g %.20g\n", avg[i], var[i]);
+	      break;
+	  }
+
+	  case HAAR_WAVELET_ENERGY_ACT: {
+	      Vector<double> energy;
+	      tree.haar_wavelet_energy_coeff(energy);
+	      for (int i = 0; i < 32; i++)
+		  fprintf(out, "%.20g ", energy[i]);
+	      fprintf(out, "\n");
 	      break;
 	  }
 
