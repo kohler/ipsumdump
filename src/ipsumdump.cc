@@ -587,20 +587,21 @@ particular purpose.\n");
 	    p_errh->message("(`--interval' works best with `--collate' when you have\nmultiple data sources.)");
 	}
     }
-    
-    // possible elements to write tcpdump file
+
+    // possible tap for writing tcpdump file
     if (write_dump) {
-	sa << "  -> { input -> t :: Tee -> output;\n        t[1] -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
-	for (int i = 0; i < files.size(); i++)
-	    sa << " src" << i;
-	sa << ", SNAPLEN " << snaplen << ") }\n";
+	if (log_contents.size() == 0)
+	    sa << "  -> tap :: { input -> output };\n";
+	else
+	    sa << "  -> tap :: Tee;\ntap[1]\n";
     }
     
     // elements to dump summary log
     if (log_contents.size() == 0) {
-	if (!write_dump)
+	if (!write_dump) {
 	    errh->warning("no dump content options, so I'm not creating a summary dump");
-	sa << "  -> Discard;\n";
+	    sa << "  -> Discard;\n";
+	}
     } else {
 	if (!output)
 	    output = "-";
@@ -618,6 +619,14 @@ particular purpose.\n");
 	sa << cp_quote(banner.take_string()) << ");\n";
     }
 
+    // elements to write tcpdump file
+    if (write_dump) {
+	sa << "tap -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
+	for (int i = 0; i < files.size(); i++)
+	    sa << " src" << i;
+	sa << ", SNAPLEN " << snaplen << ");\n";
+    }
+    
     // record drops
     if (record_drops)
 	sa << "PokeHandlers(" << record_drops << ", record_counts '', loop);\n";
