@@ -701,7 +701,6 @@ particular purpose.\n");
     else
 	sa << "  -> AggregateIP(" << agg << ")\n";
 
-    "$Id: ipaggcreate.cc,v 1.19 2002-01-28 05:54:32 kohler Exp $";
     // elements to count aggregates
     sa << "  -> ac :: AggregateCounter(";
     sa << (aggctr_pb ? aggctr_pb : String("BYTES false")) << ", IP_BYTES true";
