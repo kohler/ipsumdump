@@ -599,7 +599,7 @@ particular purpose.\n");
     // progress bar
     if (progress_bar_ok && files.size() == 1) {
 	String banner = cp_quote(files[0].substring(0, 20));
-	sa << "ProgressBar(src0.filepos, src0.filesize, BANNER " << banner << ");\n";
+	sa << "ProgressBar(src0.filepos, src0.filesize, UPDATE .1, BANNER " << banner << ");\n";
     }
     
     // output config if required
