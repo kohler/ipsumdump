@@ -144,6 +144,8 @@ tcpdump file with B<--write-tcpdump>.
 
 Include packet timestamp in the dump. Example: C<1000212480.005813>. For
 NetFlow summary input, the packet timestamp equals the flow-end timestamp.
+The timestamp has nanosecond precision when input timestamps had nanosecond
+precision.
 
 =item B<--first-timestamp>, B<-T>
 
@@ -486,7 +488,9 @@ the 'C<!data>' line, as follows:
 
    Field Name     Length  Description
    timestamp         8    timestamp sec, usec
+   ntimestamp        8    timestamp sec, nsec
    first_timestamp   8    timestamp sec, usec
+   first_ntimestamp  8    timestamp sec, nsec
    ip_src            4    source IP address
    ip_dst            4    destination IP address
    sport             2    source port
@@ -563,7 +567,7 @@ See http://www.pdos.lcs.mit.edu/click/ for more on Click.
 
 =head1 AUTHOR
 
-Eddie Kohler <kohler@icir.org>, based on the Click modular router.
+Eddie Kohler <kohler@cs.ucla.edu>, based on the Click modular router.
 
 Extensive feedback and suggestions from Vern Paxson <vern@icir.org>.
 Anonymization algorithm from tcpdpriv(1) by Greg Minshall.

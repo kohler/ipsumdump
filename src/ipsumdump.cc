@@ -107,7 +107,7 @@ static const char* const field_names[] = {
 #define IPCAPLEN_OPT	1019
 #define LINK_OPT	1020
 
-#define CLP_TIMEVAL_TYPE	(Clp_FirstUserType)
+#define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
 
 static Clp_Option options[] = {
 
@@ -139,7 +139,7 @@ static Clp_Option options[] = {
     { "record-counts", 0, WRITE_DROPS_OPT, Clp_ArgString, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "bad-packets", 0, BAD_PACKETS_OPT, 0, Clp_Negate },
-    { "interval", 0, INTERVAL_OPT, CLP_TIMEVAL_TYPE, 0 },
+    { "interval", 0, INTERVAL_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "limit-packets", 0, LIMIT_PACKETS_OPT, Clp_ArgUnsigned, Clp_Negate },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
@@ -366,9 +366,9 @@ source_output_port(bool collate, int i)
 }
 
 static int
-parse_timeval(Clp_Parser *clp, const char *arg, int complain, void *)
+parse_timestamp(Clp_Parser *clp, const char *arg, int complain, void *)
 {
-    if (cp_timeval(arg, (struct timeval *)&clp->val))
+    if (cp_time(arg, (Timestamp *)&clp->val))
 	return 1;
     else if (complain)
 	return Clp_OptionError(clp, "'%O' expects a time value, not '%s'", arg);
@@ -382,7 +382,7 @@ main(int argc, char *argv[])
     Clp_Parser *clp = Clp_NewParser
 	(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
-    Clp_AddType(clp, CLP_TIMEVAL_TYPE, 0, parse_timeval, 0);
+    Clp_AddType(clp, CLP_TIMESTAMP_TYPE, 0, parse_timestamp, 0);
 
     click_static_initialize();
     ErrorHandler *errh = ErrorHandler::default_handler();
@@ -413,8 +413,7 @@ main(int argc, char *argv[])
     const char *record_drops = 0;
     unsigned limit_packets = 0;
     int mmap = -1;
-    struct timeval interval;
-    timerclear(&interval);
+    Timestamp interval;
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -535,7 +534,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case INTERVAL_OPT:
-	    interval = *reinterpret_cast<struct timeval *>(&clp->val);
+	    interval = *reinterpret_cast<Timestamp *>(&clp->val);
 	    break;
 
 	  case MMAP_OPT:
@@ -701,7 +700,7 @@ particular purpose.\n");
 	sa << "  -> IPFilter(0 " << filter << ")\n";
     if (anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
-    if (action != INTERFACE_OPT && timerisset(&interval)) {
+    if (action != INTERFACE_OPT && interval) {
 	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL stop cold)\n";
 	if (files.size() > 1 && !collate) {
 	    p_errh->warning("'--collate' missing");
@@ -771,9 +770,9 @@ particular purpose.\n");
     if (action != INTERFACE_OPT)
 	stop_driver_count += files.size() + (collate ? 1 : 0);
     else {
-	if (timerisset(&interval))
+	if (interval)
 	    sa << ", wait_for " << interval;
-	if (!timerisset(&interval) || collate)
+	if (!interval || collate)
 	    stop_driver_count++;
     }
     if (stop_driver_count > 1)

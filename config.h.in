@@ -1,8 +1,8 @@
 /* Process this file with configure to produce config.h. -*- mode: c -*- */
-#ifndef ACIRI_IPSUMDUMP_CONFIG_H
-#define ACIRI_IPSUMDUMP_CONFIG_H
+#ifndef IPSUMDUMP_CONFIG_H
+#define IPSUMDUMP_CONFIG_H
 
 /* Version number of package. */
 #define IPSUMDUMP_VERSION "0.1"
 
-#endif /* ACIRI_IPSUMDUMP_CONFIG_H */
+#endif /* IPSUMDUMP_CONFIG_H */

@@ -16,7 +16,7 @@ subdir = .
 conf_auxdir = @conf_auxdir@
 
 AUTOCONF = @AUTOCONF@
-ACLOCAL = cp $(top_srcdir)/$(libclick)/acclick.m4 $(top_srcdir)/aclocal.m4
+ACLOCAL = cp $(top_srcdir)/$(libclick)/aclocal.m4 $(top_srcdir)/aclocal.m4
 INSTALL = @INSTALL@
 INSTALL_IF_CHANGED = @INSTALL_IF_CHANGED@
 INSTALL_DATA = @INSTALL@ -m 644
@@ -82,7 +82,7 @@ distclean:
 clicksrcdir = @clicksrcdir@
 clickbuilddir = @clickbuilddir@
 fetch-click:
-	cd $(clickbuilddir)/etc/libclick; $(MAKE) $(libclick).tar.gz
+	cd $(clickbuilddir)/etc/libclick; $(MAKE) dist
 	cd $(top_srcdir); tar xzf $(clickbuilddir)/etc/libclick/$(libclick).tar.gz
 	@for fgroup in `cat $(top_srcdir)/CLICKFILES`; do \
 	  alteration=`echo "$$fgroup" | sed 's/[^:]*://'`; \
@@ -95,7 +95,7 @@ fetch-click:
 	    || echo "Could not copy $(clicksrcdir)/$$f!" 1>&2; \
 	    test "$$alteration" = "$$fgroup" || perl -pi -e "$$alteration" $(top_srcdir)/src/$$g; \
 	  done; done
-	cd $(top_srcdir); cp $(libclick)/acclick.m4 $(libclick)/aclocal.m4 .
+	cd $(top_srcdir); cp $(libclick)/aclocal.m4 .
 
 
 distdir = $(PACKAGE)-$(VERSION)

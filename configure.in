@@ -10,7 +10,7 @@ IPSUMDUMP_VERSION=1.43
 AC_DEFINE_UNQUOTED(IPSUMDUMP_VERSION, "$IPSUMDUMP_VERSION")
 AC_SUBST(IPSUMDUMP_VERSION)
 
-AC_DEFUN([AC_LIBCLICK_VERSION], [1.4.2])
+AC_DEFUN([AC_LIBCLICK_VERSION], [1.5pre])
 LIBCLICK_VERSION=AC_LIBCLICK_VERSION
 AC_SUBST(LIBCLICK_VERSION)
 AC_CONFIG_AUX_DIR([libclick-]AC_LIBCLICK_VERSION)
@@ -37,6 +37,7 @@ if test "$clickprefix" = NONE; then
     CLICKINCLUDES='-I$(top_builddir)/'"$LIBCLICK_TARGET"'/include -I$(top_srcdir)/'"$LIBCLICK_TARGET"'/include'
     CLICKLIB='$(top_builddir)/'"$LIBCLICK_TARGET"'/libsrc/libclick.a'
     CLICKLIBFILE=$CLICKLIB
+    export enable_nanotimestamp=yes
     AC_CONFIG_SUBDIRS(libclick-AC_LIBCLICK_VERSION)
 else
     LIBCLICK_TARGET=
@@ -53,12 +54,6 @@ AC_SUBST(CLICK_COMPILE)
 AC_SUBST(CLICKINCLUDES)
 AC_SUBST(CLICKLIB)
 AC_SUBST(CLICKLIBFILE)
-
-#if test ! -r $CLICKINCLUDES/click/pathvars.h ; then
-#  AC_MSG_ERROR([
-#Can't read \`$CLICKINCLUDES/click/pathvars.h'!
-#(Are you sure \`$CLICKINCLUDES' is a Click install directory?)])
-#fi
 
 
 dnl
