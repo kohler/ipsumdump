@@ -5,6 +5,7 @@
 #include <click/clp.h>
 #include <click/error.hh>
 #include <click/confparse.hh>
+#include <click/ipaddress.hh>
 
 #include <cstdio>
 #include <cstdlib>
@@ -50,6 +51,7 @@
 #define FAKE_BY_DISCRIM_ACT	413
 #define FAKE_BY_BRANCHING_ACT	414
 #define FAKE_BY_DIRICHLET_ACT	415
+#define REMAP_ACT		416
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -109,6 +111,7 @@ static Clp_Option options[] = {
   { "conditional-split-counts", 0, COND_SPLIT_ACT, Clp_ArgUnsigned, 0 },
   { "prefix", 'p', PREFIX_ACT, Clp_ArgUnsigned, 0 },
   { "posterize", 'P', POSTERIZE_ACT, 0, 0 },
+  { "remap", 0, REMAP_ACT, Clp_ArgString, 0 },
   { "average-and-variance", 0, AVG_VAR_ACT, 0, 0 },
   { "avg-var", 0, AVG_VAR_ACT, 0, 0 },
   { "average-and-variance-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
@@ -226,6 +229,7 @@ Actions: (Results of final action sent to output.)\n\
                              sharing this data's --all-discriminating-prefix.\n\
                              TYP is a randomness factor between 0 and 1.\n\
       --fake-by-dirichlet\n\
+      --remap\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of active addresses.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
@@ -265,19 +269,21 @@ write_vector(const Vector<uint32_t> &v, FILE *f)
 static Vector<int> actions;
 static Vector<uint32_t> extras;
 static Vector<uint32_t> extras2;
+static Vector<String> str_extras;
 static FILE *out;
 static AggregateTree::WriteFormat output_format = AggregateTree::WR_BINARY;
 static Vector<String> files;
 static int files_pos = 0;
 
 static void
-add_action(int action, uint32_t extra = 0, uint32_t extra2 = 0)
+add_action(int action, uint32_t extra = 0, uint32_t extra2 = 0, const String &extra_s = String())
 {
     if (actions.size() && actions.back() >= FIRST_END_ACT)
 	die_usage("can't add another action after that");
     actions.push_back(action);
     extras.push_back(extra);
     extras2.push_back(extra2);
+    str_extras.push_back(extra_s);
 }
 
 static int
@@ -586,6 +592,65 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      break;
 	  }
 
+	  case REMAP_ACT: {
+	      // parse the string
+	      const char *s = str_extras[j].data();
+	      const char *ends = s + str_extras[j].length();
+	      Vector<int> x1, x2, xp;
+	      int max_p = 0;
+	      while (s < ends) {
+		  int v1 = 0, p1 = 0;
+		  while (s < ends && (*s == '0' || *s == '1'))
+		      v1 = (v1 << 1) + (*s - '0'), p1++, s++;
+		  if (s >= ends || (*s != '=' && *s != '>' && *s != ':') || p1 == 0 || p1 > 31)
+		      errh->fatal("syntax error 1 in --remap argument (%c)", *s);
+		  s++;
+		  
+		  int v2 = 0, p2 = 0;
+		  while (s < ends && (*s == '0' || *s == '1'))
+		      v2 = (v2 << 1) + (*s - '0'), p2++, s++;
+		  if ((s < ends && *s != ',') || p2 != p1)
+		      errh->fatal("syntax error 2 in --remap argument (%c)", *s);
+		  s++;
+		  
+		  x1.push_back(v1);
+		  x2.push_back(v2);
+		  xp.push_back(p1);
+		  if (p1 > max_p)
+		      max_p = p1;
+	      }
+
+	      // change into a map with a single prefix
+	      Vector<uint32_t> map(1 << max_p, 0);
+	      for (uint32_t i = 0; i < (1 << max_p); i++)
+		  map[i] = i;
+	      Vector<uint32_t> map_used(1 << max_p, 0);
+	      for (int i = 0; i < x1.size(); i++) {
+		  int pdiff = max_p - xp[i];
+		  for (uint32_t k = 0; k < (1 << pdiff); k++) {
+		      uint32_t v1 = (x1[i] << pdiff) | k;
+		      uint32_t v2 = (x2[i] << pdiff) | k;
+		      if (map_used[v1])
+			  errh->error("prefix `%s/%d' mapped twice in --remap", IPAddress(htonl(v1 << (32 - max_p))).s().cc(), max_p);
+		      map_used[v1]++;
+		      map[v1] = v2;
+		  }
+	      }
+
+	      // check double-mapping
+	      map_used.assign(1 << max_p, 0);
+	      for (uint32_t i = 0; i < (1 << max_p); i++) {
+		  if (map_used[i] == 1)
+		      errh->warning("prefix `%s/%d' repeatedly mapped to in --remap", IPAddress(htonl(i << (32 - max_p))).s().cc(), max_p);
+		  map_used[i]++;
+	      }
+
+	      // actually map
+	      AggregateTree new_tree;
+	      tree.make_mapped(max_p, map, new_tree);
+	      tree = new_tree;
+	  }
+	    
 	}
     }
 }
@@ -792,6 +857,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case FAKE_BY_DISCRIM_ACT:
       case FAKE_BY_BRANCHING_ACT:
       case FAKE_BY_DIRICHLET_ACT:
+      case REMAP_ACT:
       case NO_ACT:
 	tree.write_file(out, output_format, errh);
 	break;
@@ -950,6 +1016,10 @@ particular purpose.\n");
 		die_usage("`" + optname + "' arg should be between 0 and 1");
 	    add_action(opt, (uint32_t) (clp->val.d * DOUBLE_FACTOR));
 	    break;
+
+	  case REMAP_ACT:
+	    add_action(opt, 0, 0, clp->arg);
+	    break;
 	    
 	  case Clp_NotOption:
 	    files.push_back(clp->arg);
@@ -1103,4 +1173,3 @@ particular purpose.\n");
     
     exit(0);
 }
-

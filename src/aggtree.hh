@@ -34,6 +34,8 @@ class AggregateTree { public:
     void cut_larger_aggregates(int, uint32_t);
     void cut_smaller_host_aggregates(int, uint32_t);
     void cut_larger_host_aggregates(int, uint32_t);
+
+    void make_mapped(int prefix_len, const Vector<uint32_t> &map, AggregateTree &) const;
     
     void num_active_prefixes(Vector<uint32_t> &) const;
     void num_active_left_prefixes(Vector<uint32_t> &) const;

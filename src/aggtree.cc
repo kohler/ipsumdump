@@ -662,6 +662,38 @@ AggregateTree::num_active_left_prefixes(Vector<uint32_t> &out) const
 
 
 //
+// MAPPING
+//
+
+static void
+node_make_mapped(const AggregateTree::Node *n, AggregateTree &new_tree,
+		 int shift, uint32_t neg_mask, const uint32_t *map)
+{
+    if (n->count) {
+	uint32_t new_aggregate = (n->aggregate & neg_mask)
+	    | (map[n->aggregate >> shift] << shift);
+	new_tree.add(new_aggregate, n->count);
+    }
+    if (n->child[0]) {
+	node_make_mapped(n->child[0], new_tree, shift, neg_mask, map);
+	node_make_mapped(n->child[1], new_tree, shift, neg_mask, map);
+    }
+}
+
+void
+AggregateTree::make_mapped(int prefix_len, const Vector<uint32_t> &map, AggregateTree &new_tree) const
+{
+    assert(prefix_len >= 0 && prefix_len <= 32);
+    if (prefix_len == 0)
+	new_tree += *this;
+    else {
+	assert(map.size() == (1 << prefix_len));
+	node_make_mapped(_root, new_tree, 32 - prefix_len, 0xFFFFFFFFU >> prefix_len, &map[0]);
+    }
+}
+
+
+//
 // LEFT/RIGHT BALANCE
 //
 
