@@ -35,7 +35,7 @@ class AggregateWTree { public:
 
     typedef AggregateTree::Node Node;
     struct WNode : public Node {
-	uint32_t child_count[2];
+	uint32_t full_count;
     };
 
   public:
@@ -61,10 +61,11 @@ class AggregateWTree { public:
     void delete_subtree(WNode *, WNode *stack[], int);
     void adjust_num_nonzero(int32_t, WNode *stack[], int);
 
-    uint32_t node_ok(WNode *, int, ErrorHandler *) const;
+    uint32_t node_ok(WNode *, int, uint32_t *, ErrorHandler *) const;
     WNode *pick_random_nonzero_node(WNode *stack[], int *) const;
 
-    uint32_t node_count(WNode *) const;
+    uint32_t node_local_count(WNode *) const;
+    uint32_t node_full_count(WNode *) const;
 
     void node_prefixize(WNode *, int, WNode *stack[], int);
     
@@ -91,12 +92,15 @@ AggregateWTree::free_node(WNode *n)
 }
 
 inline uint32_t
-AggregateWTree::node_count(WNode *n) const
+AggregateWTree::node_local_count(WNode *n) const
 {
-    if (_count_type == COUNT_HOSTS)
-	return n->child_count[0] + n->child_count[1] + (n->count ? 1 : 0);
-    else
-	return n->child_count[0] + n->child_count[1] + n->count;
+    return (_count_type == COUNT_HOSTS ? n->count != 0 : n->count);
+}
+
+inline uint32_t
+AggregateWTree::node_full_count(WNode *n) const
+{
+    return (n ? n->full_count : 0);
 }
 
 #endif

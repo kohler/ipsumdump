@@ -66,6 +66,12 @@ class AggregateTree { public:
 	Node *child[2];
     };
 
+  protected:
+    
+    Node *new_node();
+    void free_node(Node *);
+    void initialize_root();
+    
   private:
     
     Node *_root;
@@ -74,10 +80,7 @@ class AggregateTree { public:
 
     uint32_t _num_nonzero;
 
-    Node *new_node();
     Node *new_node_block();
-    void free_node(Node *);
-    void initialize_root();
     void copy_nodes(const Node *, uint32_t = 0xFFFFFFFFU);
     void kill_all_nodes();
 

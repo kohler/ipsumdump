@@ -433,6 +433,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  case CULL_HOSTS_ACT: {
 	      AggregateWTree wtree(tree, false);
 	      wtree.cull_hosts(action_extra);
+	      //wtree.ok();
 	      tree = wtree;
 	      break;
 	  }
@@ -440,6 +441,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  case CULL_HOSTS_BY_PACKETS_ACT: {
 	      AggregateWTree wtree(tree, true);
 	      wtree.cull_hosts_by_packets(action_extra);
+	      //wtree.ok();
 	      tree = wtree;
 	      break;
 	  }
@@ -447,6 +449,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  case CULL_PACKETS_ACT: {
 	      AggregateWTree wtree(tree, true);
 	      wtree.cull_packets(action_extra);
+	      //wtree.ok();
 	      tree = wtree;
 	      break;
 	  }
