@@ -1,9 +1,9 @@
 Makefile.in
 README
+acclick.m4
 configure
 configure.in
 config.h.in
-mkinstalldirs
 
 src
 src/Makefile.in

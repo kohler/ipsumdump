@@ -22,9 +22,12 @@
 #include <click/error.hh>
 #include <click/click_ip.h>
 #include <click/click_udp.h>
+#include <click/llrpc.h>
+#ifdef CLICK_USERLEVEL
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
+#endif
 
 AnonymizeIPAddr::AnonymizeIPAddr()
     : Element(1, 0), _root(0), _free(0)
@@ -65,18 +68,46 @@ AnonymizeIPAddr::notify_noutputs(int n)
     set_noutputs(n <= 1 ? 1 : 2);
 }
 
+static void
+install_seed()
+{
+    static const int bufsiz = 16;
+    uint32_t buf[bufsiz];
+    int pos = 0;
+    click_gettimeofday((struct timeval *)(buf + pos));
+    pos += sizeof(struct timeval) / 4;
+#ifdef CLICK_USERLEVEL
+    FILE *f = fopen("/dev/random", "rb");
+    if (f) {
+	fread(buf + pos, sizeof(uint32_t), bufsiz - pos, f);
+	fclose(f);
+	pos = bufsiz;
+    } else {
+	buf[pos++] = getpid();
+	buf[pos++] = getuid();
+    }
+#endif
+
+    uint32_t result = 0;
+    for (int i = 0; i < pos; i++) {
+	result ^= buf[i];
+	result = (result << 1) | (result >> 31);
+    }
+    srandom(result);
+}
+
 int
 AnonymizeIPAddr::configure(const Vector<String> &conf, ErrorHandler *errh)
 {
     _preserve_class = 0;
     String preserve_8;
-    _checksum = true;
+    bool seed = true;
     
     if (cp_va_parse(conf, this, errh,
 		    cpKeywords,
 		    "CLASS", cpInteger, "preserve class bits?", &_preserve_class,
 		    "PRESERVE_8", cpArgument, "list of /8s to preserve", &preserve_8,
-		    "CHECKSUM", cpBool, "update checksum?", &_checksum,
+		    "SEED", cpBool, "seed random number generator?", &seed,
 		    0) < 0)
 	return -1;
 
@@ -97,6 +128,10 @@ AnonymizeIPAddr::configure(const Vector<String> &conf, ErrorHandler *errh)
 	    else
 		return errh->error("bad PRESERVE_8 argument `%s', should be integer between 0 and 255", words[i].cc());
     }
+
+    // install seed if required
+    if (seed)
+	install_seed();
     
     return 0;
 }
@@ -299,5 +334,30 @@ AnonymizeIPAddr::simple_action(Packet *p)
 	return 0;
 }
 
-ELEMENT_REQUIRES(userlevel)
+int
+AnonymizeIPAddr::llrpc(unsigned command, void *data)
+{
+    if (command == CLICK_LLRPC_MAP_IPADDRESS) {
+	uint32_t d;
+	if (CLICK_LLRPC_GET_DATA(&d, data, sizeof(d)) < 0)
+	    return -EINVAL;
+	d = anonymize_addr(d);
+	return CLICK_LLRPC_PUT_DATA(data, &d, sizeof(d));
+
+    } else
+	return Element::llrpc(command, data);
+}
+
+int
+AnonymizeIPAddr::local_llrpc(unsigned command, void *data)
+{
+    if (command == CLICK_LLRPC_MAP_IPADDRESS) {
+	uint32_t *dp = (uint32_t *)data;
+	*dp = anonymize_addr(*dp);
+	return 0;
+
+    } else
+	return Element::local_llrpc(command, data);
+}
+
 EXPORT_ELEMENT(AnonymizeIPAddr)

@@ -68,6 +68,13 @@ to each other. Here is the complete list:
       64-127     ...      64-127
      128-255     ...     128-255
 
+=item SEED
+
+Boolean. By default, AnonymizeIPAddr seeds the random number generator with
+with an approximation of random data, thus protecting the anonymized results
+from random-number guess attacks. Say `SEED false' if you do not want it to
+do this. Default is true.
+
 =back
 
 =n
@@ -84,10 +91,10 @@ option.  I wouldn't expect this to be the case for most organizations."
 tcpdpriv(1) */
 
 class AnonymizeIPAddr : public Element { public:
-  
+
     AnonymizeIPAddr();
     ~AnonymizeIPAddr();
-  
+
     const char *class_name() const	{ return "AnonymizeIPAddr"; }
     const char *processing() const	{ return AGNOSTIC; }
     AnonymizeIPAddr *clone() const	{ return new AnonymizeIPAddr; }
@@ -98,6 +105,9 @@ class AnonymizeIPAddr : public Element { public:
     void uninitialize();
 
     Packet *simple_action(Packet *);
+
+    int llrpc(unsigned, void *);
+    int local_llrpc(unsigned, void *);
     
   private:
 
@@ -111,7 +121,6 @@ class AnonymizeIPAddr : public Element { public:
     Node *_free;
     Vector<Node *> _blocks;
     Node _special_nodes[2];
-    bool _checksum;
 
     int _preserve_class;
     Vector<uint32_t> _preserve_8;

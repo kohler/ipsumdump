@@ -7,6 +7,7 @@
 #include <click/confparse.hh>
 #include <click/router.hh>
 #include <click/lexer.hh>
+#include <click/llrpc.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +26,7 @@
 #define FILTER_OPT	307
 #define VERBOSE_OPT	308
 #define ANONYMIZE_OPT	309
+#define MAP_PREFIX_OPT	310
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -48,6 +50,8 @@ static Clp_Option options[] = {
   { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
   { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
   { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
+  { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
+  { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
   
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "config", 0, CONFIG_OPT, 0, 0 },
@@ -106,6 +110,8 @@ Other options:\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
+      --map-addr ADDRS       When done, print to stdout the anonymized IP\n\
+                             addresses and/or prefixes corresponding to ADDRS.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
@@ -143,6 +149,7 @@ main(int argc, char *argv[])
     String write_dump;
     String output;
     String filter;
+    Vector<uint32_t> map_prefixes;
     bool config = false;
     bool verbose = false;
     bool anonymize = false;
@@ -185,7 +192,28 @@ main(int argc, char *argv[])
 	  case ANONYMIZE_OPT:
 	    anonymize = !clp->negated;
 	    break;
-	    
+
+	  case MAP_PREFIX_OPT: {
+	      String arg(clp->arg);
+	      char *data = arg.mutable_data();
+	      int len = arg.length();
+	      for (int i = 0; i < len; i++)
+		  if (data[i] == ',')
+		      data[i] = ' ';
+	      
+	      Vector<String> v;
+	      cp_spacevec(arg, v);
+
+	      for (int i = 0; i < v.size(); i++) {
+		  IPAddress addr, mask;
+		  if (!cp_ip_prefix(v[i], &addr, &mask, true))
+		      die_usage("bad argument to `--map-prefix'");
+		  map_prefixes.push_back(addr.addr());
+		  map_prefixes.push_back(mask.addr());
+	      }
+	      break;
+	  }
+	  
 	  case CONFIG_OPT:
 	    config = true;
 	    break;
@@ -252,7 +280,7 @@ particular purpose.\n");
 
     // possible elements to anonymize packets
     if (anonymize)
-	sa << "  -> AnonymizeIPAddr(CLASS 4)\n";
+	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4)\n";
     
     // possible elements to write tcpdump file
     if (write_dump)
@@ -304,6 +332,28 @@ particular purpose.\n");
     started = true;
     router->thread(0)->driver();
 
+    // print result of mapping addresses &/or prefixes
+    if (anonymize) {
+	Element *anon = router->find("anon");
+	assert(anon);
+	for (int i = 0; i < map_prefixes.size(); i += 2) {
+	    IPAddress addr(map_prefixes[i]), mask(map_prefixes[i+1]);
+	    anon->local_llrpc(CLICK_LLRPC_MAP_IPADDRESS, addr.data());
+	    addr &= mask;
+	    if (mask == 0xFFFFFFFFU)
+		printf("%s\n", addr.unparse().cc());
+	    else
+		printf("%s\n", addr.unparse_with_mask(mask).cc());
+	}
+    } else
+	for (int i = 0; i < map_prefixes.size(); i += 2) {
+	    IPAddress addr(map_prefixes[i]), mask(map_prefixes[i+1]);
+	    if (mask == 0xFFFFFFFFU)
+		printf("%s\n", addr.unparse().cc());
+	    else
+		printf("%s\n", addr.unparse_with_mask(mask).cc());
+	}
+    
     // exit
     delete router;
     exit(0);

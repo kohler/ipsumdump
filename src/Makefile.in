@@ -2,12 +2,11 @@ SHELL = @SHELL@
 @SUBMAKE@
 
 
-top_builddir := ..
-subdir := src
-
-srcdir := @srcdir@
-top_srcdir := @top_srcdir@
-auxprogdir := @auxprogdir@
+top_srcdir = @top_srcdir@
+srcdir = @srcdir@
+top_builddir = ..
+subdir = src
+conf_auxdir = @conf_auxdir@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -33,7 +32,7 @@ AR = @AR@
 RANLIB = @RANLIB@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL@ -m 644
-mkinstalldirs = $(auxprogdir)/mkinstalldirs
+mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .o .ii

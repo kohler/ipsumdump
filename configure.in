@@ -6,16 +6,16 @@ AC_INIT(config.h.in)
 AC_CONFIG_HEADER(config.h)
 AC_SUBST(ac_configure_args)
 
+IPSUMDUMP_VERSION=0.3
+AC_DEFINE_UNQUOTED(IPSUMDUMP_VERSION, "$IPSUMDUMP_VERSION")
+AC_SUBST(IPSUMDUMP_VERSION)
+
 LIBCLICK_VERSION=1.2.1a
 AC_SUBST(LIBCLICK_VERSION)
 AC_CONFIG_AUX_DIR(libclick-$LIBCLICK_VERSION)
 
-auxprogdir="\$(top_srcdir)/libclick-$LIBCLICK_VERSION"
-AC_SUBST(auxprogdir)
+CLICK_INIT('$(top_srcdir)/libclick-'"$LIBCLICK_VERSION")
 
-IPSUMDUMP_VERSION=0.2
-AC_DEFINE_UNQUOTED(IPSUMDUMP_VERSION, "$IPSUMDUMP_VERSION")
-AC_SUBST(IPSUMDUMP_VERSION)
 
 dnl
 dnl locate Click install directory
@@ -86,9 +86,9 @@ dnl The rest of this file is based on Click `configure.in'. You shouldn't
 dnl generally need to change it, although you may want to add to it.
 dnl
 
-AC_PROG_CC
+CLICK_PROG_CC
 AC_PROG_CPP
-AC_PROG_CXX
+CLICK_PROG_CXX
 AC_PROG_CXXCPP
 
 AC_PATH_PROG(AR, ar)
@@ -96,137 +96,18 @@ AC_PATH_PROG(LD, ld)
 AC_PATH_PROG(RANLIB, ranlib, :)
 AC_PATH_PROG(STRIP, strip, :)
 
-AC_PROG_INSTALL
+CLICK_PROG_INSTALL
+CLICK_PROG_AUTOCONF
+CLICK_PROG_GMAKE
 
-
-dnl
-dnl check for install -C
-dnl
-
-AC_MSG_CHECKING(whether install accepts -C)
-echo X > conftest.1
-if $INSTALL -C conftest.1 conftest.2 >/dev/null 2>&1; then
-  INSTALL_IF_CHANGED="$INSTALL -C"
-  AC_MSG_RESULT(yes)
-else
-  INSTALL_IF_CHANGED="$INSTALL"
-  AC_MSG_RESULT(no)
-fi
-AC_SUBST(INSTALL_IF_CHANGED)
-
-
-dnl
-dnl check suitability of the C++ compiler
-dnl
-
-if test -z "$GXX"; then
-  AC_MSG_WARN(Your C++ compiler ($CXX) is not a GNU C++ compiler!
-Either set the "'`'"CXX' environment variable to tell me where
-[a GNU C++ compiler is, or compile at your own risk.
-(This code uses a few GCC extensions and GCC-specific compiler options,
-and Linux header files are GCC-specific.)])
-fi
-
-AC_LANG_CPLUSPLUS
-AC_CACHE_CHECK(for recent version of C++, ac_cv_good_cxx,
-  AC_TRY_COMPILE([], [#ifdef __GNUG__
-#if (__GNUC__ == 2) && (__GNUC_MINOR__ <= 7)
-#error "fuckers! fuckers!"
-#endif
-#endif
-return 0;], ac_cv_good_cxx=yes, ac_cv_good_cxx=no))
-if test "$ac_cv_good_cxx" != yes; then
-  AC_MSG_ERROR(Your GNU C++ compiler ($CXX) is too old!
-[Either download a newer compiler, or tell me to use a different compiler
-by setting the "'`'"CXX' environment variable and rerunning me.])
-fi
-
-AC_CACHE_CHECK(for working new.h, ac_cv_good_new_h,
-  AC_TRY_LINK([#include <new.h>], [
-  int a;
-  int *b = new(&a) int;
-  return 0;
-], ac_cv_good_new_h=yes, ac_cv_good_new_h=no))
-if test "$ac_cv_good_new_h" = yes; then
-  AC_DEFINE(HAVE_NEW_H)
-fi
-
-CPPFLAGS="$CPPFLAGS"
-if test -n "$GCC"; then
-  CC="$CC -Wall"
-fi
-if test -n "$GXX"; then
-  CXX="$CXX -Wp,-w -W -Wall"; KERNEL_CXX="$CXX -w -Wall"
-else
-  KERNEL_CXX="$CXX"
-fi
-if test -n "$GXX"; then
-  CXXFLAGS="-fno-exceptions -fno-rtti -fvtable-thunks $CXXFLAGS"
-fi
-AC_SUBST(KERNEL_CXX)
-
-
-dnl
-dnl find autoconf
-dnl
-
-AC_MSG_CHECKING(for working autoconf)
-AUTOCONF=${AUTOCONF-autoconf}
-if ($AUTOCONF --version) < /dev/null > conftest.out 2>&1; then
-  if test `head -1 conftest.out | sed 's/.*2\.\([[0-9]]*\).*/\1/'` -ge 13 2>/dev/null; then
-    AC_MSG_RESULT(found)
-  else
-    AUTOCONF='$(auxprogdir)/missing autoconf'
-    AC_MSG_RESULT(old)
-  fi
-else
-  AUTOCONF='$(auxprogdir)/missing autoconf'
-  AC_MSG_RESULT(missing)
-fi
-
-AC_SUBST(AUTOCONF)
-
-
-dnl
-dnl make FLAGS variables without `-g'
-dnl
-
-CFLAGS_NDEBUG=`echo "$CFLAGS" | sed 's/-g//'`
-CXXFLAGS_NDEBUG=`echo "$CXXFLAGS" | sed 's/-g//'`
-AC_SUBST(CFLAGS_NDEBUG)
-AC_SUBST(CXXFLAGS_NDEBUG)
-
-
-dnl
-dnl check for GNU make
-dnl
-
-if test "x${GMAKE-NO}" = xNO; then
-  AC_CACHE_CHECK(for GNU make, ac_cv_gnu_make,
-[if /bin/sh -c 'make -f /dev/null -n --version | grep GNU' >/dev/null 2>&1; then
-  ac_cv_gnu_make='make'
-elif /bin/sh -c 'gmake -f /dev/null -n --version | grep GNU' >/dev/null 2>&1; then
-  ac_cv_gnu_make='gmake'
-else
-  AC_MSG_RESULT(not found)
-  AC_MSG_WARN([can't find GNU make, not tracking dependencies])
-  ac_cv_gnu_make=''
-fi])
-  GMAKE="$ac_cv_gnu_make"
-fi
-
-SUBMAKE=''
-AC_SUBST(SUBMAKE)
-if test "x$GMAKE" != xmake -a "x$GMAKE" != x; then
-  SUBMAKE="MAKE = $ac_cv_gnu_make"
+if test -z "$GMAKE"; then
+    AC_MSG_WARN([can't find GNU make, not tracking dependencies])
 fi
 
 
 dnl
 dnl Output
 dnl
-
-/bin/rm -rf conftest*
 
 AC_OUTPUT_COMMANDS(for ac_file in $CONFIG_FILES; do
   test -z "$GMAKE" && echo $ac_file | grep Makefile >/dev/null && $ac_given_srcdir/libclick-$LIBCLICK_VERSION/missing gmake $ac_file
