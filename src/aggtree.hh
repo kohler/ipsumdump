@@ -32,6 +32,8 @@ class AggregateTree { public:
     void cut_larger(uint32_t);
     void cut_smaller_aggregates(int, uint32_t);
     void cut_larger_aggregates(int, uint32_t);
+    void cut_smaller_host_aggregates(int, uint32_t);
+    void cut_larger_host_aggregates(int, uint32_t);
     
     void nnz_in_prefixes(Vector<uint32_t> &) const;
     void nnz_in_left_prefixes(Vector<uint32_t> &) const;
@@ -84,8 +86,7 @@ class AggregateTree { public:
     void node_sample(Node *, uint32_t);
     void node_cut_smaller(Node *, uint32_t);
     void node_cut_larger(Node *, uint32_t);
-    void node_cut_smaller_aggregates(Node *, uint32_t, uint32_t &, uint32_t &, uint32_t);
-    void node_cut_larger_aggregates(Node *, uint32_t, uint32_t &, uint32_t &, uint32_t);
+    void node_cut_aggregates(Node *, uint32_t, uint32_t &, uint32_t &, uint32_t, bool smaller, bool hosts);
 
     static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);

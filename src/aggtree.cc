@@ -520,19 +520,20 @@ AggregateTree::cut_larger(uint32_t largest)
 
 
 void
-AggregateTree::node_cut_smaller_aggregates(Node *n, uint32_t mask, uint32_t &value, uint32_t &count, uint32_t smallest)
+AggregateTree::node_cut_aggregates(Node *n, uint32_t mask, uint32_t &value, uint32_t &count, uint32_t size_boundary, bool smallerp, bool hostsp)
 {
     if ((n->aggregate & mask) != value) {
 	assert((n->aggregate & mask) > value);
-	if (count && count < smallest)
+	bool this_smallerp = (count < size_boundary);
+	if (count && (smallerp == this_smallerp))
 	    zero_masked_aggregate(mask, value);
 	count = 0;
 	value = (n->aggregate & mask);
     }
-    count += n->count;
+    count += (hostsp ? n->count != 0 : n->count);
     if (n->child[0]) {
-	node_cut_smaller_aggregates(n->child[0], mask, value, count, smallest);
-	node_cut_smaller_aggregates(n->child[1], mask, value, count, smallest);
+	node_cut_aggregates(n->child[0], mask, value, count, size_boundary, smallerp, hostsp);
+	node_cut_aggregates(n->child[1], mask, value, count, size_boundary, smallerp, hostsp);
     }
 }
 
@@ -541,27 +542,9 @@ AggregateTree::cut_smaller_aggregates(int p, uint32_t smallest)
 {
     uint32_t value = 0, count = 0;
     uint32_t mask = prefix_to_mask(p);
-    node_cut_smaller_aggregates(_root, mask, value, count, smallest);
+    node_cut_aggregates(_root, mask, value, count, smallest, true, false);
     if (count && count < smallest)
 	zero_masked_aggregate(mask, value);
-}
-
-
-void
-AggregateTree::node_cut_larger_aggregates(Node *n, uint32_t mask, uint32_t &value, uint32_t &count, uint32_t largest)
-{
-    if ((n->aggregate & mask) != value) {
-	assert((n->aggregate & mask) > value);
-	if (count && count >= largest)
-	    zero_masked_aggregate(mask, value);
-	count = 0;
-	value = (n->aggregate & mask);
-    }
-    count += n->count;
-    if (n->child[0]) {
-	node_cut_larger_aggregates(n->child[0], mask, value, count, largest);
-	node_cut_larger_aggregates(n->child[1], mask, value, count, largest);
-    }
 }
 
 void
@@ -569,7 +552,27 @@ AggregateTree::cut_larger_aggregates(int p, uint32_t largest)
 {
     uint32_t value = 0, count = 0;
     uint32_t mask = prefix_to_mask(p);
-    node_cut_larger_aggregates(_root, mask, value, count, largest);
+    node_cut_aggregates(_root, mask, value, count, largest, false, false);
+    if (count && count >= largest)
+	zero_masked_aggregate(mask, value);
+}
+
+void
+AggregateTree::cut_smaller_host_aggregates(int p, uint32_t smallest)
+{
+    uint32_t value = 0, count = 0;
+    uint32_t mask = prefix_to_mask(p);
+    node_cut_aggregates(_root, mask, value, count, smallest, true, true);
+    if (count && count < smallest)
+	zero_masked_aggregate(mask, value);
+}
+
+void
+AggregateTree::cut_larger_host_aggregates(int p, uint32_t largest)
+{
+    uint32_t value = 0, count = 0;
+    uint32_t mask = prefix_to_mask(p);
+    node_cut_aggregates(_root, mask, value, count, largest, false, true);
     if (count && count >= largest)
 	zero_masked_aggregate(mask, value);
 }
@@ -751,12 +754,14 @@ node_balance_histogram(AggregateTree::Node *n, AggregateTree::Node **last,
 	assert((n->aggregate & (~prefix_mask >> 1)) == 0);
 	if (*last && ((*last)->aggregate & prefix_mask) == (n->aggregate & prefix_mask)) {
 	    assert(n->aggregate & ~prefix_mask);
-	    double sum = (double)((*last)->count) + (double)(n->count);
-	    double smaller = ((*last)->count > n->count ? n->count : (*last)->count);
-	    if (smaller == 0)
+	    double c0 = (double)((*last)->count);
+	    double sum = c0 + (double)n->count;
+	    if (c0 == 0)
 		v[0]++;
+	    else if (c0 == sum)
+		v.back()++;
 	    else {
-		uint32_t which = (uint32_t)ceil((smaller / sum) * factor);
+		uint32_t which = (uint32_t)ceil((c0 / sum) * factor);
 		v[which]++;
 	    }
 	    *last = 0;
@@ -764,7 +769,7 @@ node_balance_histogram(AggregateTree::Node *n, AggregateTree::Node **last,
 	    if (*last)
 		v[0]++;
 	    if (n->aggregate & ~prefix_mask) {
-		v[0]++;
+		v.back()++;
 		*last = 0;
 	    } else
 		*last = n;
@@ -784,7 +789,7 @@ AggregateTree::balance_histogram(int p, uint32_t nbuckets, Vector<uint32_t> &out
     out.assign(nbuckets + 1, 0);
     Node *last = 0;
     uint32_t prefix_mask = prefix_to_mask(p);
-    node_balance_histogram(_root, &last, prefix_mask, 2. * nbuckets, out);
+    node_balance_histogram(_root, &last, prefix_mask, nbuckets, out);
     if (last)
 	out[0]++;
 }

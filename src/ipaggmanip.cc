@@ -32,6 +32,8 @@
 #define CULL_PACKETS_ACT	407
 #define CUT_SMALLER_AGG_ACT	408
 #define CUT_LARGER_AGG_ACT	409
+#define CUT_SMALLER_HOST_AGG_ACT 410
+#define CUT_LARGER_HOST_AGG_ACT	411
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -75,8 +77,10 @@ static Clp_Option options[] = {
   { "sample", 0, SAMPLE_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller-aggregates", 0, CUT_SMALLER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "cut-smaller-host-aggregates", 0, CUT_SMALLER_HOST_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger", 0, CUT_LARGER_ACT, Clp_ArgUnsigned, 0 },
   { "cut-larger-aggregates", 0, CUT_LARGER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "cut-larger-host-aggregates", 0, CUT_LARGER_HOST_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cull-hosts", 0, CULL_HOSTS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-hosts-by-packets", 0, CULL_HOSTS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
@@ -138,6 +142,10 @@ Actions: (Results of final action sent to output.)\n\
                              less than N.
       --cut-larger-aggregates P,N     Zero counts for P-aggregates with size\n\
                              greater than or equal to N.
+      --cut-smaller-host-aggregates P,N    Zero counts for P-aggregates with\n\
+                             less than N nonempty hosts.\n\
+      --cut-larger-host-aggregates P,N     Zero counts for P-aggregates with\n\
+                             greater than or equal to N nonempty hosts.\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of nonzero hosts.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
@@ -280,6 +288,8 @@ particular purpose.\n");
 
 	  case CUT_SMALLER_AGG_ACT:
 	  case CUT_LARGER_AGG_ACT:
+	  case CUT_SMALLER_HOST_AGG_ACT:
+	  case CUT_LARGER_HOST_AGG_ACT:
 	  case BALANCE_HISTOGRAM_ACT:
 	    if (clp->val.us[0] > 31)
 		die_usage("`" + String(Clp_CurOptionName(clp)) + "' prefix must be between 0 and 31");
@@ -400,6 +410,14 @@ particular purpose.\n");
 #endif
 		break;
 
+	      case CUT_SMALLER_HOST_AGG_ACT:
+		tree.cut_smaller_host_aggregates(action_extra, action_extra2);
+		break;
+		
+	      case CUT_LARGER_HOST_AGG_ACT:
+		tree.cut_larger_host_aggregates(action_extra, action_extra2);
+		break;
+		
 	      case CULL_HOSTS_ACT: {
 		  AggregateWTree wtree(tree, false);
 		  wtree.cull_hosts(action_extra);
@@ -504,10 +522,18 @@ particular purpose.\n");
 	  case BALANCE_HISTOGRAM_ACT: {
 	      Vector<uint32_t> sizes;
 	      tree.balance_histogram(action_extra, action_extra2, sizes);
+	      
+	      // print number of aggregates to help users
+	      uint32_t total = 0;
+	      for (int i = 0; i < sizes.size(); i++)
+		  total += sizes[i];
+	      fprintf(out, "# nnz %u\n", total);
+	      
 	      fprintf(out, "0 0 %u\n", sizes[0]);
-	      double step = 0.5 / (double)action_extra2;
-	      for (int i = 1; i < sizes.size(); i++)
+	      double step = 1. / (double)action_extra2;
+	      for (int i = 1; i < sizes.size() - 1; i++)
 		  fprintf(out, "%g %g %u\n", (i - 1) * step, i * step, sizes[i]);
+	      fprintf(out, "1 1 %u\n", sizes.back());
 	      break;
 	  }
 	  
@@ -521,6 +547,8 @@ particular purpose.\n");
 	  case CULL_PACKETS_ACT:
 	  case CUT_SMALLER_AGG_ACT:
 	  case CUT_LARGER_AGG_ACT:
+	  case CUT_SMALLER_HOST_AGG_ACT:
+	  case CUT_LARGER_HOST_AGG_ACT:
 	    tree.write_file(out, output_binary, errh);
 	    break;
 	  
