@@ -53,10 +53,11 @@ AUTHORS
 -------
 
     Eddie Kohler
-    ICIR/International Computer Science Institute
-    kohler@icir.org
+    UCLA and ICIR/International Computer Science Institute
+    kohler@cs.ucla.edu
 
     Copyright 2001-2003 International Computer Science Institute
+    Copyright 2004 Regents of the University of California
 
     The anonymization algorithm was borrowed from tcpdpriv by Greg Minshall.
 

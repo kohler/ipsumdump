@@ -81,7 +81,7 @@ elemlist: always
 	@rm -f elements.conf
 	@$(MAKE) elements.conf
 elements.conf: $(CLICK_BUILDTOOL)
-	echo $(srcdir) | $(CLICK_BUILDTOOL) findelem -S -r userlevel > elements.conf
+	echo $(srcdir) | $(CLICK_BUILDTOOL) findelem -r userlevel -S > elements.conf
 elements.cc: elements.conf $(CLICK_BUILDTOOL)
 	$(CLICK_BUILDTOOL) elem2export -S < elements.conf > elements.cc
 	@rm -f elements.d
