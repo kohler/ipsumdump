@@ -123,7 +123,7 @@ static Clp_Option options[] = {
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "all-branching-counts", 0, ALL_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
-  { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, 0, 0 },
+  { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, Clp_ArgString, Clp_Optional },
   
 };
 
@@ -197,8 +197,9 @@ Actions: (Results of final action sent to output.)\n\
                              less than N active addresses.\n\
       --cut-larger-address-aggregates P,N    Zero counts for P-aggregates with\n\
                              greater than or equal to N active addresses.\n\
-      --fake-by-discriminating-prefixes      Create fake posterized data\n\
+      --fake-by-discriminating-prefixes[=TYP]   Create fake posterized data\n\
                              sharing this data's --all-discriminating-prefix.\n\
+                             TYP is either `random' (default) or `nonrandom'.\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of active addresses.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
@@ -499,7 +500,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	      
 	      AggregateWTree new_tree(AggregateWTree::COUNT_ADDRS_LEAF);
 	      for (int i = 0; i <= 32; i++)
-		  new_tree.fake_by_discriminating_prefix(i, dp);
+		  new_tree.fake_by_discriminating_prefix(i, dp, action_extra);
 
 	      tree = new_tree;
 	      break;
@@ -735,7 +736,6 @@ particular purpose.\n");
 	  case SIZES_ACT:
 	  case SORTED_SIZES_ACT:
 	  case ALL_NNZ_DISCRIM_ACT:
-	  case FAKE_BY_DISCRIM_ACT:
 	    add_action(opt);
 	    break;
 
@@ -783,6 +783,16 @@ particular purpose.\n");
 	    add_action(opt, clp->val.u);
 	    break;
 
+	  case FAKE_BY_DISCRIM_ACT:
+	    if (!clp->have_arg || strcmp(clp->arg, "random") == 0)
+		clp->val.u = 1;	// random
+	    else if (strcmp(clp->arg, "nonrandom") == 0)
+		clp->val.u = 0;
+	    else
+		die_usage("`" + String(Clp_CurOptionName(clp)) + "' arg should be `random' or `nonrandom'");
+	    add_action(opt, clp->val.u);
+	    break;
+	    
 	  case Clp_NotOption:
 	    files.push_back(clp->arg);
 	    break;

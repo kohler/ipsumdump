@@ -39,7 +39,7 @@ class AggregateWTree { public:
     void collect_active(Vector<WNode *> &) const;
     void collect_active_depth(int d, Vector<WNode *> &) const;
 
-    void fake_by_discriminating_prefix(int, const uint32_t[33][33]);
+    void fake_by_discriminating_prefix(int, const uint32_t[33][33], bool=true);
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;

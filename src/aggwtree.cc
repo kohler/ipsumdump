@@ -614,7 +614,8 @@ AggregateWTree::collect_active_depth(int d, Vector<WNode *> &v) const
 //
 
 void
-AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33])
+AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33],
+					      bool randomized)
 {
     assert(q >= 0 && q <= 32 && !_topheavy);
 
@@ -635,7 +636,7 @@ AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33])
 	
 	for (uint32_t i = dp[p][q]; i < dp[p-1][q]; i++) {
 	    // pick random element of s
-	    int which = ((uint32_t)random()) % s.size();
+	    int which = (randomized ? ((uint32_t)random()) % s.size() : s.size() - 1);
 	    WNode *n = s[which];
 	    assert(n->depth == p - 1 && n->count == 1 && n->full_count == 1);
 	    add(n->aggregate | (1 << (32 - p)), 1);
