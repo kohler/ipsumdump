@@ -59,7 +59,9 @@ fly.
 =item B<--interface>, B<-i>
 
 Read from live network interfaces. When run this way, B<ipsumdump> will
-continue until interrupted with SIGINT.
+continue until interrupted with SIGINT or SIGHUP. When stopped,
+B<ipsumdump> appends a comment to its output file, indicating how many
+packets were dropped by the kernel before output.
 
 =item B<--netflow-summary>
 
@@ -268,10 +270,10 @@ called elements. While some elements run only in a Linux kernel, most can
 run either in the kernel or in user space, and there are user-level
 elements for reading packets from libpcap or from tcpdump files.
 
-B<Ipsumdump> program just builds up a simple Click configuration and runs
-it, as if by the click(1) user-level driver. However, you don't need to
-install Click to run B<ipsumdump>; the F<libclick> directory contains all
-the relevant parts of Click, bundled into a library.
+B<Ipsumdump> creates and runs a simple user-level Click configuration.
+However, you don't need to install Click to run B<ipsumdump>; the
+F<libclick> directory contains all the relevant parts of Click, bundled
+into a library.
 
 If you're curious, try running `ipsumdump B<--config>' with some other
 options to see the Click configuration B<ipsumdump> would run. Only a
