@@ -127,7 +127,7 @@ Default contents option is `-sd' (log source and destination addresses).\n\
 \n\
 Data source options (give exactly one):\n\
   -i, --interface            Read packets from network devices DEVNAMES.\n\
-  -r, --read-tcpdump         Read packets from tcpdump(1) file FILES.\n\
+  -r, --read-tcpdump         Read packets from tcpdump(1) file FILES (default).\n\
       --read-breslau1-dump   Read Breslau1 summarized NetFlow format FILES.\n\
 \n\
 Other options:\n\
@@ -301,6 +301,8 @@ particular purpose.\n");
 	p_errh->fatal("standard output used for both log output and tcpdump output");
 
     // elements to read packets
+    if (action == 0)
+	action = READ_DUMP_OPT;
     if (action == INTERFACE_OPT) {
 	if (files.size() != 1)
 	    p_errh->fatal("`-i' option takes exactly one DEVNAME");
