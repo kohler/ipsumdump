@@ -74,7 +74,7 @@
 #define AGG_ADDRS_ACT		517
 #define CORR_SIZE_AGG_ADDR_ACT	518
 
-#define CLP_TWO_UINTS_TYPE	(Clp_MaxDefaultType + 1)
+#define CLP_TWO_UINTS_TYPE	(Clp_FirstUserType)
 
 static Clp_Option options[] = {
 
@@ -169,7 +169,7 @@ static void
 usage()
 {
   printf("\
-`Aciri-aggmanip' reads a summary of aggregated IP data from a file, transforms\n\
+'Aciri-aggmanip' reads a summary of aggregated IP data from a file, transforms\n\
 that summary or calculates one of its statistics, and writes the result to\n\
 standard output.\n\
 \n\
@@ -213,14 +213,14 @@ Actions: (Results of final action sent to output.)\n\
                              randomly selected addresses.\n\
       --cull-addresses-by-packets N   Reduce --num-active to at most N by\n\
                              removing randomly selected packets.\n\
-      --cull-packets N       Reduce total number of packets to at most N by
+      --cull-packets N       Reduce total number of packets to at most N by\n\
                              removing randomly selected packets.\n\
       --cut-smaller N        Zero counts less than N.\n\
       --cut-larger N         Zero counts greater than or equal to N.\n\
       --cut-smaller-aggregates P,N    Zero counts for P-aggregates with size\n\
-                             less than N.
+                             less than N.\n\
       --cut-larger-aggregates P,N     Zero counts for P-aggregates with size\n\
-                             greater than or equal to N.
+                             greater than or equal to N.\n\
       --cut-smaller-address-aggregates P,N   Zero counts for P-aggregates with\n\
                              less than N active addresses.\n\
       --cut-larger-address-aggregates P,N    Zero counts for P-aggregates with\n\

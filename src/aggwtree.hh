@@ -107,7 +107,7 @@ inline AggregateWTree::WNode *&
 AggregateWTree::WNode::child(int w)
 {
     assert(w == 0 || w == 1);
-    return (WNode *) Node::child[w];
+    return (WNode *&) Node::child[w];
 }
 
 inline AggregateWTree::WNode *
