@@ -246,10 +246,13 @@ Actions: (Results of final action sent to output.)\n\
 Other options:\n\
   -r, --read FILE            Read summary from FILE (default stdin).\n\
   -o, --output FILE          Write output to FILE (default stdout).\n\
+  -B, --binary               Output binary (default).\n\
+  -A, --ascii                Output ASCII.\n\
+      --ip                   Output ASCII with IP addresses.\n\
   -h, --help                 Print this message and exit.\n\
   -v, --version              Print version number and exit.\n\
 \n\
-Report bugs to <kohler@aciri.org>.\n", program_name);
+Report bugs to <kohler@icir.org>.\n", program_name);
 }
 
 static void
