@@ -214,6 +214,14 @@ Only include packets and flows matching a tcpdump(1) filter. For example,
 packets from net 18. (The syntax for I<filter> is currently a subset of
 tcpdump's syntax.)
 
+=item B<--bad-packets>
+
+Print lines like `C<!bad IP header length 4>' for packets with no IP
+headers, bad IP headers, or bad TCP/UDP headers. (A bad header has an
+incorrect length or unexpected version, or is spread across multiple
+fragments.) Default is to print a normal line, but with a dash `C<->' for
+any piece of information that came from a bad header.
+
 =item B<--anonymize>, B<-A>
 
 Anonymize IP addresses in the output. The anonymization preserves prefix
@@ -226,14 +234,6 @@ comes from tcpdpriv(1); it works like `tcpdpriv B<-A50 -C4>'.
 If B<--anonymize> and B<--write-tcpdump> are both on, the B<tcpdump> output
 file will have anonymized IP addresses. However, the file will contain
 actual packet data, unlike B<tcpdpriv> output.
-
-=item B<--bad-packets>
-
-Print lines like `C<!bad IP header length 4>' for packets with no IP
-headers, bad IP headers, or bad TCP/UDP headers. (A bad header has an
-incorrect length or unexpected version, or is spread across multiple
-fragments.) Default is to print a normal line, but with a dash `C<->' for
-any piece of information that came from a bad header.
 
 =item B<--no-promiscuous>
 
