@@ -153,6 +153,4 @@ prefix_to_mask(int p)
 
 extern int mask_to_prefix(uint32_t);
 
-extern int bi_ffs(uint32_t);
-
 #endif

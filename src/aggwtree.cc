@@ -2,6 +2,7 @@
 #include "aggwtree.hh"
 #include <click/confparse.hh>
 #include <click/error.hh>
+#include <click/integers.hh>
 #include <stdlib.h>
 #include <string.h>
 
@@ -152,7 +153,7 @@ AggregateWTree::node_ok(WNode *n, int last_swivel, uint32_t *nnz_ptr,
 	errh->error("%x: bad depth %d <= %d", n->aggregate, n->depth, last_swivel);
     
     if (n->child(0) && n->child(1)) {
-	int swivel = bi_ffs(n->child(0)->aggregate ^ n->child(1)->aggregate);
+	int swivel = first_bit_set(n->child(0)->aggregate ^ n->child(1)->aggregate);
 	if (swivel <= last_swivel)
 	    return errh->error("%x: bad swivel %d <= %d (%x-%x)", n->aggregate, swivel, last_swivel, n->child(0)->aggregate, n->child(1)->aggregate);
 	
@@ -235,7 +236,7 @@ AggregateWTree::make_peer(uint32_t a, WNode *n)
     }
 
     // swivel is first bit 'a' and 'old->input' differ
-    int swivel = bi_ffs(a ^ n->aggregate);
+    int swivel = first_bit_set(a ^ n->aggregate);
     // bitvalue is the value of that bit of 'a'
     int bitvalue = (a >> (32 - swivel)) & 1;
     // mask masks off all bits before swivel
@@ -303,8 +304,8 @@ AggregateWTree::add(uint32_t a, int32_t delta)
 	    n = make_peer(a, n);
 	else {
 	    // swivel is the first bit in which the two children differ
-	    int swivel = bi_ffs(n->child(0)->aggregate ^ n->child(1)->aggregate);
-	    if (bi_ffs(a ^ n->aggregate) < swivel) // input differs earlier
+	    int swivel = first_bit_set(n->child(0)->aggregate ^ n->child(1)->aggregate);
+	    if (first_bit_set(a ^ n->aggregate) < swivel) // input differs earlier
 		n = make_peer(a, n);
 	    else if (a & (1 << (32 - swivel)))
 		n = n->child(1);
@@ -516,7 +517,7 @@ node_discriminated_by(WNode *n, uint32_t *ndp)
 	uint32_t nnondiscrim = node_discriminated_by(left, ndp)
 	    + node_discriminated_by(right, ndp);
 	if (nnondiscrim && left->full_count && right->full_count) {
-	    int swivel = bi_ffs(left->aggregate ^ right->aggregate);
+	    int swivel = first_bit_set(left->aggregate ^ right->aggregate);
 	    assert(swivel >= 0 && swivel <= 32);
 	    ndp[swivel] += nnondiscrim;
 	    nnondiscrim = 0;

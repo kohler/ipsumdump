@@ -2,6 +2,7 @@
 #include "aggtree.hh"
 #include <click/confparse.hh>
 #include <click/error.hh>
+#include <click/integers.hh>	// for first_bit_set
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -106,37 +107,9 @@ mask_to_prefix(uint32_t mask)
 {
     if (mask == 0xFFFFFFFFU)
 	return 32;
-    int possible_p = bi_ffs(~mask) - 1;
+    int possible_p = first_bit_set(~mask) - 1;
     uint32_t new_mask = prefix_to_mask(possible_p);
     return (new_mask == mask ? possible_p : -1);
-}
-
-// from tcpdpriv
-int
-bi_ffs(uint32_t value)
-{
-    int add = 0;
-    static uint8_t bvals[] = { 0, 4, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 };
-
-    if ((value & 0xFFFF0000) == 0) {
-	if (value == 0) {	/* zero input ==> zero output */
-	    return 0;
-	}
-	add += 16;
-    } else {
-	value >>= 16;
-    }
-    if ((value & 0xFF00) == 0) {
-	add += 8;
-    } else {
-	value >>= 8;
-    }
-    if ((value & 0xF0) == 0) {
-	add += 4;
-    } else {
-	value >>= 4;
-    }
-    return add + bvals[value & 0xf];
 }
 
 //
@@ -147,7 +120,7 @@ static uint32_t
 node_ok(AggregateTree::Node *n, int last_swivel, ErrorHandler *errh)
 {
     if (n->child[0] && n->child[1]) {
-	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	int swivel = first_bit_set(n->child[0]->aggregate ^ n->child[1]->aggregate);
 	if (swivel <= last_swivel)
 	    return errh->error("%x: bad swivel %d <= %d (%x-%x)", n->aggregate, swivel, last_swivel, n->child[0]->aggregate, n->child[1]->aggregate);
 	
@@ -219,7 +192,7 @@ AggregateTree::make_peer(uint32_t a, Node *n)
     }
 
     // swivel is first bit 'a' and 'old->input' differ
-    int swivel = bi_ffs(a ^ n->aggregate);
+    int swivel = first_bit_set(a ^ n->aggregate);
     // bitvalue is the value of that bit of 'a'
     int bitvalue = (a >> (32 - swivel)) & 1;
     // mask masks off all bits before swivel
@@ -255,8 +228,8 @@ AggregateTree::find_node(uint32_t a)
 	    n = make_peer(a, n);
 	else {
 	    // swivel is the first bit in which the two children differ
-	    int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
-	    if (bi_ffs(a ^ n->aggregate) < swivel) // input differs earlier
+	    int swivel = first_bit_set(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	    if (first_bit_set(a ^ n->aggregate) < swivel) // input differs earlier
 		n = make_peer(a, n);
 	    else if (a & (1 << (32 - swivel)))
 		n = n->child[1];
@@ -281,8 +254,8 @@ AggregateTree::find_existing_node(uint32_t a) const
 	    return 0;
 	else {
 	    // swivel is the first bit in which the two children differ
-	    int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
-	    if (bi_ffs(a ^ n->aggregate) < swivel) // input differs earlier
+	    int swivel = first_bit_set(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	    if (first_bit_set(a ^ n->aggregate) < swivel) // input differs earlier
 		return 0;
 	    else if (a & (1 << (32 - swivel)))
 		n = n->child[1];
@@ -319,7 +292,7 @@ AggregateTree::node_zero_aggregate(Node *n, uint32_t mask, uint32_t value)
     }
     if (n->child[0]) {
 	// swivel is the first bit in which the two children differ
-	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	int swivel = first_bit_set(n->child[0]->aggregate ^ n->child[1]->aggregate);
 	uint32_t swivel_mask = (swivel == 1 ? 0 : 0xFFFFFFFFU << (33 - swivel)) & mask;
 	if ((n->child[0]->aggregate & swivel_mask) == (value & swivel_mask))
 	    node_zero_aggregate(n->child[0], mask, value);
@@ -613,7 +586,7 @@ AggregateTree::node_prefixize(Node *n, int prefix)
 	n->aggregate &= mask;
     
     } else if (n->child[0]) {
-	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	int swivel = first_bit_set(n->child[0]->aggregate ^ n->child[1]->aggregate);
 	//ErrorHandler::default_handler()->message("%d", swivel);
 	
 	if (swivel <= prefix) {
