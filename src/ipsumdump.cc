@@ -74,28 +74,38 @@
 #define READ_DAG_DUMP_OPT	407
 #define READ_DAG_PPP_DUMP_OPT	408
 
+static const char* const field_names[] = {
+    "timestamp", "first_timestamp", "ip_src", "ip_dst", // 0-4
+    "sport", "dport", "ip_len", "ip_id",		// 5-7
+    "ip_proto", "tcp_seq", "tcp_ack", "tcp_flags",	// 8-11
+    "tcp_opt", "tcp_sack", "payload_len", "count",	// 12-15
+    "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
+    "link"						// 20
+};
+
 // options for logging
 #define FIRST_LOG_OPT	1000
-#define TIMESTAMP_OPT	(1000 + ToIPSummaryDump::W_TIMESTAMP)
-#define FIRST_TIMESTAMP_OPT (1000 + ToIPSummaryDump::W_FIRST_TIMESTAMP)
-#define SRC_OPT		(1000 + ToIPSummaryDump::W_IP_SRC)
-#define DST_OPT		(1000 + ToIPSummaryDump::W_IP_DST)
-#define SPORT_OPT	(1000 + ToIPSummaryDump::W_SPORT)
-#define DPORT_OPT	(1000 + ToIPSummaryDump::W_DPORT)
-#define LENGTH_OPT	(1000 + ToIPSummaryDump::W_IP_LEN)
-#define IPID_OPT	(1000 + ToIPSummaryDump::W_IP_ID)
-#define PROTO_OPT	(1000 + ToIPSummaryDump::W_IP_PROTO)
-#define TCP_SEQ_OPT	(1000 + ToIPSummaryDump::W_TCP_SEQ)
-#define TCP_ACK_OPT	(1000 + ToIPSummaryDump::W_TCP_ACK)
-#define TCP_FLAGS_OPT	(1000 + ToIPSummaryDump::W_TCP_FLAGS)
-#define TCP_OPT_OPT	(1000 + ToIPSummaryDump::W_TCP_OPT)
-#define TCP_SACK_OPT	(1000 + ToIPSummaryDump::W_TCP_SACK)
-#define PAYLOAD_LEN_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD_LEN)
-#define COUNT_OPT	(1000 + ToIPSummaryDump::W_COUNT)
-#define FRAG_OPT	(1000 + ToIPSummaryDump::W_IP_FRAG)
-#define FRAGOFF_OPT	(1000 + ToIPSummaryDump::W_IP_FRAGOFF)
-#define PAYLOAD_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD)
-#define IPCAPLEN_OPT	(1000 + ToIPSummaryDump::W_IP_CAPTURE_LEN)
+#define TIMESTAMP_OPT	1000
+#define FIRST_TIMESTAMP_OPT 1001
+#define SRC_OPT		1002
+#define DST_OPT		1003
+#define SPORT_OPT	1004
+#define DPORT_OPT	1005
+#define LENGTH_OPT	1006
+#define IPID_OPT	1007
+#define PROTO_OPT	1008
+#define TCP_SEQ_OPT	1009
+#define TCP_ACK_OPT	1010
+#define TCP_FLAGS_OPT	1011
+#define TCP_OPT_OPT	1012
+#define TCP_SACK_OPT	1013
+#define PAYLOAD_LEN_OPT	1014
+#define COUNT_OPT	1015
+#define FRAG_OPT	1016
+#define FRAGOFF_OPT	1017
+#define PAYLOAD_OPT	1018
+#define IPCAPLEN_OPT	1019
+#define LINK_OPT	1020
 
 #define CLP_TIMEVAL_TYPE	(Clp_FirstUserType)
 
@@ -155,7 +165,8 @@ static Clp_Option options[] = {
     { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
     { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
     { "payload", 0, PAYLOAD_OPT, 0, 0 },
-    { "capture-length", 0, IPCAPLEN_OPT, 0, 0 }
+    { "capture-length", 0, IPCAPLEN_OPT, 0, 0 },
+    { "link", 0, LINK_OPT, 0, 0 }
 
 };
 
@@ -206,6 +217,7 @@ Options that determine summary dump contents (can give multiple options):\n\
       --payload              Include packet payloads as quoted strings.\n\
       --capture-length       Include lengths of captured IP data.\n\
   -c, --packet-count         Include packet counts (usually 1).\n\
+      --link                 Include link numbers (NLANR/NetFlow).\n\
 \n", program_name);
   printf("\
 Data source options (give exactly one):\n\
@@ -718,7 +730,7 @@ particular purpose.\n");
     } else {
 	sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
 	for (int i = 0; i < log_contents.size(); i++)
-	    sa << ' ' << cp_quote(FromIPSummaryDump::unparse_content(log_contents[i]));
+	    sa << ' ' << cp_quote(field_names[log_contents[i]]);
 	if (binary)
 	    sa << ", BINARY true";
 	if (action == READ_DUMP_OPT)

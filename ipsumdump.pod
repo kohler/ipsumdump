@@ -266,10 +266,16 @@ will store only part of each packet's data.
 
 =item B<--packet-count>, B<-c>
 
-Include packet count in the dump. Some kinds of logs -- such as NetFlow
-summary logs -- record information about flows, not packets. A flow
-represents multiple packets; the packet count says exactly how many.
-Example: C<1>. See also B<--multipacket>, below.
+Include packet count in the dump.  Some kinds of logs -- such as NetFlow
+summary logs -- record information about flows, not packets.  A flow
+represents multiple packets; the packet count says exactly how many. 
+Example: C<1>.  See also B<--multipacket>, below.
+
+=item B<--link>
+
+Include the link number in the dump.  TSH-format NLANR logs, NetFlow
+summary logs, and some IP summary logs can contain a link number.  Example:
+C<2>.  For NetFlow summary logs, B<--link> uses the input interface number.
 
 =back
 

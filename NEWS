@@ -1,5 +1,14 @@
 Ipsumdump NEWS
 
+Version 1.43   16.Sep.2004
+
+* Add the '--link' content option, relevant to NLANR TSH logs and NetFlow
+  logs.  Requested by Kaushal Patel.
+
+* Rewrite ToIPSummaryDump element, separating its functionality into
+  separate "unparser" files.
+
+
 Version 1.42   3.Sep.2004
 
 * Add support for PPP-encapsulated DAG dumps, via the '--dag-ppp' option,
