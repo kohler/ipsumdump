@@ -298,7 +298,7 @@ particular purpose.\n");
     if (!output)
 	output = "-";
     if (output == "-" && write_dump == "-")
-	p_errh->fatal("standard output used for both log output and tcpdump output");
+	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
     // elements to read packets
     if (action == 0)
