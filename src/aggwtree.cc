@@ -130,7 +130,7 @@ void
 AggregateWTree::kill_all_nodes()
 {
     for (int i = 0; i < _blocks.size(); i++)
-	delete _blocks[i];
+	delete[] _blocks[i];
     _blocks.clear();
     _root = _free = 0;
 }
