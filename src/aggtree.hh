@@ -29,6 +29,7 @@ class AggregateTree { public:
 
     void sample(double);
     void cut_smaller(uint32_t);
+    void cut_larger(uint32_t);
     
     void nnz_in_prefixes(Vector<uint32_t> &) const;
     void nnz_in_left_prefixes(Vector<uint32_t> &) const;
@@ -40,7 +41,8 @@ class AggregateTree { public:
     
     void sum_and_sum_sq(double *, double *) const;
 
-    void left_right_balance(int prefix_len, FILE *) const;
+    void balance(int prefix_len, FILE *) const;
+    void balance_histogram(int prefix_len, uint32_t nbuckets, Vector<uint32_t> &) const;
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
@@ -78,6 +80,7 @@ class AggregateTree { public:
     uint32_t node_to_discriminated_by(Node *, const AggregateTree &, uint32_t, bool);
     void node_sample(Node *, uint32_t);
     void node_cut_smaller(Node *, uint32_t);
+    void node_cut_larger(Node *, uint32_t);
 
     static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);

@@ -26,9 +26,10 @@
 #define POSTERIZE_ACT		401
 #define SAMPLE_ACT		402
 #define CUT_SMALLER_ACT		403
-#define CULL_HOSTS_ACT		404
-#define CULL_HOSTS_BY_PACKETS_ACT 405
-#define CULL_PACKETS_ACT	406
+#define CUT_LARGER_ACT		404
+#define CULL_HOSTS_ACT		405
+#define CULL_HOSTS_BY_PACKETS_ACT 406
+#define CULL_PACKETS_ACT	407
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -41,6 +42,9 @@
 #define SIZES_ACT		507
 #define SORTED_SIZES_ACT	508
 #define BALANCE_ACT		509
+#define BALANCE_HISTOGRAM_ACT	510
+
+#define CLP_TWO_UINTS_TYPE	(Clp_MaxDefaultType + 1)
 
 static Clp_Option options[] = {
 
@@ -75,6 +79,7 @@ static Clp_Option options[] = {
   { "sizes", 0, SIZES_ACT, 0, 0 },
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
+  { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   
 };
 
@@ -125,12 +130,15 @@ Actions: (Results of final action sent to output.)\n\
       --cull-packets N       Reduce total number of packets to at most N by
                              removing randomly selected packets.\n\
       --cut-smaller N        Zero counts less than N.\n\
+      --cut-larger N         Zero counts greater than or equal to N.\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of nonzero hosts.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
                              Average and variance of nonzero p-aggregates for\n\
                              all p.\n\
       --haar-wavelet-energy  Haar wavelet energy coefficients.\n\
+      --balance N\n\
+      --balance-histogram N,NBUCKETS\n\
 \n\
 Other options:\n\
   -r, --read FILE            Read summary from FILE (default stdin).\n\
@@ -151,14 +159,16 @@ write_vector(const Vector<uint32_t> &v, FILE *f)
 
 static Vector<int> actions;
 static Vector<uint32_t> extras;
+static Vector<uint32_t> extras2;
 
 static void
-add_action(int action, uint32_t extra = 0)
+add_action(int action, uint32_t extra = 0, uint32_t extra2 = 0)
 {
     if (actions.size() && actions.back() >= FIRST_END_ACT)
 	die_usage("can't add another action after that");
     actions.push_back(action);
     extras.push_back(extra);
+    extras2.push_back(extra2);
 }
 
 static int
@@ -169,12 +179,30 @@ uint32_rev_compar(const void *ap, const void *bp)
     return b - a;
 }
 
+static int
+parse_two_uints(Clp_Parser *clp, const char *arg, int complain, void *)
+{
+    Vector<String> conf;
+    cp_argvec(arg, conf);
+    if (conf.size() == 2
+	&& cp_va_parse(conf, 0, ErrorHandler::silent_handler(),
+		       cpUnsigned, "arg 1", &clp->val.us[0],
+		       cpUnsigned, "arg 2", &clp->val.us[1],
+		       0) >= 0)
+	return 1;
+    else if (complain)
+	return Clp_OptionError(clp, "`%O' expects two unsigned integers separated by a comma, not `%s'", arg);
+    else
+	return 0;
+}
+
 int
 main(int argc, char *argv[])
 {
     Clp_Parser *clp = Clp_NewParser
 	(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
+    Clp_AddType(clp, CLP_TWO_UINTS_TYPE, 0, parse_two_uints, 0);
     
     String::static_initialize();
     cp_va_static_initialize();
@@ -243,8 +271,15 @@ particular purpose.\n");
 	    add_action(opt, clp->val.u);
 	    break;
 
+	  case BALANCE_HISTOGRAM_ACT:
+	    if (clp->val.us[0] > 31)
+		die_usage("`--balance-histogram' prefix must be between 0 and 31");
+	    add_action(opt, clp->val.us[0], clp->val.us[1]);
+	    break;
+
 	  case SAMPLE_ACT:
 	  case CUT_SMALLER_ACT:
+	  case CUT_LARGER_ACT:
 	  case CULL_HOSTS_ACT:
 	  case CULL_HOSTS_BY_PACKETS_ACT:
 	  case CULL_PACKETS_ACT:
@@ -325,6 +360,10 @@ particular purpose.\n");
 		tree.cut_smaller(action_extra);
 		break;
 
+	      case CUT_LARGER_ACT:
+		tree.cut_larger(action_extra);
+		break;
+
 	      case CULL_HOSTS_ACT: {
 		  AggregateWTree wtree(tree, false);
 		  wtree.cull_hosts(action_extra);
@@ -352,6 +391,7 @@ particular purpose.\n");
 	// output result of final action
 	int action = actions.back();
 	uint32_t action_extra = extras.back();
+	uint32_t action_extra2 = extras2.back();
 	switch (action) {
 	    
 	  case NNZ_ACT:
@@ -422,13 +462,24 @@ particular purpose.\n");
 	  }
 
 	  case BALANCE_ACT:
-	    tree.left_right_balance(action_extra, out);
+	    tree.balance(action_extra, out);
 	    break;
+
+	  case BALANCE_HISTOGRAM_ACT: {
+	      Vector<uint32_t> sizes;
+	      tree.balance_histogram(action_extra, action_extra2, sizes);
+	      fprintf(out, "0 0 %u\n", sizes[0]);
+	      double step = 0.5 / (double)action_extra2;
+	      for (int i = 1; i < sizes.size(); i++)
+		  fprintf(out, "%g %g %u\n", (i - 1) * step, i * step, sizes[i]);
+	      break;
+	  }
 	  
 	  case PREFIX_ACT:
 	  case POSTERIZE_ACT:
 	  case SAMPLE_ACT:
 	  case CUT_SMALLER_ACT:
+	  case CUT_LARGER_ACT:
 	  case CULL_HOSTS_ACT:
 	  case CULL_HOSTS_BY_PACKETS_ACT:
 	  case CULL_PACKETS_ACT:
