@@ -38,6 +38,10 @@
 #define LENGTH_OPT	(1000 + ToIPSummaryDump::W_LENGTH)
 #define IPID_OPT	(1000 + ToIPSummaryDump::W_IPID)
 #define PROTO_OPT	(1000 + ToIPSummaryDump::W_PROTO)
+#define TCP_SEQ_OPT	(1000 + ToIPSummaryDump::W_TCP_SEQ)
+#define TCP_ACK_OPT	(1000 + ToIPSummaryDump::W_TCP_ACK)
+#define TCP_FLAGS_OPT	(1000 + ToIPSummaryDump::W_TCP_FLAGS)
+#define PAYLOAD_LEN_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD_LENGTH)
 
 static Clp_Option options[] = {
 
@@ -64,6 +68,10 @@ static Clp_Option options[] = {
   { "log-length", 'l', LENGTH_OPT, 0, Clp_Negate },
   { "log-id", 0, IPID_OPT, 0, Clp_Negate },
   { "log-protocol", 'p', PROTO_OPT, 0, Clp_Negate },
+  { "log-tcp-seq", 'Q', TCP_SEQ_OPT, 0, Clp_Negate },
+  { "log-tcp-ack", 'K', TCP_ACK_OPT, 0, Clp_Negate },
+  { "log-tcp-flags", 'F', TCP_FLAGS_OPT, 0, Clp_Negate },
+  { "log-payload-length", 'L', PAYLOAD_LEN_OPT, 0, Clp_Negate },
   
 };
 
@@ -99,9 +107,13 @@ Options that determine log contents (can give multiple options):\n\
   -d, --log-dst              Log IP destination addresses.\n\
   -S, --log-sport            Log TCP/UDP source ports.\n\
   -D, --log-dport            Log TCP/UDP destination ports.\n\
-  -l, --log-length           Log IP length field.\n\
-  -p, --log-protocol         Log IP protocol.\n\
-      --log-id               Log IP ID.\n\
+  -l, --log-length           Log IP lengths.\n\
+  -p, --log-protocol         Log IP protocols.\n\
+      --log-id               Log IP IDs.\n\
+  -Q, --log-tcp-seq          Log TCP sequence numbers.\n\
+  -K, --log-tcp-ack          Log TCP acknowledgement numbers.\n\
+  -F, --log-tcp-flags        Log TCP flags words.\n\
+  -L, --log-payload-length   Log payload lengths (no IP/UDP/TCP headers).\n\
 Default contents option is `-sd' (log source and destination addresses).\n\
 \n\
 Other options:\n\
@@ -109,6 +121,7 @@ Other options:\n\
   -r, --read-tcpdump FILE    Read packets from tcpdump(1) file FILE.\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
+  -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
       --map-addr ADDRS       When done, print to stdout the anonymized IP\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
@@ -296,7 +309,7 @@ particular purpose.\n");
     sa << "  -> ToIPSummaryDump(" << output << ", CONTENTS";
     for (int i = 0; i < 31; i++)
 	if (log_contents & (1 << i))
-	    sa << ' ' << cp_quote(ToIPSummaryDump::content_name(i));
+	    sa << ' ' << cp_quote(ToIPSummaryDump::unparse_content(i));
     sa << ", VERBOSE true, BANNER ";
     // create banner
     StringAccum banner;

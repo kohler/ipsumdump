@@ -84,6 +84,7 @@ fetch-click:
 	    || cp -p $(clicksrcdir)/$$f $(top_srcdir)/src/$$g \
 	    || echo "Could not copy $(clicksrcdir)/$$f!" 1>&2; \
 	  done; done
+	cd $(top_srcdir); cp $(libclick)/acclick.m4 $(libclick)/aclocal.m4 .
 
 
 distdir = $(PACKAGE)-$(VERSION)

@@ -29,19 +29,26 @@ Keyword arguments are:
 Space-separated list of field names. Each line of the summary dump will
 contain those fields. Valid field names, with examples, are:
 
-   timestamp   Packet timestamp: `996033261.451094'
-   ts sec      Seconds portion of timestamp: `996033261'
-   ts usec     Microseconds portion of timestamp: `451094'
-   src         IP source address: `192.150.187.37'
-   dst         IP destination address: `192.168.1.100'
-   len         IP length field: `132'
-   proto       IP protocol: `6'
-   ip id       IP ID: `48759'
-   sport       TCP/UDP source port: `22'
-   dport       TCP/UDP destination port: `2943'
+   timestamp    Packet timestamp: `996033261.451094'
+   ts sec       Seconds portion of timestamp: `996033261'
+   ts usec      Microseconds portion of timestamp: `451094'
+   ip src       IP source address: `192.150.187.37'
+   ip dst       IP destination address: `192.168.1.100'
+   len          IP length field: `132'
+   proto        IP protocol: `10', or `I' for ICMP, `T' for TCP, `U' for UDP
+   ip id        IP ID: `48759'
+   sport        TCP/UDP source port: `22'
+   dport        TCP/UDP destination port: `2943'
+   tcp seq      TCP sequence number: `93167339'
+   tcp ack      TCP acknowledgement number: `93178192'
+   tcp flags    TCP flags: `SA', `.'
+   payload len  Payload length (not including IP/TCP/UDP headers): `34'
 
-(You must quote field names that contain a space.) Default CONTENTS is `src
-dst'.
+If a field does not apply to a particular packet -- for example, `C<sport>' on
+an ICMP packet -- ToIPSummaryDump prints a single dash for that value.
+
+Default CONTENTS is `src dst'. You must quote field names that contain a
+space -- for example, `C<src dst "tcp seq">'.
 
 =item VERBOSE
 
@@ -90,9 +97,15 @@ class ToIPSummaryDump : public Element { public:
 
     enum Content {
 	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
-	W_SRC, W_DST, W_LENGTH, W_PROTO, W_IPID, W_SPORT, W_DPORT
+	W_SRC, W_DST, W_LENGTH, W_PROTO, W_IPID,
+	W_SPORT, W_DPORT, W_TCP_SEQ, W_TCP_ACK, W_TCP_FLAGS,
+	W_PAYLOAD_LENGTH,
+	W_LAST
     };
-    static const char *content_name(int);
+    static int parse_content(const String &);
+    static const char *unparse_content(int);
+
+    static const char * const tcp_flags_word = "FSRPAU67";
     
   private:
 
