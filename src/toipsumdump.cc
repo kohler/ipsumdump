@@ -443,6 +443,11 @@ ToIPSummaryDump::summary(Packet *p, StringAccum &sa) const
 		  sa << '.';
 	      break;
 	  }
+	  case W_TCP_WINDOW:
+	    if (!tcph)
+		goto no_data;
+	    sa << ntohs(tcph->th_win);
+	    break;
 	  case W_TCP_OPT:
 	    if (!tcph)
 		goto no_data;
@@ -525,6 +530,9 @@ ToIPSummaryDump::summary(Packet *p, StringAccum &sa) const
 	  }
 	  case W_AGGREGATE:
 	    sa << AGGREGATE_ANNO(p);
+	    break;
+	  case W_FIRST_TIMESTAMP:
+	    sa << FIRST_TIMESTAMP_ANNO(p);
 	    break;
 	  no_data:
 	  default:
@@ -615,13 +623,11 @@ ToIPSummaryDump::binary_summary(Packet *p, const click_ip *iph, const click_tcp 
 	    pos += 8;
 	    break;
 	  case W_TIMESTAMP_SEC:
-	    PUT4(buf + pos, p->timestamp_anno().tv_sec);
-	    pos += 4;
-	    break;
+	    v = p->timestamp_anno().tv_sec;
+	    goto output_4_host;
 	  case W_TIMESTAMP_USEC:
-	    PUT4(buf + pos, p->timestamp_anno().tv_usec);
-	    pos += 4;
-	    break;
+	    v = p->timestamp_anno().tv_usec;
+	    goto output_4_host;
 	  case W_SRC:
 	    if (iph)
 		v = iph->ip_src.s_addr;
@@ -666,6 +672,10 @@ ToIPSummaryDump::binary_summary(Packet *p, const click_ip *iph, const click_tcp 
 	    if (tcph)
 		v = tcph->th_flags;
 	    goto output_1;
+	  case W_TCP_WINDOW:
+	    if (tcph)
+		v = tcph->th_win;
+	    goto output_2_net;
 	  case W_TCP_OPT: {
 	      if (!tcph || tcph->th_off <= (sizeof(click_tcp) >> 2))
 		  goto output_1;
@@ -717,6 +727,11 @@ ToIPSummaryDump::binary_summary(Packet *p, const click_ip *iph, const click_tcp 
 	  case W_AGGREGATE:
 	    v = AGGREGATE_ANNO(p);
 	    goto output_4_host;
+	  case W_FIRST_TIMESTAMP:
+	    PUT4(buf + pos, FIRST_TIMESTAMP_ANNO(p).tv_sec);
+	    PUT4(buf + pos + 4, FIRST_TIMESTAMP_ANNO(p).tv_usec);
+	    pos += 8;
+	    break;
 	  output_1:
 	    PUT1(buf + pos, v);
 	    pos++;
@@ -776,17 +791,21 @@ ToIPSummaryDump::push(int, Packet *p)
     p->kill();
 }
 
-void
-ToIPSummaryDump::run_scheduled()
+bool
+ToIPSummaryDump::run_task()
 {
     if (!_active)
-	return;
+	return false;
     if (Packet *p = input(0).pull()) {
 	write_packet(p, _multipacket);
 	p->kill();
-    } else if (!_signal)
-	return;
-    _task.fast_reschedule();
+	_task.fast_reschedule();
+	return true;
+    } else if (_signal) {
+	_task.fast_reschedule();
+	return false;
+    } else
+	return false;
 }
 
 void
@@ -799,6 +818,22 @@ ToIPSummaryDump::write_line(const String &s)
 	    fwrite(&marker, 4, 1, _f);
 	}
 	fwrite(s.data(), 1, s.length(), _f);
+    }
+}
+
+void
+ToIPSummaryDump::add_note(const String &s)
+{
+    if (s.length()) {
+	int extra = 1 + (s.back() == '\n' ? 0 : 1);
+	if (_binary) {
+	    uint32_t marker = htonl((s.length() + extra) | 0x80000000U);
+	    fwrite(&marker, 4, 1, _f);
+	}
+	fputc('#', _f);
+	fwrite(s.data(), 1, s.length(), _f);
+	if (extra > 1)
+	    fputc('\n', _f);
     }
 }
 

@@ -234,9 +234,9 @@ static void
 write_sampling_prob_message(Router *r, const String &sample_elt)
 {
     Element *sample = r->find(sample_elt);
-    int hi = r->find_handler(sample, "sampling_prob");
-    if (sample && hi >= 0) {
-	String s = r->handler(hi).call_read(sample);
+    const Router::Handler *h = Router::handler(sample, "sampling_prob");
+    if (sample && h) {
+	String s = h->call_read(sample);
 	ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(r->find("to_dump"));
 	if (td)
 	    td->write_line("!sampling_prob " + s);
@@ -288,7 +288,7 @@ stop_hook(const String &s_in, Element *, void *, ErrorHandler *errh)
     else if (s == "cold")
 	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
     else if (s == "switch") {
-	HandlerCall::call_write(router, "switch/s", "switch", "1", errh);
+	HandlerCall::call_write(router->find("switch/s"), "switch", "1", errh);
 	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
     } else
 	return errh->error("bad argument to `stop'");
@@ -714,8 +714,8 @@ particular purpose.\n");
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
-    router->add_global_write_handler("record_counts", record_drops_hook, 0);
-    router->add_global_write_handler("stop", stop_hook, 0);
+    router->add_write_handler(0, "record_counts", record_drops_hook, 0);
+    router->add_write_handler(0, "stop", stop_hook, 0);
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
     
