@@ -625,12 +625,12 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 
 	      // change into a map with a single prefix
 	      Vector<uint32_t> map(1 << max_p, 0);
-	      for (uint32_t i = 0; i < (1 << max_p); i++)
+	      for (uint32_t i = 0; i < (1U << max_p); i++)
 		  map[i] = i;
 	      Vector<uint32_t> map_used(1 << max_p, 0);
 	      for (int i = 0; i < x1.size(); i++) {
 		  int pdiff = max_p - xp[i];
-		  for (uint32_t k = 0; k < (1 << pdiff); k++) {
+		  for (uint32_t k = 0; k < (1U << pdiff); k++) {
 		      uint32_t v1 = (x1[i] << pdiff) | k;
 		      uint32_t v2 = (x2[i] << pdiff) | k;
 		      if (map_used[v1])
@@ -642,7 +642,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 
 	      // check double-mapping
 	      map_used.assign(1 << max_p, 0);
-	      for (uint32_t i = 0; i < (1 << max_p); i++) {
+	      for (uint32_t i = 0; i < (1U << max_p); i++) {
 		  if (map_used[i] == 1)
 		      errh->warning("prefix `%s/%d' repeatedly mapped to in --remap-prefixes", IPAddress(htonl(i << (32 - max_p))).s().cc(), max_p);
 		  map_used[i]++;
