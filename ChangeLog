@@ -1,3 +1,27 @@
+2001-10-10 Wednesday 15:38  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.25), ipsumdump.pod (1.12), src/fromipsumdump.cc
+	(1.8), src/fromipsumdump.hh (1.5), src/fromnetflowsumdump.cc (1.5),
+	src/ipsumdump.cc (1.28), src/toipsumdump.cc (1.13),
+	src/toipsumdump.hh (1.17): handle fragments correctly, and
+	introduce --fragment/--fragoff options
+
+2001-10-10 Wednesday 04:09  Eddie Kohler <kohler@aciri.org>
+
+	* CLICKFILES (1.6), configure.in (1.24), src/Makefile.in (1.16),
+	src/ipsumdump.cc (1.27), src/toipsumdump.cc (1.12),
+	src/toipsumdump.hh (1.16): to 1.9: --record-counts
+
+2001-10-09 Tuesday 16:51  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.23): to version 1.8
+
+2001-10-09 Tuesday 14:08  Eddie Kohler <kohler@aciri.org>
+
+	* CLICKFILES (1.5), Makefile.in (1.17), ipsumdump.pod (1.11),
+	src/Makefile.in (1.15), src/ipsumdump.cc (1.26): to v1.7 again: fix
+	--filter, add --no-promisc
+
 2001-10-09 Tuesday 09:24  Eddie Kohler <kohler@aciri.org>
 
 	* src/fromipsumdump.cc (1.7): FromIPSummaryDump supports "payload
