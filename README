@@ -1,9 +1,9 @@
 ACIRI-IPSUMDUMP
 ===============
-    This program reads IP packets from the network (using libpcap or (on
-Linux) raw sockets) or from a tcpdump(1) save file, and writes an ASCII
-summary of the packet data to the standard output. Comments on the first
-couple lines describe the summary's contents; for example:
+    This program reads IP packets from the network (using libpcap, or
+packet sockets on Linux) or from a tcpdump(1) save file, and writes an
+ASCII summary of the packet data to the standard output. Comments on the
+first couple lines describe the summary's contents; for example:
 
 !creator "aciri-ipsumdump -i wvlan0"
 !host no.lcdf.org
