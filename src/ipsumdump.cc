@@ -6,7 +6,7 @@
 #include <click/error.hh>
 #include <click/confparse.hh>
 #include <click/router.hh>
-#include <click/lexer.hh>
+#include <click/driver.hh>
 #include <click/llrpc.h>
 #include <click/handlercall.hh>
 
@@ -45,6 +45,7 @@
 #define READ_DUMP_OPT		401
 #define READ_NETFLOW_SUMMARY_OPT 402
 #define READ_IPSUMDUMP_OPT	403
+#define IPSUMDUMP_FORMAT_OPT	404
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -82,6 +83,7 @@ static Clp_Option options[] = {
     { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
     { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
+    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
@@ -174,6 +176,7 @@ Data source options (give exactly one):\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
       --ipsumdump            Read from existing ipsumdump FILES.\n\
+      --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
   -i, --interface            Read packets from network devices DEVNAMES until\n\
                              interrupted.\n\
 \n\
@@ -211,23 +214,26 @@ static void
 catch_signal(int sig)
 {
     signal(sig, SIG_DFL);
-    if (!started)
+    if (!started || !router)
 	kill(getpid(), sig);
-    DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
-    router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+    else {
+	DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
+	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+    }
 }
 
 static void
 catch_sighup(int sig)
 {
-    if (!started) {
+    if (!started || !router) {
 	signal(sig, SIG_DFL);
 	kill(getpid(), sig);
+    } else {
+	signal(sig, catch_sighup);
+	ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(router->find("to_dump"));
+	if (td)
+	    td->flush_buffer();
     }
-    signal(sig, catch_sighup);
-    ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(router->find("to_dump"));
-    if (td)
-	td->flush_buffer();
 }
 
 static void
@@ -295,8 +301,6 @@ stop_hook(const String &s_in, Element *, void *, ErrorHandler *errh)
     return 0;
 }
 
-extern void click_export_elements(Lexer *);
-
 static String
 source_output_port(bool collate, int i)
 {
@@ -334,6 +338,7 @@ main(int argc, char *argv[])
     String write_dump;
     String output;
     String filter;
+    String ipsumdump_format;
     Vector<uint32_t> map_prefixes;
     bool config = false;
     bool verbose = false;
@@ -374,6 +379,15 @@ main(int argc, char *argv[])
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
+	    break;
+	    
+	  case IPSUMDUMP_FORMAT_OPT:
+	    if (ipsumdump_format)
+		die_usage("`--format' already specified");
+	    else if (action && action != READ_IPSUMDUMP_OPT)
+		die_usage("`--format' only useful with `--ipsumdump'");
+	    action = READ_IPSUMDUMP_OPT;
+	    ipsumdump_format = clp->arg;
 	    break;
 	    
 	  case WRITE_DUMP_OPT:
@@ -586,6 +600,8 @@ particular purpose.\n");
 	    config += ", SAMPLE " + String(sample);
 	if (multipacket)
 	    config += ", MULTIPACKET true";
+	if (ipsumdump_format)
+	    config += ", DEFAULT_CONTENTS " + ipsumdump_format;
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromIPSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";
@@ -710,15 +726,8 @@ particular purpose.\n");
     // lex configuration
     BailErrorHandler berrh(errh);
     VerboseFilterErrorHandler verrh(&berrh, ErrorHandler::ERRVERBOSITY_CONTEXT + 1);
-    ErrorHandler *click_errh = (verbose ? errh : &verrh);
-    Lexer *lexer = new Lexer;
-    click_export_elements(lexer);
-    int cookie = lexer->begin_parse(sa.take_string(), "<internal>", 0, click_errh);
-    while (lexer->ystatement())
-	/* do nothing */;
-    router = lexer->create_router();
-    lexer->end_parse(cookie);
-    if (errh->nerrors() > 0 || router->initialize(click_errh) < 0)
+    router = click_read_router(sa.take_string(), true, (verbose ? errh : &verrh));
+    if (!router)
 	exit(1);
     
     // output sample probability if appropriate
