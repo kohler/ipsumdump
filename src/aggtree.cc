@@ -2,6 +2,8 @@
 #include "aggtree.hh"
 #include <click/confparse.hh>
 #include <click/error.hh>
+#include <stdlib.h>
+#include <string.h>
 
 void
 AggregateTree::initialize_root()
@@ -230,6 +232,30 @@ AggregateTree::find_node(uint32_t a)
     return 0;
 }
 
+AggregateTree::Node *
+AggregateTree::find_existing_node(uint32_t a) const
+{
+    // straight outta tcpdpriv
+    Node *n = _root;
+    while (n) {
+	if (n->aggregate == a)
+	    return n;
+	if (!n->child[0])
+	    return 0;
+	else {
+	    // swivel is the first bit in which the two children differ
+	    int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	    if (bi_ffs(a ^ n->aggregate) < swivel) // input differs earlier
+		return 0;
+	    else if (a & (1 << (32 - swivel)))
+		n = n->child[1];
+	    else
+		n = n->child[0];
+	}
+    }
+    return 0;
+}
+
 
 void
 AggregateTree::hard_fix_children(Node *n)
@@ -267,6 +293,11 @@ AggregateTree::collapse_subtree(Node *root)
 	root->child[0] = root->child[1] = 0;
     }
 }
+
+
+//
+// PREFIXES
+//
 
 void
 AggregateTree::node_to_prefix(Node *n, int prefix)
@@ -306,7 +337,7 @@ AggregateTree::node_to_prefix(Node *n, int prefix)
 }
 
 void
-AggregateTree::mask_by_prefix(int prefix_len)
+AggregateTree::mask_to_prefix(int prefix_len)
 {
     assert(prefix_len >= 0 && prefix_len <= 32);
     if (prefix_len < 32)
@@ -328,11 +359,59 @@ AggregateTree::num_nonzero_in_prefixes(Vector<uint32_t> &out) const
     out.assign(33, 0);
     out[32] = nnz();
     for (int i = 31; i >= 0; i--) {
-	copy.mask_by_prefix(i);
+	copy.mask_to_prefix(i);
 	out[i] = copy.nnz();
     }
 }
 
+
+//
+// DISCRIMINATING PREFIXES
+//
+
+uint32_t
+AggregateTree::node_to_discriminated_by(Node *n, const AggregateTree &prefix,
+					uint32_t mask, bool count)
+{
+    uint32_t result = 0;
+    
+    if (n->count) {
+	Node *nn = prefix.find_existing_node(n->aggregate & mask);
+	assert(nn && nn->count >= n->count);
+	if (nn->count > n->count) {
+	    result += (count ? n->count : 1);
+	    n->count = 0;
+	}
+    }
+
+    if (n->child[0]) {
+	result += node_to_discriminated_by(n->child[0], prefix, mask, count);
+	result += node_to_discriminated_by(n->child[1], prefix, mask, count);
+	if (!n->child[0]->child[0] && !n->child[1]->child[0]
+	    && !n->child[0]->count && !n->child[1]->count)
+	    collapse_subtree(n);
+    }
+
+    return result;
+}
+
+void
+AggregateTree::num_discriminated_by_prefix(Vector<uint32_t> &out) const
+{
+    AggregateTree copy(*this);
+    AggregateTree prefix(*this);
+    out.assign(33, 0);
+
+    for (int i = 32; i >= 1; i--) {
+	prefix.mask_to_prefix(i - 1);
+	out[i] = copy.node_to_discriminated_by(copy._root, prefix, prefix_to_mask(i - 1), false);
+    }
+}
+
+
+//
+// READING AND WRITING
+//
 
 int
 AggregateTree::read_file(FILE *f, ErrorHandler *errh)
@@ -420,29 +499,4 @@ AggregateTree::write_file(FILE *f, bool binary, ErrorHandler *errh) const
 	return errh->error("file error");
     else
 	return 0;
-}
-
-
-int
-main(int argc, char *argv[])
-{
-    /*Clp_Parser *clp = Clp_NewParser
-	(argc, argv, sizeof(options) / sizeof(options[0]), options);
-	program_name = Clp_ProgramName(clp);*/
-    
-    String::static_initialize();
-    cp_va_static_initialize();
-    ErrorHandler *errh = new FileErrorHandler(stderr, "");
-    ErrorHandler::static_initialize(errh);
-
-    AggregateTree orig_tree;
-    orig_tree.read_file(stdin, errh);
-    orig_tree.ok();
-
-    Vector<uint32_t> nnz_by_p;
-    orig_tree.num_nonzero_in_prefixes(nnz_by_p);
-    for (int i = 0; i <= 32; i++)
-	printf("%u ", nnz_by_p[i]);
-
-    return 0;
 }
