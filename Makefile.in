@@ -30,17 +30,17 @@ CLICKLIB = @CLICKLIB@
 
 all: @LIBCLICK_TARGET@ src Makefile
 
-$(libclick):
+$(libclick): always
 	@cd $(libclick) && $(MAKE) all
-src: stamp-h
+src: always stamp-h
 	@cd src && $(MAKE) all-local
 
-install: $(libclick) stamp-h
+install: always $(libclick) stamp-h
 	@cd src && $(MAKE) install
-install-libclick:
+install-libclick: always
 	@cd $(libclick) && $(MAKE) install
 
-elemlist elemlists:
+elemlist elemlists: always
 	@cd src && $(MAKE) elemlist
 
 always:
@@ -86,7 +86,7 @@ fetch-click:
 distdir = $(PACKAGE)-$(VERSION)
 dist: $(distdir).tar.gz
 	-rm -rf $(distdir)
-$(distdir).tar.gz: distdir
+$(distdir).tar.gz: always distdir
 	tar czf $(distdir).tar.gz $(distdir)
 distdir:
 	-rm -rf $(distdir)

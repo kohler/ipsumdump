@@ -5,7 +5,6 @@ SHELL = @SHELL@
 top_builddir := ..
 subdir := src
 
-
 srcdir := @srcdir@
 top_srcdir := @top_srcdir@
 
@@ -46,9 +45,8 @@ mkinstalldirs = @top_srcdir@/mkinstalldirs
 	$(CXXCOMPILE) -E $< > $@
 
 
--include elements.mk
-
-OBJS = $(ELEMENT_OBJS) bailerror.o aciri-ipsumdump.o elements.o
+OBJS = fromdevice.o fromdump.o todump.o toipsumdump.o \
+	bailerror.o aciri-ipsumdump.o elements.o
 
 CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL
 CFLAGS = @CFLAGS@
@@ -73,7 +71,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	cd $(top_builddir) && \
 	  CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
-elemlist:
+elemlist: always
 	@rm -f elements.conf
 	@$(MAKE) elements.conf
 elements.conf: $(CLICK_BUILDTOOL)
@@ -91,10 +89,12 @@ install: aciri-ipsumdump
 always:
 	@:
 
+#!gmake
 DEPFILES := $(wildcard *.d)
 ifneq ($(DEPFILES),)
 include $(DEPFILES)
 endif
+#!end gmake
 
 clean:
 	-rm -f *.d *.o elements.mk elements.cc elements.conf aciri-ipsumdump
