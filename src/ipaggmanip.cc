@@ -25,6 +25,8 @@
 #define OR_OPT			307
 #define EACH_OPT		308
 #define AND_LIST_OPT		309
+#define MINUS_OPT		310
+#define XOR_OPT			311
 
 #define FIRST_ACT		400
 #define NO_ACT			400
@@ -67,6 +69,8 @@ static Clp_Option options[] = {
   { "ascii", 0, ASCII_OPT, 0, Clp_Negate },
   { "and", '&', AND_OPT, 0, 0 },
   { "or", '|', OR_OPT, 0, 0 },
+  { "minus", 0, MINUS_OPT, 0, 0 },
+  { "xor", '^', XOR_OPT, 0, 0 },
   { "each", 'e', EACH_OPT, 0, 0 },
   { "and-list", 0, AND_LIST_OPT, 0, 0 },
 
@@ -134,9 +138,13 @@ Actions: (Results of final action sent to output.)\n\
                              every file.\n\
       --and-list             Output results for FILE1, then FILE1 & FILE2,\n\
                              then FILE1 & FILE2 & FILE3, and so on.\n\
+      --minus                Drop any host in FILE1 present in any other FILE.\n\
+  -^, --xor                  Combine FILES, but drop any host present in more\n\
+                             than one FILE.\n\
   -e, --each                 Output result for each FILE separately.\n\
-  Also say \"'(+' FILE FILE ... ')'\" to or files together, and\n\
-  \"'(&' FILE FILE ... ')'\" to and files together.\n\
+  Also say \"'(+' FILE FILE ... ')'\" to --or particular files, or\n\
+  \"'(&' FILE ... ')'\" for --and, \"'(-' FILE ... ')'\" for --minus,\n\
+  \"'(^' FILE ... ')'\" for --xor.\n\
 \n\
   -n, --num-nonzero          Number of nonzero hosts.\n\
       --nnz-in-prefixes      Number of nonzero p-aggregates for all p.\n\
@@ -293,6 +301,53 @@ read_next_file(AggregateTree &tree, ErrorHandler *errh, bool recurse = false)
 	    }
 	
 	tree += tree2;
+	if (files_pos >= files.size())
+	    errh->warning("missing ')' at end of file list");
+	files_pos++;
+	last_filename += " )";
+	
+    } else if (files[files_pos] == "(-") {
+	last_filename += "(-";
+	files_pos++;
+	AggregateTree tree2;
+	
+	bool read_yet = false;
+	while (files_pos < files.size() && files[files_pos] != ")")
+	    if (!read_yet)
+		read_next_file(tree2, errh, true), read_yet = true;
+	    else {
+		AggregateTree tree3;
+		read_next_file(tree3, errh, true);
+		tree2.drop_common_hosts(tree3);
+	    }
+	
+	tree += tree2;
+	if (files_pos >= files.size())
+	    errh->warning("missing ')' at end of file list");
+	files_pos++;
+	last_filename += " )";
+	
+    } else if (files[files_pos] == "(^") {
+	last_filename += "(^";
+	files_pos++;
+	AggregateTree tree_or;
+	AggregateTree tree_or1;
+	
+	bool read_yet = false;
+	while (files_pos < files.size() && files[files_pos] != ")")
+	    if (!read_yet) {
+		read_next_file(tree_or, errh, true);
+		tree_or1 = tree_or;
+		read_yet = true;
+	    } else {
+		AggregateTree tree3;
+		read_next_file(tree3, errh, true);
+		tree_or1.add_new_hosts(tree3);
+		tree_or += tree3;
+	    }
+
+	tree_or.drop_common_unequal_hosts(tree_or1);
+	tree += tree_or;
 	if (files_pos >= files.size())
 	    errh->warning("missing ')' at end of file list");
 	files_pos++;
@@ -552,6 +607,8 @@ main(int argc, char *argv[])
 	  case OR_OPT:
 	  case EACH_OPT:
 	  case AND_LIST_OPT:
+	  case MINUS_OPT:
+	  case XOR_OPT:
 	    if (combiner)
 		die_usage("combiner option already specified");
 	    combiner = opt;
@@ -687,6 +744,33 @@ particular purpose.\n");
 	  AggregateTree tree;
 	  while (more_files())
 	      read_next_file(tree, errh);
+	  process_actions(tree, errh);
+	  break;
+      }
+
+      case XOR_OPT: {
+	  AggregateTree tree_or, tree_or1;
+	  read_next_file(tree_or, errh);
+	  tree_or1 = tree_or;
+	  while (more_files()) {
+	      AggregateTree t;
+	      read_next_file(t, errh);
+	      tree_or1.add_new_hosts(t);
+	      tree_or += t;
+	  }
+	  tree_or.drop_common_unequal_hosts(tree_or1);
+	  process_actions(tree_or, errh);
+	  break;
+      }
+
+      case MINUS_OPT: {
+	  AggregateTree tree;
+	  read_next_file(tree, errh);
+	  while (more_files()) {
+	      AggregateTree tree2;
+	      read_next_file(tree2, errh);
+	      tree.drop_common_hosts(tree2);
+	  }
 	  process_actions(tree, errh);
 	  break;
       }

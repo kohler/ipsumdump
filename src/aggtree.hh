@@ -49,6 +49,9 @@ class AggregateTree { public:
     void balance_histogram(int prefix_len, uint32_t nbuckets, Vector<uint32_t> &) const;
 
     void keep_common_hosts(const AggregateTree &, bool add = false);
+    void drop_common_hosts(const AggregateTree &);
+    void drop_common_unequal_hosts(const AggregateTree &);
+    void add_new_hosts(const AggregateTree &);
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
@@ -91,6 +94,8 @@ class AggregateTree { public:
     void node_cut_larger(Node *, uint32_t);
     void node_cut_aggregates(Node *, uint32_t, uint32_t &, uint32_t &, uint32_t, bool smaller, bool hosts);
     void node_keep_common_hosts(Node *, const Node *[], int &, bool);
+    void node_drop_common_hosts(Node *, const Node *[], int &);
+    void node_drop_common_unequal_hosts(Node *, const Node *[], int &);
 
     static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);

@@ -915,6 +915,72 @@ AggregateTree::keep_common_hosts(const AggregateTree &other, bool add)
 }
 
 
+void
+AggregateTree::node_drop_common_hosts(Node *n, const Node *other_stack[], int &other_pos)
+{
+    if (n->count) {
+	const Node *other = (other_pos ? other_stack[other_pos - 1] : 0);
+	while (other && other->aggregate < n->aggregate)
+	    other = preorder_step(other_stack, other_pos);
+	if (other && other->aggregate == n->aggregate && other->count != 0) {
+	    n->count = 0;
+	    _num_nonzero--;
+	}
+    }
+    if (n->child[0]) {
+	node_drop_common_hosts(n->child[0], other_stack, other_pos);
+	node_drop_common_hosts(n->child[1], other_stack, other_pos);
+    }
+}
+
+void
+AggregateTree::drop_common_hosts(const AggregateTree &other)
+{
+    const Node *other_stack[32];
+    other_stack[0] = other._root;
+    int other_pos = 1;
+    node_drop_common_hosts(_root, other_stack, other_pos);
+}
+
+
+void
+AggregateTree::add_new_hosts(const AggregateTree &other)
+{
+    AggregateTree other_copy(other);
+    other_copy.drop_common_hosts(*this);
+    *this += other_copy;
+}
+
+
+void
+AggregateTree::node_drop_common_unequal_hosts(Node *n, const Node *other_stack[], int &other_pos)
+{
+    if (n->count) {
+	const Node *other = (other_pos ? other_stack[other_pos - 1] : 0);
+	while (other && other->aggregate < n->aggregate)
+	    other = preorder_step(other_stack, other_pos);
+	if (other && other->aggregate == n->aggregate
+	    && other->count != 0 && other->count != n->count) {
+	    n->count = 0;
+	    _num_nonzero--;
+	}
+    }
+    if (n->child[0]) {
+	node_drop_common_unequal_hosts(n->child[0], other_stack, other_pos);
+	node_drop_common_unequal_hosts(n->child[1], other_stack, other_pos);
+    }
+}
+
+void
+AggregateTree::drop_common_unequal_hosts(const AggregateTree &other)
+{
+    const Node *other_stack[32];
+    other_stack[0] = other._root;
+    int other_pos = 1;
+    node_drop_common_unequal_hosts(_root, other_stack, other_pos);
+}
+
+
 //
 // READING AND WRITING
 //
