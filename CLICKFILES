@@ -1,5 +1,7 @@
 elements/userlevel/fromdump.cc
 elements/userlevel/fromdump.hh
+elements/userlevel/fromfile.cc
+elements/userlevel/fromfile.hh
 elements/userlevel/todump.cc
 elements/userlevel/todump.hh
 elements/userlevel/fakepcap.hh
@@ -10,12 +12,12 @@ elements/userlevel/progressbar.cc
 elements/userlevel/progressbar.hh
 elements/analysis/anonipaddr.cc
 elements/analysis/anonipaddr.hh
-elements/analysis/fromipsumdump.cc
-elements/analysis/fromipsumdump.hh
-elements/analysis/fromnetflowsumdump.cc
-elements/analysis/fromnetflowsumdump.hh
-elements/analysis/fromtcpdump.cc
-elements/analysis/fromtcpdump.hh
+elements/analysis/fromipsumdump.cc:s{"elements/userlevel/}{"}
+elements/analysis/fromipsumdump.hh:s{"elements/userlevel/}{"}
+elements/analysis/fromnetflowsumdump.cc:s{"elements/userlevel/}{"}
+elements/analysis/fromnetflowsumdump.hh:s{"elements/userlevel/}{"}
+elements/analysis/fromtcpdump.cc:s{"elements/userlevel/}{"}
+elements/analysis/fromtcpdump.hh:s{"elements/userlevel/}{"}
 elements/analysis/ipsumdumpinfo.cc
 elements/analysis/ipsumdumpinfo.hh
 elements/analysis/timesortedsched.cc

@@ -57,7 +57,7 @@ AC_DEFUN([CLICK_PROG_CXX], [
 
     dnl work around Autoconf 2.53, which #includes <stdlib.h> inappropriately
     if grep __cplusplus confdefs.h >/dev/null 2>&1; then
-	sed 's/#ifdef __cplusplus/#if 0/' < confdefs.h > confdefs.h~
+	sed 's/#ifdef __cplusplus/#if defined(__cplusplus) \&\& !defined(__KERNEL__)/' < confdefs.h > confdefs.h~
 	mv confdefs.h~ confdefs.h
     fi
 
@@ -180,7 +180,8 @@ AC_DEFUN([CLICK_PROG_KERNEL_CXX], [
 dnl
 dnl CLICK_CHECK_DYNAMIC_LINKING
 dnl Defines HAVE_DYNAMIC_LINKING and DL_LIBS if <dlfcn.h> and -ldl exist 
-dnl and work.
+dnl and work.  Also defines LDMODULEFLAGS, the flags to pass to the linker
+dnl when building a loadable module.
 dnl
 
 AC_DEFUN([CLICK_CHECK_DYNAMIC_LINKING], [
@@ -193,6 +194,16 @@ AC_DEFUN([CLICK_CHECK_DYNAMIC_LINKING], [
 	ac_have_dynamic_linking=yes
     fi
     AC_SUBST(DL_LIBS)
+
+    AC_MSG_CHECKING(compiler flags for building loadable modules)
+    LDMODULEFLAGS=-shared
+    if test "x$ac_have_dynamic_linking" = xyes; then
+	if echo "$ac_cv_target" | grep apple-darwin >/dev/null 2>&1; then
+	    LDMODULEFLAGS='-bundle -flat_namespace -undefined suppress'
+	fi
+    fi
+    AC_MSG_RESULT($LDMODULEFLAGS)
+    AC_SUBST(LDMODULEFLAGS)
 ])
 
 
@@ -539,8 +550,10 @@ Compile with '--disable-int64'.
 	AC_CACHE_CHECK(whether long and int64_t are the same type,
 	    ac_cv_long_64, [AC_LANG_CPLUSPLUS
 	    AC_TRY_COMPILE([#include <$inttypes_hdr>
-void f1(long);
-void f1(int64_t); // will fail if long and int64_t are the same type
+void f1(long) {
+}
+void f1(int64_t) { // will fail if long and int64_t are the same type
+}
 ], [], ac_cv_long_64=no, ac_cv_long_64=yes)])
 	if test $ac_cv_long_64 = yes; then
 	    AC_DEFINE(HAVE_64_BIT_LONG)

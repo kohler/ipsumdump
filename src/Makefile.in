@@ -45,8 +45,9 @@ mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 	$(CXXCOMPILE) -E $< > $@
 
 
-OBJS = fromdevice.o fromdump.o fromipsumdump.o fromnetflowsumdump.o \
-	fromtcpdump.o ipsumdumpinfo.o toipsumdump.o todump.o \
+OBJS = fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
+	fromnetflowsumdump.o fromtcpdump.o ipsumdumpinfo.o \
+	toipsumdump.o todump.o \
 	anonipaddr.o classifier.o counter.o discard.o fakepcap.o ipfilter.o \
 	timesortedsched.o pokehandlers.o progressbar.o randomsample.o \
 	switch.o tee.o timefilter.o unqueue.o \

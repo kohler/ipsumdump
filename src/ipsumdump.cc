@@ -3,7 +3,7 @@
  * ipsumdump.cc -- driver for the ipsumdump program
  * Eddie Kohler
  *
- * Copyright (c) 2001-3 International Computer Science Institute
+ * Copyright (c) 2001-4 International Computer Science Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "fromipsumdump.hh"
 #include "toipsumdump.hh"
@@ -89,7 +91,7 @@
 #define FRAGOFF_OPT	(1000 + ToIPSummaryDump::W_FRAGOFF)
 #define PAYLOAD_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD)
 
-#define CLP_TIMEVAL_TYPE	(Clp_MaxDefaultType + 1)
+#define CLP_TIMEVAL_TYPE	(Clp_FirstUserType)
 
 static Clp_Option options[] = {
 
