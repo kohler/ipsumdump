@@ -1,3 +1,15 @@
+2001-10-04 Thursday 16:07  Eddie Kohler <kohler@aciri.org>
+
+	* src/toipsumdump.hh (1.14): another doc update
+
+2001-10-04 Thursday 16:00  Eddie Kohler <kohler@aciri.org>
+
+	* src/toipsumdump.hh (1.13): update doc
+
+2001-10-04 Thursday 11:52  Eddie Kohler <kohler@aciri.org>
+
+	* src/ipsumdump.cc (1.20): adapt to new Click clp
+
 2001-10-02 Tuesday 17:43  Eddie Kohler <kohler@aciri.org>
 
 	* Makefile.in (1.16), src/ipsumdump.cc (1.19): catch a couple more
