@@ -35,14 +35,16 @@ contain those fields. Valid field names, with examples, are:
    ip src       IP source address: `192.150.187.37'
    ip dst       IP destination address: `192.168.1.100'
    len          Packet length: `132'
-   proto        IP protocol: `10', or `I' for ICMP, `T' for TCP, `U' for UDP
+   proto        IP protocol: `10', or `I' for ICMP, `T' for
+                TCP, `U' for UDP
    ip id        IP ID: `48759'
    sport        TCP/UDP source port: `22'
    dport        TCP/UDP destination port: `2943'
    tcp seq      TCP sequence number: `93167339'
    tcp ack      TCP acknowledgement number: `93178192'
    tcp flags    TCP flags: `SA', `.'
-   payload len  Payload length (not including IP/TCP/UDP headers): `34'
+   payload len  Payload length (not including IP/TCP/UDP
+                headers): `34'
    count        Number of packets: `1'
 
 If a field does not apply to a particular packet -- for example, `C<sport>' on
