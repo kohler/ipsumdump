@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 
 #include "aggtree.hh"
 #include "aggwtree.hh"
@@ -64,6 +65,9 @@
 #define BRANCHING_ACT		513
 #define ALL_BRANCHING_ACT	514
 #define SIZE_COUNTS_ACT		515
+#define AGG_SIZES_ACT		516
+#define AGG_ADDRS_ACT		517
+#define CORR_SIZE_AGG_ADDR_ACT	518
 
 #define CLP_TWO_UINTS_TYPE	(Clp_MaxDefaultType + 1)
 
@@ -124,12 +128,16 @@ static Clp_Option options[] = {
   { "sizes", 0, SIZES_ACT, 0, 0 },
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   { "size-counts", 0, SIZE_COUNTS_ACT, 0, 0 },
+  { "container-sizes", 0, AGG_SIZES_ACT, Clp_ArgUnsigned, 0 },
+  { "container-addresses", 0, AGG_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  { "container-addrs", 0, AGG_ADDRS_ACT, Clp_ArgUnsigned, 0 },
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "all-branching-counts", 0, ALL_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
   { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, Clp_ArgDouble, Clp_Optional },
   { "fake-by-branching-counts", 0, FAKE_BY_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
+  { "correlation-size-container-addresses", 0, CORR_SIZE_AGG_ADDR_ACT, Clp_ArgUnsigned, 0 },
   
 };
 
@@ -180,11 +188,12 @@ Actions: (Results of final action sent to output.)\n\
                              discriminating prefix p for all p.\n\
       --all-discriminating-prefix-counts   Number of active p-aggregates with\n\
                              p-discriminating prefix q for all p, q.\n\
-      --sizes                All active aggregate sizes in arbitrary order.\n\
-      --sorted-sizes         All active aggregate sizes in decreasing order\n\
-                             by size.\n\
+      --sizes                All active address sizes in address order.\n\
+      --sorted-sizes         All active address sizes in reverse size order.\n\
       --size-counts          Counts of active aggregates with each size,\n\
                              in return-separated size-count pairs.\n\
+      --container-sizes P    Sizes of P-aggregates containing each address, in\n\
+                             address order.\n\
       --balance P            Print left-right balance at prefix level P.\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
@@ -219,6 +228,7 @@ Actions: (Results of final action sent to output.)\n\
       --branching-counts P,STEP\n\
       --all-branching-counts STEP\n\
       --conditional-split-counts P\n\
+      --correlation-size-container-addresses P\n\
 \n\
 Other options:\n\
   -r, --read FILE            Read summary from FILE (default stdin).\n\
@@ -415,6 +425,28 @@ static bool
 more_files()
 {
     return (files_pos < files.size());
+}
+
+static double
+correlation_coefficient(const Vector<uint32_t> &a, const Vector<uint32_t> &b)
+{
+    assert(a.size() == b.size());
+    double a_sum = 0, b_sum = 0, a2_sum = 0, b2_sum = 0, ab_sum = 0;
+    uint32_t n = a.size();
+    
+    for (uint32_t i = 0; i < n; i++) {
+	a_sum += a[i];
+	a2_sum += (double) a[i] * a[i];
+	b_sum += b[i];
+	b2_sum += (double) b[i] * b[i];
+	ab_sum += (double) a[i] * b[i];
+    }
+
+    double a_avg = a_sum / n, b_avg = b_sum / n;
+    double a_varx = a2_sum - a_sum * a_avg;
+    double b_varx = b2_sum - b_sum * b_avg;
+    double ab_covarx = ab_sum - a_avg * b_sum - b_avg * a_sum + n * a_avg * b_avg;
+    return ab_covarx / sqrt(a_varx * b_varx);
 }
 
 static void
@@ -625,6 +657,35 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  break;
       }
 
+      case AGG_SIZES_ACT:
+      case AGG_ADDRS_ACT: {
+	  AggregateTree agg_tree(tree);
+	  if (action == AGG_ADDRS_ACT)
+	      agg_tree.posterize();
+	  agg_tree.prefixize(action_extra);
+	  tree.take_nonzero_sizes(agg_tree, prefix_to_mask(action_extra));
+	  Vector<uint32_t> sizes;
+	  tree.nonzero_sizes(sizes);
+	  write_vector(sizes, out);
+	  break;
+      }
+
+      case CORR_SIZE_AGG_ADDR_ACT: {
+	  Vector<uint32_t> sizes;
+	  tree.nonzero_sizes(sizes);
+	  
+	  AggregateTree agg_tree(tree);
+	  agg_tree.posterize();
+	  agg_tree.prefixize(action_extra);
+	  tree.take_nonzero_sizes(agg_tree, prefix_to_mask(action_extra));
+	  Vector<uint32_t> agg_addrs;
+	  tree.nonzero_sizes(agg_addrs);
+
+	  fprintf(out, "%.20g\n", correlation_coefficient(sizes, agg_addrs));
+	  //fprintf(out, "# bar %.20g %.20g\n# var %.20g %.20g\n# covar %.20g\n", a_avg, b_avg, a_varx, b_varx, ab_covarx);
+	  break;
+      }
+
       case SIZE_COUNTS_ACT: {
 	  Vector<uint32_t> sizes;
 	  tree.nonzero_sizes(sizes);
@@ -791,8 +852,11 @@ particular purpose.\n");
 	    break;
 
 	  case PREFIX_ACT:
+	  case AGG_SIZES_ACT:
+	  case AGG_ADDRS_ACT:
+	  case CORR_SIZE_AGG_ADDR_ACT:
 	    if (clp->val.u > 32)
-		die_usage("`--prefix' must be between 0 and 32");
+		die_usage("`" + String(Clp_CurOptionName(clp)) + "' must be between 0 and 32");
 	    add_action(opt, clp->val.u);
 	    break;
 
