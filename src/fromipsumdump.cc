@@ -36,7 +36,8 @@
 static uint8_t flag_mapping[256];
 
 FromIPSummaryDump::FromIPSummaryDump()
-    : Element(0, 1), _fd(-1), _pos(0), _len(0), _task(this), _pipe(0)
+    : Element(0, 1), _fd(-1), _pos(0), _len(0), _work_packet(0),
+      _task(this), _pipe(0)
 {
     MOD_INC_USE_COUNT;
     if (!flag_mapping[(uint8_t)'A']) {
@@ -55,7 +56,7 @@ FromIPSummaryDump::~FromIPSummaryDump()
 int
 FromIPSummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
 {
-    bool stop = false, active = true, zero = false;
+    bool stop = false, active = true, zero = false, multipacket = false;
     uint8_t default_proto = IP_PROTO_TCP;
     _sampling_prob = (1 << SAMPLING_SHIFT);
     
@@ -67,6 +68,7 @@ FromIPSummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
 		    "ZERO", cpBool, "zero packet data?", &zero,
 		    "SAMPLE", cpUnsignedReal2, "sampling probability", SAMPLING_SHIFT, &_sampling_prob,
 		    "PROTO", cpByte, "default IP protocol", &default_proto,
+		    "MULTIPACKET", cpBool, "generate multiple packets per record?", &multipacket,
 		    0) < 0)
 	return -1;
     if (_sampling_prob > (1 << SAMPLING_SHIFT)) {
@@ -79,6 +81,7 @@ FromIPSummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
     _stop = stop;
     _active = active;
     _zero = zero;
+    _multipacket = multipacket;
     return 0;
 }
 
@@ -219,6 +222,10 @@ FromIPSummaryDump::uninitialize()
 	pclose(_pipe);
     else if (_fd >= 0 && _fd != STDIN_FILENO)
 	close(_fd);
+    if (_work_packet) {
+	_work_packet->kill();
+	_work_packet = 0;
+    }
     _fd = -1;
     _pipe = 0;
     _buffer = String();
@@ -291,11 +298,6 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	if (words.size() != _contents.size() || _contents.size() == 0)
 	    break;		// bad format
 
-	// checking sampling probability
-	if (_sampling_prob < (1 << SAMPLING_SHIFT)
-	    && (uint32_t)(random() & ((1 << SAMPLING_SHIFT) - 1)) >= _sampling_prob)
-	    continue;
-    
 	int ok = 0;
 	for (int i = 0; i < _contents.size(); i++)
 	    switch (_contents[i]) {
@@ -416,20 +418,52 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
     return 0;
 }
 
+Packet *
+FromIPSummaryDump::handle_multipacket(Packet *p)
+{
+    if (p) {
+	uint32_t count = PACKET_COUNT_ANNO(p);
+	if (!_work_packet && count > 1)
+	    _multipacket_extra_length = EXTRA_LENGTH_ANNO(p) / count;
+	_work_packet = (count > 1 ? p : 0);
+	if (_work_packet) {
+	    SET_PACKET_COUNT_ANNO(_work_packet, count - 1);
+	    SET_EXTRA_LENGTH_ANNO(_work_packet, EXTRA_LENGTH_ANNO(_work_packet) - _multipacket_extra_length);
+	    if ((p = p->clone())) {
+		SET_PACKET_COUNT_ANNO(p, 1);
+		SET_EXTRA_LENGTH_ANNO(p, _multipacket_extra_length);
+	    }
+	}
+    }
+    return p;
+}
+
 void
 FromIPSummaryDump::run_scheduled()
 {
     if (!_active)
 	return;
+    Packet *p;
 
-    Packet *p = read_packet(0);
-    if (!p) {
-	if (_stop)
-	    router()->please_stop_driver();
-	return;
+    while (1) {
+	p = (_work_packet ? _work_packet : read_packet(0));
+	if (!p) {
+	    if (_stop)
+		router()->please_stop_driver();
+	    return;
+	}
+	if (_multipacket)
+	    p = handle_multipacket(p);
+	// check sampling probability
+	if (_sampling_prob < (1 << SAMPLING_SHIFT)
+	    && (uint32_t)(random() & ((1 << SAMPLING_SHIFT) - 1)) < _sampling_prob)
+	    break;
+	if (p)
+	    p->kill();
     }
-    
-    output(0).push(p);
+
+    if (p)
+	output(0).push(p);
     _task.fast_reschedule();
 }
 
@@ -438,10 +472,25 @@ FromIPSummaryDump::pull(int)
 {
     if (!_active)
 	return 0;
+    Packet *p;
 
-    Packet *p = read_packet(0);
-    if (!p && _stop)
-	router()->please_stop_driver();
+    while (1) {
+	p = (_work_packet ? _work_packet : read_packet(0));
+	if (!p) {
+	    if (_stop)
+		router()->please_stop_driver();
+	    return 0;
+	}
+	if (_multipacket)
+	    p = handle_multipacket(p);
+	// check sampling probability
+	if (_sampling_prob < (1 << SAMPLING_SHIFT)
+	    && (uint32_t)(random() & ((1 << SAMPLING_SHIFT) - 1)) < _sampling_prob)
+	    break;
+	if (p)
+	    p->kill();
+    }
+    
     return p;
 }
 

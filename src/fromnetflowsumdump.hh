@@ -41,6 +41,12 @@ Boolean. If false, then FromIPSummaryDump will not emit packets (until the
 Boolean. If true, then emitted packet data is zero, except for data set by the
 dump. If false (the default), this data is random garbage.
 
+=item MULTIPACKET
+
+Boolean. If true, then generate multiple packets for each flow, according to
+the flow's packet count. Packet timestamps all equal the flow start timestamp.
+Default is false.
+
 =back
 
 Only available in user-level processes.
@@ -65,6 +71,7 @@ attention to some of these fields:
   5      Packet count in flow          5
   6      Byte count in flow            10932
   7      Flow timestamp (UNIX-style)   998006995
+  8      Flow end timestamp            998006999
   9      Source port                   3917
   10     Destination port              80
   13     IP protocol                   6
@@ -114,6 +121,9 @@ class FromNetFlowSummaryDump : public Element { public:
     bool _format_complaint : 1;
     bool _zero;
     bool _active;
+    bool _multipacket;
+    Packet *_work_packet;
+    uint32_t _multipacket_extra_length;
 
     Task _task;
 
@@ -126,6 +136,7 @@ class FromNetFlowSummaryDump : public Element { public:
     int read_line(String &, ErrorHandler *);
 
     Packet *read_packet(ErrorHandler *);
+    Packet *handle_multipacket(Packet *);
 
     static String read_handler(Element *, void *);
     static int write_handler(const String &, Element *, void *, ErrorHandler *);

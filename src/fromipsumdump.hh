@@ -57,6 +57,22 @@ this data is zero. If false (the default), this data is random garbage.
 Byte (0-255). Sets the IP protocol used for output packets when the dump
 doesn't specify a protocol. Default is 6 (TCP).
 
+=item MULTIPACKET
+
+Boolean. If true, then FromIPSummaryDump will emit multiple packets for each
+line---specifically, it will emit as many packets as the packet count field
+specifies. Default is false.
+
+=item SAMPLE
+
+Unsigned real number between 0 and 1. FromIPSummaryDump will output each
+packet with probability SAMPLE. Default is 1. FromIPSummaryDump uses
+fixed-point arithmetic, so the actual sampling probability may differ
+substantially from the requested sampling probability. Use the
+C<sampling_prob> handler to find out the actual probability. If MULTIPACKET is
+true, then the sampling probability applies separately to the multiple packets
+generated per record.
+
 =back
 
 Only available in user-level processes.
@@ -127,6 +143,9 @@ class FromIPSummaryDump : public Element { public:
     bool _format_complaint : 1;
     bool _zero;
     bool _active;
+    bool _multipacket;
+    Packet *_work_packet;
+    uint32_t _multipacket_extra_length;
 
     Task _task;
 
@@ -140,6 +159,7 @@ class FromIPSummaryDump : public Element { public:
 
     void bang_data(const String &, ErrorHandler *);
     Packet *read_packet(ErrorHandler *);
+    Packet *handle_multipacket(Packet *);
 
     static String read_handler(Element *, void *);
     static int write_handler(const String &, Element *, void *, ErrorHandler *);

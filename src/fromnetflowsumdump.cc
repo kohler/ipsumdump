@@ -33,7 +33,8 @@
 #include <fcntl.h>
 
 FromNetFlowSummaryDump::FromNetFlowSummaryDump()
-    : Element(0, 1), _fd(-1), _pos(0), _len(0), _task(this), _pipe(0)
+    : Element(0, 1), _fd(-1), _pos(0), _len(0), _work_packet(0),
+      _task(this), _pipe(0)
 {
     MOD_INC_USE_COUNT;
 }
@@ -47,7 +48,7 @@ FromNetFlowSummaryDump::~FromNetFlowSummaryDump()
 int
 FromNetFlowSummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
 {
-    bool stop = false, active = true, zero = false;
+    bool stop = false, active = true, zero = false, multipacket = false;
     
     if (cp_va_parse(conf, this, errh,
 		    cpFilename, "dump file name", &_filename,
@@ -55,12 +56,14 @@ FromNetFlowSummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh
 		    "STOP", cpBool, "stop driver when done?", &stop,
 		    "ACTIVE", cpBool, "start active?", &active,
 		    "ZERO", cpBool, "zero packet data?", &zero,
+		    "MULTIPACKET", cpBool, "generate multiple packets per flow?", &multipacket,
 		    0) < 0)
 	return -1;
 
     _stop = stop;
     _active = active;
     _zero = zero;
+    _multipacket = multipacket;
     return 0;
 }
 
@@ -198,6 +201,10 @@ FromNetFlowSummaryDump::uninitialize()
 	pclose(_pipe);
     else if (_fd >= 0 && _fd != STDIN_FILENO)
 	close(_fd);
+    if (_work_packet) {
+	_work_packet->kill();
+	_work_packet = 0;
+    }
     _fd = -1;
     _pipe = 0;
     _buffer = String();
@@ -253,20 +260,24 @@ FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
 	// 5 - # packets
 	// 6 - # bytes
 	// 7 - start timestamp sec
+	// 8 - end timestamp sec
 	// 9 - source port
 	// 10 - dest port
 	// 13 - protocol
 	// 14 - TOS bits
 
 	int ok = 0;
+	uint32_t byte_count, end_timestamp;
 	ok += cp_ip_address(words[0], (unsigned char *)&iph->ip_src);
 	ok += cp_ip_address(words[1], (unsigned char *)&iph->ip_dst);
 	if (cp_unsigned(words[5], &j))
 	    SET_PACKET_COUNT_ANNO(q, j), ok++;
-	if (cp_unsigned(words[6], &j))
-	    SET_EXTRA_LENGTH_ANNO(q, j - q->length()), ok++;
+	if (cp_unsigned(words[6], (unsigned *)&byte_count))
+	    ok++;
 	if (cp_unsigned(words[7], &j))
 	    q->set_timestamp_anno(j, 0), ok++;
+	if (cp_unsigned(words[7], (unsigned *)&end_timestamp))
+	    ok++;
 	if (cp_unsigned(words[13], &j) && j <= 0xFF)
 	    iph->ip_p = j, ok++;
 	if (cp_unsigned(words[14], &j) && j <= 0xFF)
@@ -276,8 +287,17 @@ FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
 	if (cp_unsigned(words[10], &j) && j <= 0xFFFF)
 	    q->udp_header()->uh_dport = htons(j), ok++;
 
-	if (ok < 9)
+	if (ok < 10)
 	    break;
+	
+	// set TCP offset to a reasonable value; possibly reduce packet length
+	if (iph->ip_p == IP_PROTO_TCP)
+	    q->tcp_header()->th_off = sizeof(click_tcp) >> 2;
+	else if (iph->ip_p == IP_PROTO_UDP)
+	    q->take(sizeof(click_tcp) - sizeof(click_udp));
+	else
+	    q->take(sizeof(click_tcp));
+	SET_EXTRA_LENGTH_ANNO(q, byte_count - q->length());
 	return q;
     }
 
@@ -291,20 +311,43 @@ FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
     return 0;
 }
 
+Packet *
+FromNetFlowSummaryDump::handle_multipacket(Packet *p)
+{
+    if (p) {
+	uint32_t count = PACKET_COUNT_ANNO(p);
+	if (!_work_packet && count > 1)
+	    _multipacket_extra_length = EXTRA_LENGTH_ANNO(p) / count;
+	_work_packet = (count > 1 ? p : 0);
+	if (_work_packet) {
+	    SET_PACKET_COUNT_ANNO(_work_packet, count - 1);
+	    SET_EXTRA_LENGTH_ANNO(_work_packet, EXTRA_LENGTH_ANNO(_work_packet) - _multipacket_extra_length);
+	    if ((p = p->clone())) {
+		SET_PACKET_COUNT_ANNO(p, 1);
+		SET_EXTRA_LENGTH_ANNO(p, _multipacket_extra_length);
+	    }
+	}
+    }
+    return p;
+}
+
 void
 FromNetFlowSummaryDump::run_scheduled()
 {
     if (!_active)
 	return;
 
-    Packet *p = read_packet(0);
+    Packet *p = (_work_packet ? _work_packet : read_packet(0));
     if (!p) {
 	if (_stop)
 	    router()->please_stop_driver();
 	return;
     }
-    
-    output(0).push(p);
+
+    if (_multipacket)
+	p = handle_multipacket(p);
+    if (p)
+	output(0).push(p);
     _task.fast_reschedule();
 }
 
@@ -314,9 +357,11 @@ FromNetFlowSummaryDump::pull(int)
     if (!_active)
 	return 0;
 
-    Packet *p = read_packet(0);
+    Packet *p = (_work_packet ? _work_packet : read_packet(0));
     if (!p && _stop)
 	router()->please_stop_driver();
+    if (_multipacket)
+	p = handle_multipacket(p);
     return p;
 }
 

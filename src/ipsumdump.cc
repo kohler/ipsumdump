@@ -402,15 +402,14 @@ particular purpose.\n");
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
     // set random seed if appropriate
-    if (do_seed)
+    if (do_seed && (do_sample || anonymize))
 	click_random_srandom();
 
     // define shunt
     String shunt_internals = "";
     StringAccum psa;
-    String toipsumdump_extra;
     String sample_elt;
-    int snaplen = (write_dump ? 2000 : 60);
+    int snaplen = (write_dump ? 2000 : 68);
     
     // elements to read packets
     if (action == 0)
@@ -446,10 +445,11 @@ particular purpose.\n");
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << files[i] << ", STOP true) -> " << source_output_port(collate, i) << ";\n";
+	String config = ", STOP true";
 	if (multipacket)
-	    toipsumdump_extra += ", MULTIPACKET true";
+	    config += ", MULTIPACKET true";
+	for (int i = 0; i < files.size(); i++)
+	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	if (do_sample) {
 	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
 	    sample_elt = "shunt/samp";
@@ -463,10 +463,10 @@ particular purpose.\n");
 	String config = ", STOP true, ZERO true";
 	if (do_sample)
 	    config += ", SAMPLE " + String(sample);
+	if (multipacket)
+	    config += ", MULTIPACKET true";
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromIPSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
-	if (multipacket)
-	    toipsumdump_extra += ", MULTIPACKET true";
 	sample_elt = "src0";
 	
     } else
@@ -510,7 +510,7 @@ particular purpose.\n");
     for (int i = 0; i < argc; i++)
 	banner << argv[i] << ' ';
     banner.pop_back();
-    sa << cp_quote(banner.take_string()) << toipsumdump_extra << ");\n";
+    sa << cp_quote(banner.take_string()) << ");\n";
 
     sa << "DriverManager(";
     if ((files.size() > 1 && action != INTERFACE_OPT) || collate) {

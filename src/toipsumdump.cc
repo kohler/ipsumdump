@@ -138,7 +138,7 @@ ToIPSummaryDump::uninitialize()
 
 static const char *content_names[] = {
     "??", "timestamp", "ts sec", "ts usec",
-    "ip src", "ip dst", "len", "ip proto", "ip id",
+    "ip src", "ip dst", "ip len", "ip proto", "ip id",
     "sport", "dport", "tcp seq", "tcp ack", "tcp flags",
     "payload len", "count"
 };
@@ -266,12 +266,14 @@ ToIPSummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 	  }
 	  case W_LENGTH: {
 	      uint32_t len = p->length() + EXTRA_LENGTH_ANNO(p);
+	      if (iph)
+		  len -= p->network_header_offset();
 	      sa << len;
 	      break;
 	  }
 	  case W_PAYLOAD_LENGTH: {
 	      uint32_t len = p->length() + EXTRA_LENGTH_ANNO(p);
-	      if (const click_ip *iph = p->ip_header()) {
+	      if (iph) {
 		  len -= p->transport_header_offset();
 		  if (iph->ip_p == IP_PROTO_TCP)
 		      len -= (tcph->th_off << 2);

@@ -124,7 +124,8 @@ Include TCP or UDP destination port in the dump. Example: C<80>.
 
 =item B<--length>, B<-l>
 
-Include packet length in the dump. Example: C<1536>.
+Include packet length in the dump, not including any link-level headers.
+Example: C<72>.
 
 =item B<--protocol>, B<-p>
 
@@ -200,8 +201,7 @@ addresses to the standard error, paired with their anonymized counterparts.
 Supply this option if you are reading NetFlow or IP summaries -- files
 where each record might represent multiple packets -- and you would like
 the output summary to have one line per packet, instead of the default one
-line per record. See also B<--packet-count>, above. If you supply both
-B<--multipacket> and B<--packet-count>, then B<--multipacket> is ignored.
+line per record. See also B<--packet-count>, above.
 
 =item B<--sample>=I<p>
 
@@ -253,6 +253,12 @@ Print version number and license information to the standard output, then
 exit.
 
 =back
+
+=head1 SIGNALS
+
+When killed with SIGTERM or SIGINT, B<ipsumdump> will exit cleanly by
+flushing its buffers. If you want it to flush its buffers without exiting,
+kill it with SIGHUP.
 
 =head1 EXAMPLES
 
