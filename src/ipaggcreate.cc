@@ -33,7 +33,7 @@
 #define TIME_OFFSET_OPT	316
 #define BINARY_OPT	317
 #define ASCII_OPT	318
-#define HASHES_OPT	319
+#define QUIET_OPT	320
 
 // data sources
 #define READ_DUMP_OPT	401
@@ -77,7 +77,7 @@ static Clp_Option options[] = {
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
     { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
-    { "hashes", 'H', HASHES_OPT, 0, 0 },
+    { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -152,7 +152,7 @@ Other options:\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
   -B, --binary               Output aggregate file in binary.\n\
       --ascii                Output aggregate file in ASCII (default).\n\
-  -H, --hashes               Print a hash mark to stderr every 2048 packets.\n\
+  -q, --quiet                Do not print progress bar.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
@@ -296,7 +296,7 @@ main(int argc, char *argv[])
     bool collate = false;
     int action = 0;
     bool do_seed = true;
-    uint32_t hashes = 0;
+    bool progress_bar_ok = true;
     //bool binary;
     struct timeval time_offset;
     struct timeval interval;
@@ -371,8 +371,8 @@ main(int argc, char *argv[])
 	    srandom(clp->val.u);
 	    break;
 
-	  case HASHES_OPT:
-	    hashes = (clp->negated ? 0 : 2048);
+	  case QUIET_OPT:
+	    progress_bar_ok = clp->negated;
 	    break;
 	    
 	  case TIME_OFFSET_OPT:
@@ -440,7 +440,7 @@ particular purpose.\n");
 	    break;
 
 	  case Clp_NotOption:
-	    files.push_back(cp_quote(clp->arg));
+	    files.push_back(clp->arg);
 	    break;
 	    
 	  case Clp_BadOption:
@@ -495,14 +495,12 @@ particular purpose.\n");
 	String config = ", FORCE_IP true, STOP true";
 	if (do_sample)
 	    config += ", SAMPLE " + String(sample);
-	if (hashes)
-	    config += ", HASH " + String(hashes);
 	if (time_config && files.size() == 1) {
 	    config += ", " + time_config;
 	    time_config = String();
 	}
 	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
+	    psa << "src" << i << " :: FromDump(" << cp_quote(files[i]) << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";
 	
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
@@ -512,13 +510,14 @@ particular purpose.\n");
 	if (multipacket)
 	    config += ", MULTIPACKET true";
 	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
+	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << cp_quote(files[i]) << config << ") -> " << source_output_port(collate, i) << ";\n";
 	if (do_sample) {
 	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
 	    sample_elt = "shunt/samp";
 	    if (!multipacket)
 		p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
 	}
+	progress_bar_ok = false;
 	
     } else if (action == READ_IPSUMDUMP_OPT
 	       || action == READ_TUDUMP_OPT) {
@@ -531,10 +530,8 @@ particular purpose.\n");
 	    config += ", MULTIPACKET true";
 	if (action == READ_TUDUMP_OPT)
 	    config += ", DEFAULT_CONTENTS timestamp 'ip src' sport 'ip dst' dport proto 'payload len'";
-	if (hashes)
-	    config += ", HASH " + String(hashes);
 	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromIPSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
+	    psa << "src" << i << " :: FromIPSummaryDump(" << cp_quote(files[i]) << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";
 	
     } else
@@ -599,6 +596,12 @@ particular purpose.\n");
     sa << ", wait_stop, write output);\n";
     sa << "// Outside of aciri-aggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "'.\n";
 
+    // progress bar
+    if (progress_bar_ok && files.size() == 1) {
+	String banner = cp_quote(files[0].substring(0, 20));
+	sa << "ProgressBar(src0.filepos, src0.filesize, BANNER " << banner << ");\n";
+    }
+    
     // output config if required
     if (config) {
 	printf("%s", sa.cc());
