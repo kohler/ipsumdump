@@ -54,6 +54,7 @@ class AggregateTree { public:
     int write_file(FILE *, bool binary, ErrorHandler *) const;
 
     AggregateTree &operator=(const AggregateTree &);
+    AggregateTree &operator+=(const AggregateTree &);
     AggregateTree &operator=(const AggregateWTree &);
 
     struct Node {

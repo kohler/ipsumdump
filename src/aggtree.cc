@@ -85,6 +85,14 @@ AggregateTree::operator=(const AggregateWTree &o)
     return *this;
 }
 
+AggregateTree &
+AggregateTree::operator+=(const AggregateTree &o)
+{
+    assert(&o != this);
+    copy_nodes(o._root);
+    return *this;
+}
+
 AggregateTree::Node *
 AggregateTree::new_node_block()
 {

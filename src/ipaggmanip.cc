@@ -135,6 +135,8 @@ Actions: (Results of final action sent to output.)\n\
       --and-list             Output results for FILE1, then FILE1 & FILE2,\n\
                              then FILE1 & FILE2 & FILE3, and so on.\n\
   -e, --each                 Output result for each FILE separately.\n\
+  Also say \"'(+' FILE FILE ... ')'\" to or files together, and\n\
+  \"'(&' FILE FILE ... ')'\" to and files together.\n\
 \n\
   -n, --num-nonzero          Number of nonzero hosts.\n\
       --nnz-in-prefixes      Number of nonzero p-aggregates for all p.\n\
@@ -195,6 +197,8 @@ static Vector<uint32_t> extras;
 static Vector<uint32_t> extras2;
 static FILE *out;
 static bool output_binary = true;
+static Vector<String> files;
+static int files_pos = 0;
 
 static void
 add_action(int action, uint32_t extra = 0, uint32_t extra2 = 0)
@@ -245,6 +249,66 @@ read_aggregates(AggregateTree &tree, String &name, ErrorHandler *errh)
     tree.read_file(f, errh);
     if (f != stdin)
 	fclose(f);
+}
+
+static String::Initializer initializer;
+static String last_filename;
+
+static void
+read_next_file(AggregateTree &tree, ErrorHandler *errh, bool recurse = false)
+{
+    if (files_pos >= files.size()) {
+	errh->error("out of files!");
+	return;
+    }
+    
+    if (!recurse)
+	last_filename = "";
+    else
+	last_filename += " ";
+    
+    if (files[files_pos] == "(+" || files[files_pos] == "(|") {
+	last_filename += "(+";
+	files_pos++;
+	while (files_pos < files.size() && files[files_pos] != ")")
+	    read_next_file(tree, errh, true);
+	if (files_pos >= files.size())
+	    errh->warning("missing ')' at end of file list");
+	files_pos++;
+	last_filename += " )";
+	
+    } else if (files[files_pos] == "(&") {
+	last_filename += "(&";
+	files_pos++;
+	AggregateTree tree2;
+	
+	bool read_yet = false;
+	while (files_pos < files.size() && files[files_pos] != ")")
+	    if (!read_yet)
+		read_next_file(tree2, errh, true), read_yet = true;
+	    else {
+		AggregateTree tree3;
+		read_next_file(tree3, errh, true);
+		tree2.keep_common_hosts(tree3, true);
+	    }
+	
+	tree += tree2;
+	if (files_pos >= files.size())
+	    errh->warning("missing ')' at end of file list");
+	files_pos++;
+	last_filename += " )";
+	
+    } else {
+	read_aggregates(tree, files[files_pos], errh);
+	last_filename += files[files_pos];
+	files_pos++;
+    }
+}
+
+static bool
+more_files()
+{
+    return (files_pos < files.size());
 }
 
 static void
@@ -462,7 +526,6 @@ main(int argc, char *argv[])
     ErrorHandler::static_initialize(errh);
     //ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
 
-    Vector<String> files;
     String output;
     int combiner = 0;
     
@@ -594,10 +657,10 @@ particular purpose.\n");
 
       case AND_OPT: {
 	  AggregateTree tree;
-	  read_aggregates(tree, files[0], errh);
-	  for (int i = 1; i < files.size(); i++) {
+	  read_next_file(tree, errh);
+	  while (more_files()) {
 	      AggregateTree tree2;
-	      read_aggregates(tree2, files[i], errh);
+	      read_next_file(tree2, errh);
 	      tree.keep_common_hosts(tree2, true);
 	  }
 	  process_actions(tree, errh);
@@ -608,45 +671,45 @@ particular purpose.\n");
 	  if (actions.back() < FIRST_END_ACT)
 	      errh->fatal("last action must not produce a tree with `--and-list'");
 	  AggregateTree tree;
-	  read_aggregates(tree, files[0], errh);
-	  for (int i = 0; i < files.size(); i++) {
+	  read_next_file(tree, errh);
+	  process_actions(tree, errh);
+	  while (more_files()) {
+	      AggregateTree tree2;
+	      read_next_file(tree2, errh);
+	      tree.keep_common_hosts(tree2, true);
 	      process_actions(tree, errh);
-	      if (i < files.size() - 1) {
-		  AggregateTree tree2;
-		  read_aggregates(tree2, files[i + 1], errh);
-		  tree.keep_common_hosts(tree2, true);
-	      }
 	  }
 	  break;
       }
 
       case OR_OPT: {
 	  AggregateTree tree;
-	  for (int i = 0; i < files.size(); i++)
-	      read_aggregates(tree, files[i], errh);
+	  while (more_files())
+	      read_next_file(tree, errh);
 	  process_actions(tree, errh);
 	  break;
       }
 
-      case EACH_OPT:
-	if (actions.back() < FIRST_END_ACT)
-	    errh->fatal("last action must not produce a tree with `--each'");
-	if (files.size() == 1)
-	    goto normal;
-	for (int i = 0; i < files.size(); i++) {
-	    AggregateTree tree;
-	    read_aggregates(tree, files[i], errh);
-	    fprintf(out, "# %s\n", files[i].cc());
-	    process_actions(tree, errh);
-	}
-	break;
+      case EACH_OPT: {
+	  if (actions.back() < FIRST_END_ACT)
+	      errh->fatal("last action must not produce a tree with `--each'");
+	  int ndone = 0;
+	  while (more_files()) {
+	      AggregateTree tree;
+	      read_next_file(tree, errh);
+	      if (ndone > 0 || more_files())
+		  fprintf(out, "# %s\n", last_filename.cc());
+	      process_actions(tree, errh);
+	      ndone++;
+	  }
+	  break;
+      }
 
-      normal:
       default: {
-	  if (files.size() > 1)
-	      errh->fatal("supply `--and', `--or', or `--each' with multiple files");
 	  AggregateTree tree;
-	  read_aggregates(tree, files[0], errh);
+	  read_next_file(tree, errh);
+	  if (more_files())
+	      errh->fatal("supply `--and', `--or', or `--each' with multiple files");
 	  process_actions(tree, errh);
 	  break;
       }
