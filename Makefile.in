@@ -83,6 +83,40 @@ fetch-click:
 	  done; done
 
 
+distdir = $(PACKAGE)-$(VERSION)
+dist: $(distdir).tar.gz
+	-rm -rf $(distdir)
+$(distdir).tar.gz: distdir
+	tar czf $(distdir).tar.gz $(distdir)
+distdir:
+	-rm -rf $(distdir)
+	mkdir $(distdir)
+	@-chmod 777 $(distdir)
+	@echo Copying files...
+	@for file in `cat $(srcdir)/DISTFILES`; do \
+	  d=$(srcdir); \
+	  if test -d "$$d/$$file"; then \
+	    mkdir $(distdir)/$$file; \
+	    chmod 777 $(distdir)/$$file; \
+	  else \
+	    test -f "$(distdir)/$$file" \
+	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
+	    || cp -p $$d/$$file $(distdir)/$$file \
+	    || echo "Could not copy $$d/$$file!" 1>&2; \
+	  fi; \
+	done
+	@for fgroup in `cat $(top_srcdir)/CLICKFILES`; do \
+	  g=`echo $$fgroup | sed 's/.*\/\([^/]*\)$$/src\/\1/'`; \
+	  for file in `cd $(top_srcdir) && eval echo $$g`; do \
+	    ln $(top_srcdir)/$$file $(distdir)/src/$$file 2> /dev/null \
+	    || cp -p $(top_srcdir)/$$file $(distdir)/$$file \
+	    || echo "Could not copy $(top_srcdir)/$$file!" 1>&2; \
+	  done; \
+	done
+	@cd $(libclick) && $(MAKE) distdir
+	mv $(libclick)/$(libclick) $(distdir)
+
+
 .PHONY: all always $(libclick) src elemlist elemlists \
 	clean distclean dist distdir \
 	install install-doc install-man install-local install-include \

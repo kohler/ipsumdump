@@ -48,7 +48,7 @@ mkinstalldirs = @top_srcdir@/mkinstalldirs
 
 -include elements.mk
 
-OBJS = $(ELEMENT_OBJS) elements.o aciri-ipsumdump.o
+OBJS = $(ELEMENT_OBJS) bailerror.o aciri-ipsumdump.o elements.o
 
 CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL
 CFLAGS = @CFLAGS@
@@ -83,6 +83,10 @@ elements.mk: elements.conf $(CLICK_BUILDTOOL)
 elements.cc: elements.conf $(CLICK_BUILDTOOL)
 	$(CLICK_BUILDTOOL) elem2export -S < elements.conf > elements.cc
 	@rm -f elements.d
+
+install: aciri-ipsumdump
+	$(mkinstalldirs) $(bindir)
+	$(INSTALL) aciri-ipsumdump $(bindir)/aciri-ipsumdump
 
 always:
 	@:

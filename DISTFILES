@@ -1,0 +1,13 @@
+Makefile.in
+configure
+configure.in
+config.h.in
+mkinstalldirs
+
+src
+src/Makefile.in
+src/aciri-ipsumdump.cc
+src/bailerror.cc
+src/bailerror.hh
+src/toejysummarydump.cc
+src/toejysummarydump.hh

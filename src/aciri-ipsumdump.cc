@@ -13,6 +13,7 @@
 #include <signal.h>
 
 #include "toejysummarydump.hh"
+#include "bailerror.hh"
 
 #define HELP_OPT	300
 #define VERSION_OPT	301
@@ -21,6 +22,8 @@
 #define OUTPUT_OPT	304
 #define CONFIG_OPT	305
 #define WRITE_DUMP_OPT	306
+#define FILTER_OPT	307
+#define VERBOSE_OPT	308
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -36,10 +39,12 @@ static Clp_Option options[] = {
 
   { "help", 'h', HELP_OPT, 0, 0 },
   { "version", 'v', VERSION_OPT, 0, 0 },
+  { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
 
   { "interface", 'i', INTERFACE_OPT, Clp_ArgString, 0 },
   { "read-tcpdump", 'r', READ_DUMP_OPT, Clp_ArgString, 0 },
   { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
+  { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
   
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "config", 0, CONFIG_OPT, 0, 0 },
@@ -96,6 +101,7 @@ Other options:\n\
   -w, --write-tcpdump FILE      Also dump packets to FILE in tcpdump(1) format.\n\
   -o, --output FILE             Write summary dump to FILE (default stdout).\n\
       --config                  Output Click configuration and exit.\n\
+  -V, --verbose                 Report errors verbosely.\n\
   -h, --help                    Print this message and exit.\n\
   -v, --version                 Print version number and exit.\n\
 \n\
@@ -130,7 +136,9 @@ main(int argc, char *argv[])
     String read_dump;
     String write_dump;
     String output;
+    String filter;
     bool config = false;
+    bool verbose = false;
     int log_contents = -1;
     
     while (1) {
@@ -161,6 +169,12 @@ main(int argc, char *argv[])
 	    write_dump = clp->arg;
 	    break;
 
+	  case FILTER_OPT:
+	    if (filter)
+		die_usage("`--filter' already specified");
+	    filter = clp->arg;
+	    break;
+	    
 	  case CONFIG_OPT:
 	    config = true;
 	    break;
@@ -173,6 +187,10 @@ main(int argc, char *argv[])
 	  case VERSION_OPT:
 	    fprintf(stderr, "Cpyright MY BIGG FAT HAIRY ASSSS (c)\n");
 	    exit(0);
+	    break;
+
+	  case VERBOSE_OPT:
+	    verbose = !clp->negated;
 	    break;
 
 	  case Clp_NotOption:
@@ -209,10 +227,12 @@ main(int argc, char *argv[])
     if (interface && read_dump)
 	die_usage("can't give both `--interface' and `--read-tcpdump'");
     else if (interface)
-	sa << "FromDevice(" << interface << ", SNAPLEN 60, FORCE_IP true)\n";
-    else if (read_dump)
+	sa << "FromDevice(" << interface << ", SNAPLEN 60, FORCE_IP true, BPF_FILTER " << cp_quote(filter) << ")\n";
+    else if (read_dump) {
 	sa << "FromDump(" << read_dump << ", FORCE_IP true)\n";
-    else
+	if (filter)
+	    sa << "  -> IPClassifier(" << filter << ")\n";
+    } else
 	die_usage("must supply either `--interface' or `--read-tcpdump'");
 
     // possible elements to write tcpdump file
@@ -240,7 +260,7 @@ main(int argc, char *argv[])
 
     // output config if required
     if (config) {
-	printf("%s\n", sa.cc());
+	printf("%s", sa.cc());
 	exit(0);
     }
 
@@ -250,14 +270,16 @@ main(int argc, char *argv[])
     signal(SIGPIPE, SIG_IGN);
   
     // lex configuration
-    Lexer *lexer = new Lexer(errh);
+    BailErrorHandler berrh(errh);
+    ErrorHandler *click_errh = (verbose ? errh : &berrh);
+    Lexer *lexer = new Lexer(click_errh);
     export_elements(lexer);
     int cookie = lexer->begin_parse(sa.take_string(), "<internal>", 0);
     while (lexer->ystatement())
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
-    if (errh->nerrors() > 0 || router->initialize(errh, false) < 0)
+    if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
 
     // run driver
