@@ -26,6 +26,7 @@ mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
+mandir = @mandir@
 
 CLICK_BUILDTOOL = @CLICK_BUILDTOOL@
 CLICKINCLUDES = @CLICKINCLUDES@
@@ -40,8 +41,12 @@ src: always stamp-h
 
 install: always @LIBCLICK_TARGET@ stamp-h
 	@cd src && $(MAKE) install
+	@$(MAKE) install-man
 install-libclick: always
 	@cd $(libclick) && $(MAKE) install
+install-man: $(srcdir)/ipsumdump.1
+	$(mkinstalldirs) $(mandir) $(mandir)/man1
+	$(INSTALL_DATA) $(srcdir)/ipsumdump.1 $(mandir)/man1/ipsumdump.1
 
 elemlist elemlists: always
 	@cd src && $(MAKE) elemlist

@@ -25,6 +25,7 @@
 #define VERBOSE_OPT	306
 #define ANONYMIZE_OPT	307
 #define MAP_PREFIX_OPT	308
+#define MULTIPACKET_OPT	309
 
 // data sources
 #define INTERFACE_OPT	400
@@ -54,17 +55,16 @@ static Clp_Option options[] = {
   { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
 
   { "interface", 'i', INTERFACE_OPT, 0, 0 },
-  { "read-tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
-  { "from-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
-  { "read-breslau1-dump", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
-  { "from-breslau1-dump", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+  { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
+  { "read-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
+  { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
   { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
-  { "from-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
   { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
   { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
   { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
   { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
   { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
+  { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
   
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "config", 0, CONFIG_OPT, 0, 0 },
@@ -130,8 +130,8 @@ Default contents option is `-sd' (log source and destination addresses).\n\
 Data source options (give exactly one):\n\
   -i, --interface            Read packets from network devices DEVNAMES until\n\
                              interrupted.\n\
-  -r, --read-tcpdump         Read packets from tcpdump(1) FILES (default).\n\
-      --read-netflow-summary Read summarized NetFlow FILES.\n\
+  -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
+      --netflow-summary      Read summarized NetFlow FILES.\n\
 \n\
 Other options:\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
@@ -140,6 +140,8 @@ Other options:\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
       --map-address ADDRS    When done, print to stderr the anonymized IP\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
+      --multipacket          Produce multiple entries for a flow identifier\n\
+                             representing multiple packets (NetFlow only).\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
@@ -188,6 +190,7 @@ main(int argc, char *argv[])
     bool config = false;
     bool verbose = false;
     bool anonymize = false;
+    bool multipacket = false;
     Vector<int> log_contents;
     int action = 0;
     Vector<String> files;
@@ -224,6 +227,10 @@ main(int argc, char *argv[])
 
 	  case ANONYMIZE_OPT:
 	    anonymize = !clp->negated;
+	    break;
+
+	  case MULTIPACKET_OPT:
+	    multipacket = !clp->negated;
 	    break;
 
 	  case MAP_PREFIX_OPT: {
@@ -323,7 +330,8 @@ particular purpose.\n");
 	sa << "shunt\n";
 	if (filter)
 	    sa << "  -> IPClassifier(" << filter << ")\n";
-	toipsumdump_extra += ", MULTIPACKET true";
+	if (multipacket)
+	    toipsumdump_extra += ", MULTIPACKET true";
     } else
 	die_usage("must supply a data source option");
 

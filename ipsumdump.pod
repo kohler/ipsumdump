@@ -8,48 +8,168 @@ ipsumdump - produce ASCII summary of network traffic or tcpdump(1) file
 
 =head1 OPTIONS
 
+=head2 Data Sources
+
+B<Ipsumdump> can read data from tcpdump(1) files, from live network
+interfaces, or from NetFlow summary files. An optional data source option
+determines the kind of source B<ipsumdump> will use; any non-option
+arguments specify which files, or interfaces, to read. For example,
+`C<B<ipsumdump> -r eth0 eth1>' will read two tcpdump(1) files, named
+C<eth0> and C<eth1>; `C<B<ipsumdump> -i eth0 eth1>', on the other hand,
+will read from two live network interfaces, C<eth0> and C<eth1>.
+
+=over 4
+
+=item B<--tcpdump>, B<-r>
+
+Read from one or more tcpdump(1) files, and stop when all the files are
+exhausted. This is the default. If no filenames are given, or if one of the
+filenames is a single dash C<->, reads from the standard input.
+
+=item B<--interface>, B<-i>
+
+Read from live network interfaces. When run this way, B<ipsumdump> will
+continue until interrupted with SIGINT.
+
+=item B<--netflow-summary>
+
+Read from one or more NetFlow summary files. These are line-oriented ASCII
+files; blank lines, and lines starting with `C<!>' or `C<#>', are ignored.
+Other lines should contain 15 or more fields separated by vertical bars
+`C<|>'. B<Ipsumdump> pays attention to some of these fields:
+
+  Field  Meaning                       Example
+  -----  ----------------------------  ----------
+  0      Source IP address             192.4.1.32
+  1      Destination IP address        18.26.4.44
+  5      Packet count in flow          5
+  6      Byte count in flow            10932
+  7      Flow timestamp (UNIX-style)   998006995
+  9      Source port                   3917
+  10     Destination port              80
+  13     IP protocol                   6
+  14     IP TOS bits                   0
+
+=back
+
+=head2 Dump Contents
+
 =over 4
 
 =item B<--timestamp>, B<-t>
 
-Include packet timestamp in summary. Example: `C<1000212480.005813>'.
+Include packet timestamp in the dump. Example: C<1000212480.005813>.
 
 =item B<--src>, B<-s>
 
-Include IP source address in summary. Example: `C<192.168.1.101>'.
+Include IP source address in the dump. Example: C<192.168.1.101>.
 
 =item B<--dst>, B<-d>
 
-Include IP destination address in summary. Example: `C<18.26.4.44>'.
+Include IP destination address in the dump. Example: C<18.26.4.44>.
 
 =item B<--sport>, B<-S>
 
-Include TCP or UDP source port in summary. Example: `C<8928>'. Non-TCP or
-UDP packets have a single dash, `C<->', for this field in the summary.
+Include TCP or UDP source port in the dump. Example: C<8928>. For non-TCP
+or UDP packets, this field is a single dash C<->.
 
 =item B<--dport>, B<-D>
 
-Similarly, include TCP or UDP destination port in summary. Example:
-`C<80>'.
+Include TCP or UDP destination port in the dump. Example: C<80>.
 
 =item B<--length>, B<-l>
 
-Include packet length in summary. Example: `C<1536>'.
+Include packet length in the dump. Example: C<1536>.
 
 =item B<--protocol>, B<-p>
 
-Include IP protocol in summary. Can be `C<T>' for TCP, `C<U>' for UDP, `C<I>' for ICMP, or a number for some other protocol.
+Include IP protocol in the dump. Can be C<T> for TCP, C<U> for UDP,
+C<I> for ICMP, or a number for some other protocol.
 
 =item B<--id>
 
+Include IP ID field in the dump. Example: C<19371>.
+
 =item B<--tcp-seq>, B<-Q>
+
+Include TCP sequence number in the dump. Example: C<4009339012>. For
+non-TCP packets, this field is a single dash C<->.
 
 =item B<--tcp-ack>, B<-K>
 
+Include TCP acknowledgement number in the dump. Example: C<4009339012>.
+For non-TCP packets, this field is a single dash C<->.
+
 =item B<--tcp-flags>, B<-F>
+
+Include TCP flags byte in the dump. Example: C<54>. For non-TCP
+packets, this field is a single dash C<->.
 
 =item B<--payload-length>, B<-L>
 
+Include length of packet payload in the dump. This is the length of the TCP
+or UDP payload, for TCP or UDP packets, or the length of the IP payload,
+for other IP packets. Example: C<1000>.
+
 =item B<--packet-count>, B<-c>
+
+Include packet count in the dump. Some kinds of logs -- such as NetFlow
+summary logs -- record information about flows, not packets. A flow
+represents multiple packets; the packet count says exactly how many.
+Example: C<1>.
+
+=back
+
+=head2
+
+=over 4
+
+=item B<--output>=I<file>, B<-o> I<file>
+
+Write the summary dump to I<file> instead of to the standard output.
+
+=item B<--filter>=I<filter>, B<-f> I<filter>
+
+Only include packets and flows matching a tcpdump(1) I<filter>. (The syntax
+for I<filter> is currently a subset of tcpdump's syntax.)
+
+=item B<--anonymize>, B<-A>
+
+Anonymize IP addresses in the output. The anonymization preserves prefix
+and class. This means, first, that two anonymized addresses will share the
+same prefix when their non-anonymized counterparts share the same prefix;
+and second, that anonymized addresses will be in the same class (A, B, C,
+or D) as their non-anonymized counterparts. The anonymization algorithm
+comes from tcpdpriv(1).
+
+=item B<--map-address>=I<addrs>
+
+I<addrs> is a space- or comma-separated list of IP addresses and/or
+prefixes. When the summary dump completes, B<ipsumdump> will write those
+addresses to the standard error, paired with their anonymized counterparts.
+
+=item B<--write-tcpdump>=I<file>, B<-w> I<file>
+
+Write processed packets to a tcpdump(1) I<file>, or to the standard output,
+if I<file> is a single dash C<->. This is in addition to the usual summary
+output.
+
+=item B<--config>
+
+Do not produce a summary. Instead, write the Click configuration that
+B<ipsumdump> would run to the standard output.
+
+=item B<--verbose>, B<-V>
+
+Produce more verbose error messages.
+
+=item B<--help>, B<-h>
+
+Print a help message to the standard output, then exit.
+
+=item B<--version>, B<-v>
+
+Print version number and license information to the standard output, then
+exit.
 
 =back

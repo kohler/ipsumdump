@@ -61,6 +61,14 @@ dump describing the hostname and starting time, in addition to the `C<!data>' li
 String. If supplied, prints a `C<!creator "BANNER">' comment at the beginning
 of the dump.
 
+=item MULTIPACKET
+
+Boolean. If true, and the CONTENTS option doesn't contain `C<count>', then
+generate multiple summary entries for packets with nonzero packet count
+annotations. For example, if MULTIPACKET is true, and a packet has packet
+count annotation 2, then ToIPSummaryDump will generate 2 identical lines for
+that packet in the dump. False by default.
+
 =back
 
 =e

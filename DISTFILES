@@ -4,6 +4,8 @@ acclick.m4
 configure
 configure.in
 config.h.in
+ipsumdump.pod
+ipsumdump.1
 
 src
 src/Makefile.in
