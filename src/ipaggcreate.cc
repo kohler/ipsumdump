@@ -334,8 +334,7 @@ main(int argc, char *argv[])
     String write_dump;
     //String output;
     String filter;
-    String agg;
-    int agg_flows = 0;
+    String agg, agg_flows;
     String aggctr_pb;
     String ipsumdump_format;
     uint32_t aggctr_limit_nnz = 0;
@@ -471,7 +470,8 @@ main(int argc, char *argv[])
 	  case AGG_UNI_ADDRPAIR_OPT:
 	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
-	    agg_flows = opt;
+	    agg_flows = (opt == AGG_FLOWS_OPT || opt == AGG_UNI_FLOWS_OPT ? "PORTS true, " : "PORTS false, ");
+	    agg_flows += (opt == AGG_UNI_FLOWS_OPT || opt == AGG_UNI_ADDRPAIR_OPT ? "BIDI false" : "BIDI true");
 	    break;
 
 	  case AGG_BYTES_OPT:
@@ -557,7 +557,7 @@ particular purpose.\n");
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
     // determine aggregate
-    if (!agg)
+    if (!agg && !agg_flows)
 	agg = "ip dst";
     
     // set random seed if appropriate
@@ -697,8 +697,9 @@ particular purpose.\n");
     
     // elements to aggregate
     if (agg_flows)
-	sa << "  -> FlowToAddress(BIDI " << (agg_flows == AGG_FLOWS_OPT || agg_flows == AGG_ADDRPAIR_OPT) << ", PORTS " << (agg_flows == AGG_FLOWS_OPT || agg_flows == AGG_UNI_FLOWS_OPT) << ")\n";
-    sa << "  -> AggregateIP(" << agg << ")\n";
+	sa << "  -> AggregateFlows(" << agg_flows << ")\n";
+    else
+	sa << "  -> AggregateIP(" << agg << ")\n";
 
     // elements to count aggregates
     sa << "  -> ac :: AggregateCounter(";
