@@ -125,6 +125,7 @@ static Clp_Option options[] = {
 static const char *program_name;
 static Router *router = 0;
 static bool started = false;
+static bool agg_is_ip = false;
 
 void
 die_usage(const char *specific = 0)
@@ -285,7 +286,7 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     AggregateCounter *ac = (AggregateCounter *)(router->find("ac"));
     int result = 0;
     if (multi_output < 0 || !ac->empty()) {
-	result = HandlerCall::call_write(router, "ac", (binary ? "write_file" : "write_ascii_file"), cp_quote(cur_output), errh);
+	result = HandlerCall::call_write(router, "ac", (binary ? "write_file" : (agg_is_ip ? "write_ip_file" : "write_ascii_file")), cp_quote(cur_output), errh);
 	if (result < 0)		// file errors are fatal
 	    catch_signal(SIGINT);
     } else if (multi_output >= 0) // skip empty files
@@ -713,8 +714,11 @@ particular purpose.\n");
     // elements to aggregate
     if (agg_flows)
 	sa << "  -> AggregateFlows(" << agg_flows << ")\n";
-    else
+    else {
+	if (agg == "src" || agg == "dst" || agg == "ip src" || agg == "ip dst")
+	    agg_is_ip = true;
 	sa << "  -> AggregateIP(" << agg << ")\n";
+    }
 
     // elements to count aggregates
     sa << "  -> ac :: AggregateCounter(";
