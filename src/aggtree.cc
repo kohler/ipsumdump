@@ -306,7 +306,7 @@ AggregateTree::node_to_prefix(Node *n, int prefix)
 }
 
 void
-AggregateTree::to_prefix(int prefix_len)
+AggregateTree::mask_by_prefix(int prefix_len)
 {
     assert(prefix_len >= 0 && prefix_len <= 32);
     if (prefix_len < 32)
@@ -319,6 +319,18 @@ AggregateTree::make_prefix(int prefix_len, AggregateTree &t)
     assert(prefix_len >= 0 && prefix_len <= 32);
     uint32_t mask = (prefix_len == 0 ? 0 : 0xFFFFFFFFU << (32 - prefix_len));
     t.copy_nodes(_root, mask);
+}
+
+void
+AggregateTree::num_nonzero_in_prefixes(Vector<uint32_t> &out) const
+{
+    AggregateTree copy(*this);
+    out.assign(33, 0);
+    out[32] = nnz();
+    for (int i = 31; i >= 0; i--) {
+	copy.mask_by_prefix(i);
+	out[i] = copy.nnz();
+    }
 }
 
 
@@ -426,17 +438,11 @@ main(int argc, char *argv[])
     AggregateTree orig_tree;
     orig_tree.read_file(stdin, errh);
     orig_tree.ok();
-    
-    AggregateTree tree(orig_tree);
-    tree.ok();
-    
-    fprintf(stderr, "NNZ 32 %u\n", tree.nnz());
-    for (int i = 31; i >= 0; i--) {
-	tree.to_prefix(i);
-	//AggregateTree q;
-	//orig_tree.make_prefix(i, q);
-	fprintf(stderr, "NNZ %d %u\n", i, tree.nnz());
-	//assert(tree.nnz() == q.nnz());
-    }
+
+    Vector<uint32_t> nnz_by_p;
+    orig_tree.num_nonzero_in_prefixes(nnz_by_p);
+    for (int i = 0; i <= 32; i++)
+	printf("%u ", nnz_by_p[i]);
+
     return 0;
 }

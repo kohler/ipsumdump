@@ -17,8 +17,9 @@ class AggregateTree { public:
     
     void add(uint32_t aggregate, uint32_t count = 1);
     
-    void to_prefix(int prefix_len);
+    void mask_by_prefix(int prefix_len);
     void make_prefix(int prefix_len, AggregateTree &);
+    void num_nonzero_in_prefixes(Vector<uint32_t> &) const;
 
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool, ErrorHandler *) const;
