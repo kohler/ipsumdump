@@ -279,6 +279,10 @@ quit after it has run for I<time>. For other options, B<ipsumdump> will
 quit before writing a packet whose timestamp is more than I<time> seconds
 later than the timestamp on the first packet it sees.
 
+=item B<--limit-packets>=I<count>
+
+Output at most I<count> packets, then quit.
+
 =item B<--map-address>=I<addrs>
 
 I<addrs> is a space- or comma-separated list of IP addresses and/or

@@ -47,8 +47,9 @@ mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 
 OBJS = fromdevice.o fromdump.o fromipsumdump.o fromnetflowsumdump.o \
 	toipsumdump.o todump.o \
-	anonipaddr.o classifier.o discard.o fakepcap.o ipfilter.o mergebyts.o \
-	pokehandlers.o progressbar.o randomsample.o tee.o timefilter.o \
+	anonipaddr.o classifier.o counter.o discard.o fakepcap.o ipfilter.o \
+	mergebyts.o pokehandlers.o progressbar.o randomsample.o switch.o \
+	tee.o timefilter.o \
 	ipsumdump.o elements.o
 
 CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL

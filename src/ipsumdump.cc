@@ -8,6 +8,7 @@
 #include <click/router.hh>
 #include <click/lexer.hh>
 #include <click/llrpc.h>
+#include <click/handlercall.hh>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,30 +19,31 @@
 #include "fromdevice.hh"
 #include <click/standard/drivermanager.hh>
 
-#define HELP_OPT	300
-#define VERSION_OPT	301
-#define OUTPUT_OPT	302
-#define CONFIG_OPT	303
-#define WRITE_DUMP_OPT	304
-#define FILTER_OPT	305
-#define VERBOSE_OPT	306
-#define ANONYMIZE_OPT	307
-#define MAP_PREFIX_OPT	308
-#define MULTIPACKET_OPT	309
-#define SAMPLE_OPT	310
-#define COLLATE_OPT	311
-#define RANDOM_SEED_OPT	312
-#define PROMISCUOUS_OPT	313
-#define WRITE_DROPS_OPT	314
-#define QUIET_OPT	315
-#define BAD_PACKETS_OPT	316
-#define INTERVAL_OPT	317
+#define HELP_OPT		300
+#define VERSION_OPT		301
+#define OUTPUT_OPT		302
+#define CONFIG_OPT		303
+#define WRITE_DUMP_OPT		304
+#define FILTER_OPT		305
+#define VERBOSE_OPT		306
+#define ANONYMIZE_OPT		307
+#define MAP_PREFIX_OPT		308
+#define MULTIPACKET_OPT		309
+#define SAMPLE_OPT		310
+#define COLLATE_OPT		311
+#define RANDOM_SEED_OPT		312
+#define PROMISCUOUS_OPT		313
+#define WRITE_DROPS_OPT		314
+#define QUIET_OPT		315
+#define BAD_PACKETS_OPT		316
+#define INTERVAL_OPT		317
+#define LIMIT_PACKETS_OPT	318
 
 // data sources
-#define INTERFACE_OPT	400
-#define READ_DUMP_OPT	401
+#define INTERFACE_OPT		400
+#define READ_DUMP_OPT		401
 #define READ_NETFLOW_SUMMARY_OPT 402
-#define READ_IPSUMDUMP_OPT 403
+#define READ_IPSUMDUMP_OPT	403
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -91,6 +93,7 @@ static Clp_Option options[] = {
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "bad-packets", 0, BAD_PACKETS_OPT, 0, Clp_Negate },
     { "interval", 0, INTERVAL_OPT, CLP_TIMEVAL_TYPE, 0 },
+    { "limit-packets", 0, LIMIT_PACKETS_OPT, Clp_ArgUnsigned, Clp_Negate },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -177,6 +180,8 @@ Other options:\n\
       --multipacket          Produce multiple entries for a flow identifier\n\
                              representing multiple packets (NetFlow only).\n\
       --collate              Collate packets from data sources by timestamp.\n\
+      --interval TIME        Stop after TIME has elapsed in trace time.\n\
+      --limit-packets N      Stop after processing N packets.\n\
       --map-address ADDRS    When done, print to stderr the anonymized IP\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
       --record-counts TIME   Record packet counts every TIME seconds in output.\n\
@@ -264,19 +269,20 @@ record_drops_hook(const String &, Element *, void *, ErrorHandler *)
 }
 
 static int
-stop_hook(const String &s, Element *, void *, ErrorHandler *)
+stop_hook(const String &s_in, Element *, void *, ErrorHandler *errh)
 {
     int n = 1;
-    (void) cp_integer(cp_uncomment(s), &n);
-    router->adjust_driver_reservations(-n);
-    return 0;
-}
-
-static int
-stop_cold_hook(const String &, Element *, void *, ErrorHandler *)
-{
+    String s = cp_uncomment(s_in);
     DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
-    router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+    if (!s || cp_integer(s, &n))
+	router->adjust_driver_reservations(-n);
+    else if (s == "cold")
+	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+    else if (s == "switch") {
+	HandlerCall::call_write(router, "switch/s", "switch", "1", errh);
+	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+    } else
+	return errh->error("bad argument to `stop'");
     return 0;
 }
 
@@ -337,6 +343,7 @@ main(int argc, char *argv[])
     int snaplen = -1;
     Vector<String> files;
     const char *record_drops = 0;
+    unsigned limit_packets = 0;
     struct timeval interval;
     timerclear(&interval);
     
@@ -384,6 +391,10 @@ main(int argc, char *argv[])
 
 	  case WRITE_DROPS_OPT:
 	    record_drops = clp->arg;
+	    break;
+
+	  case LIMIT_PACKETS_OPT:
+	    limit_packets = (clp->negated ? 0 : clp->val.u);
 	    break;
 
 	  case MAP_PREFIX_OPT: {
@@ -581,19 +592,22 @@ particular purpose.\n");
     if (anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
     if (action != INTERFACE_OPT && timerisset(&interval)) {
-	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL stop_cold)\n";
+	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL stop cold)\n";
 	if (files.size() > 1 && !collate) {
 	    p_errh->warning("`--collate' missing");
 	    p_errh->message("(`--interval' works best with `--collate' when you have\nmultiple data sources.)");
 	}
     }
+    if (limit_packets)
+	sa << "  -> switch :: { input -> s :: Switch -> output; s[1] -> Discard }\n"
+	   << "  -> Counter(COUNT_CALL " << limit_packets << " stop switch)\n";
 
-    // possible tap for writing tcpdump file
+    // elements to write tcpdump file
     if (write_dump) {
-	if (log_contents.size() == 0)
-	    sa << "  -> tap :: { input -> output };\n";
-	else
-	    sa << "  -> tap :: Tee;\ntap[1]\n";
+	sa << "  -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
+	for (int i = 0; i < files.size(); i++)
+	    sa << " src" << i;
+	sa << ", SNAPLEN " << snaplen << ")\n";
     }
     
     // elements to dump summary log
@@ -619,14 +633,6 @@ particular purpose.\n");
 	sa << cp_quote(banner.take_string()) << ");\n";
     }
 
-    // elements to write tcpdump file
-    if (write_dump) {
-	sa << "tap -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
-	for (int i = 0; i < files.size(); i++)
-	    sa << " src" << i;
-	sa << ", SNAPLEN " << snaplen << ");\n";
-    }
-    
     // record drops
     if (record_drops)
 	sa << "PokeHandlers(" << record_drops << ", record_counts '', loop);\n";
@@ -693,7 +699,6 @@ particular purpose.\n");
     lexer->end_parse(cookie);
     router->add_global_write_handler("record_counts", record_drops_hook, 0);
     router->add_global_write_handler("stop", stop_hook, 0);
-    router->add_global_write_handler("stop_cold", stop_cold_hook, 0);
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
     

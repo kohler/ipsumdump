@@ -1,5 +1,14 @@
 Ipsumdump NEWS
 
+Version 1.24   31.Jul.2002
+
+* Speed up interaction of `-r' (read from tcpdump(1) files) and `-A'
+  (anonymize). Previously this would uselessly copy 4MB of data per packet!
+  Reported by Vern.
+
+* Add `--limit-packets' option.
+
+
 Version 1.23   2.Jun.2002
 
 * Documentation updates.
