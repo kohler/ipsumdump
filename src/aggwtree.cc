@@ -531,7 +531,7 @@ AggregateWTree::num_active_prefixes(Vector<uint32_t> &out) const
 //
 
 static uint32_t
-node_discriminated_by(WNode *n, Vector<uint32_t> &ndp)
+node_discriminated_by(WNode *n, uint32_t *ndp)
 {
     if (n->child(0)) {
 	assert(!n->count);
@@ -540,6 +540,7 @@ node_discriminated_by(WNode *n, Vector<uint32_t> &ndp)
 	    + node_discriminated_by(right, ndp);
 	if (nnondiscrim && left->full_count && right->full_count) {
 	    int swivel = bi_ffs(left->aggregate ^ right->aggregate);
+	    assert(swivel >= 0 && swivel <= 32);
 	    ndp[swivel] += nnondiscrim;
 	    nnondiscrim = 0;
 	}
@@ -549,13 +550,21 @@ node_discriminated_by(WNode *n, Vector<uint32_t> &ndp)
 }
 
 void
-AggregateWTree::num_discriminated_by_prefix(Vector<uint32_t> &ndp) const
+AggregateWTree::num_discriminated_by_prefix(uint32_t ndp[33]) const
 {
     assert(!_topheavy);
-    ndp.assign(33, 0);
+    for (int i = 0; i <= 32; i++)
+	ndp[i] = 0;
     uint32_t any = node_discriminated_by(_root, ndp);
     assert(any == 0 || any == 1);
     ndp[0] += any;
+}
+
+void
+AggregateWTree::num_discriminated_by_prefix(Vector<uint32_t> &ndp) const
+{
+    ndp.resize(33);
+    num_discriminated_by_prefix(&ndp[0]);
 }
 
 
@@ -581,59 +590,82 @@ AggregateWTree::collect_active(Vector<WNode *> &v) const
     node_collect_active(_root, v);
 }
 
+static void
+node_collect_active_depth(WNode *n, int d, Vector<WNode *> &v)
+{
+    if (n->count && n->depth == d)
+	v.push_back(n);
+    if (n->child(0)) {
+	node_collect_active_depth(n->child(0), d, v);
+	node_collect_active_depth(n->child(1), d, v);
+    }
+}
+
+void
+AggregateWTree::collect_active_depth(int d, Vector<WNode *> &v) const
+{
+    v.reserve(v.size() + _num_nonzero);
+    node_collect_active_depth(_root, d, v);
+}
+
 
 //
 // FAKING BASED ON DISCRIMINATING PREFIX
 //
 
 void
-AggregateWTree::fake_by_discriminating_prefix(int p, const Vector<uint32_t> &ndp)
+AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33])
 {
-    assert(ndp.size() == p + 1 && !_topheavy);
-    
-    if (p == 0) {
-	assert(_num_nonzero == 0 && _root->count == 0 && !_root->child(0));
-	assert(ndp[0] == 0 || ndp[0] == 1);
-	if (ndp[0])
+    assert(q >= 0 && q <= 32 && !_topheavy);
+
+    if (q == 0) {
+	assert(_root->count == 0 && !_root->child(0));
+	assert(dp[0][0] == 0 || dp[0][0] == 1);
+	if (dp[0][0])
 	    add(0, 1);
-	return;
     }
-    ok();
-    fprintf(stderr, "\n");
-    if (p < 10)
-	write_hex_file(stderr, ErrorHandler::default_handler());
 
-    assert(p == 32 || _num_nonzero <= (1U << p));
-
-    // collect nonzero nodes
-    Vector<WNode *> nzn;
-    collect_active(nzn);
-    for (int i = 0; i < nzn.size(); i++)
-	assert(nzn[i]->depth <= p);
-
-    // XXX permute nzn
-
-    for (int q = 0; q <= p; q++)
-	for (int count = ndp[q]; count > 0; count--) {
-	    // choose an element of 'nzn' with size at least 'q'
-	    int j;
-	    for (j = 0; j < nzn.size() && nzn[j]->depth > q; j++)
-		/* nada */;
-
-	    // split that node at this level
-	    WNode *n = nzn[j];
-	    uint32_t right_aggregate = n->aggregate | (1 << (32 - q));
-	    if (n->depth < q)
-		(void) make_peer(right_aggregate, n);
-	    if (count > 1) {
-		add(right_aggregate, 1);
-		count--;
-	    }
-
-	    // remove from nzn
-	    nzn[j] = nzn.back();
-	    nzn.pop_back();
+    // collect nonzero nodes with correct depth
+    Vector<WNode *> s;
+    collect_active_depth(q, s);
+    
+    //
+    for (int p = q + 1; p <= 32; p++) {
+	assert((uint32_t) s.size() == dp[p-1][q]);
+	
+	for (uint32_t i = dp[p][q]; i < dp[p-1][q]; i++) {
+	    // pick random element of s
+	    int which = ((uint32_t)random()) % s.size();
+	    WNode *n = s[which];
+	    assert(n->depth == p - 1 && n->count == 1 && n->full_count == 1);
+	    add(n->aggregate | (1 << (32 - p)), 1);
+	    s[which] = s.back();
+	    s.pop_back();
 	}
+
+	for (uint32_t i = 0; i < dp[p][q]; i++) {
+	    WNode *n = s[i];
+	    assert(n->depth == p - 1 && n->count == 1 && n->full_count == 1);
+	    (void) make_peer(n->aggregate | (1 << (32 - p)), n);
+	    if (random() % 1) {	// swap left and right
+		n->child(1)->count = n->child(1)->full_count = 1;
+		n->child(0)->count = n->child(0)->full_count = 0;
+		s[i] = n->child(1);
+	    } else
+		s[i] = n->child(0);
+	}
+    }
+
+#if !NDEBUG
+    if (q < 32)
+	assert((uint32_t) s.size() == dp[32][q]);
+    else {
+	uint32_t nnz = 0;
+	for (int p = 0; p <= 32; p++)
+	    nnz += dp[32][p];
+	assert((uint32_t) s.size() == nnz);
+    }
+#endif
 }
 
 

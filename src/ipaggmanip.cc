@@ -210,11 +210,17 @@ Report bugs to <kohler@aciri.org>.\n", program_name);
 }
 
 static void
-write_vector(const Vector<uint32_t> &v, FILE *f)
+write_vector(const uint32_t *v, int size, FILE *f)
 {
-    for (int i = 0; i < v.size(); i++)
+    for (int i = 0; i < size; i++)
 	fprintf(f, (i ? " %u" : "%u"), v[i]);
     fprintf(f, "\n");
+}
+
+static inline void
+write_vector(const Vector<uint32_t> &v, FILE *f)
+{
+    write_vector((v.size() ? &v[0] : 0), v.size(), f);
 }
 
 static Vector<int> actions;
@@ -472,19 +478,18 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  }
 
 	  case FAKE_BY_DISCRIM_ACT: {
-	      Vector<uint32_t> *nnzp = new Vector<uint32_t>[33];
+	      uint32_t dp[33][33];
 	      AggregateWTree wtree(tree, AggregateWTree::COUNT_ADDRS_LEAF);
-	      for (int i = 32; i > 0; i--) {
-		  wtree.num_discriminated_by_prefix(nnzp[i]);
-		  wtree.prefixize(i - 1);
+	      for (int p = 32; p >= 0; p--) {
+		  wtree.num_discriminated_by_prefix(dp[p]);
+		  if (p > 0)
+		      wtree.prefixize(p - 1);
 	      }
-	      wtree.num_discriminated_by_prefix(nnzp[0]);
+	      
 	      AggregateWTree new_tree(AggregateWTree::COUNT_ADDRS_LEAF);
-	      for (int i = 0; i <= 32; i++) {
-		  nnzp[i].resize(i + 1);
-		  new_tree.fake_by_discriminating_prefix(i, nnzp[i]);
-	      }
-	      delete[] nnzp;
+	      for (int i = 0; i <= 32; i++)
+		  new_tree.fake_by_discriminating_prefix(i, dp);
+
 	      tree = new_tree;
 	      break;
 	  }
@@ -525,18 +530,15 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       }
 
       case ALL_NNZ_DISCRIM_ACT: {
-	  Vector<uint32_t> *nnzp = new Vector<uint32_t>[33];
+	  uint32_t dp[33][33];
 	  AggregateWTree wtree(tree, AggregateWTree::COUNT_ADDRS_LEAF);
 	  for (int i = 32; i > 0; i--) {
-	      wtree.num_discriminated_by_prefix(nnzp[i]);
+	      wtree.num_discriminated_by_prefix(dp[i]);
 	      wtree.prefixize(i - 1);
 	  }
-	  wtree.num_discriminated_by_prefix(nnzp[0]);
-	  for (int i = 0; i <= 32; i++) {
-	      nnzp[i].resize(i + 1);
-	      write_vector(nnzp[i], out);
-	  }
-	  delete[] nnzp;
+	  wtree.num_discriminated_by_prefix(dp[0]);
+	  for (int i = 0; i <= 32; i++)
+	      write_vector(dp[i], i + 1, out);
 	  break;
       }
 
