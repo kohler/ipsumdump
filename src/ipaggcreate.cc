@@ -77,7 +77,7 @@ static Clp_Option options[] = {
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
     { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
-    { "hashes", 'H', HASH_OPT, 0, 0 },
+    { "hashes", 'H', HASHES_OPT, 0, 0 },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
