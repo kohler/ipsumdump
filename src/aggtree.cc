@@ -1,5 +1,6 @@
 #include <click/config.h>
 #include "aggtree.hh"
+#include "aggwtree.hh"
 #include <click/confparse.hh>
 #include <click/error.hh>
 #include <stdlib.h>
@@ -42,6 +43,13 @@ AggregateTree::AggregateTree(const AggregateTree &o)
     copy_nodes(o._root);
 }
 
+AggregateTree::AggregateTree(const AggregateWTree &o)
+    : _free(0)
+{
+    initialize_root();
+    copy_nodes(o._root);
+}
+
 AggregateTree::~AggregateTree()
 {
     kill_all_nodes();
@@ -55,6 +63,15 @@ AggregateTree::operator=(const AggregateTree &o)
 	initialize_root();
 	copy_nodes(o._root);
     }
+    return *this;
+}
+
+AggregateTree &
+AggregateTree::operator=(const AggregateWTree &o)
+{
+    kill_all_nodes();
+    initialize_root();
+    copy_nodes(o._root);
     return *this;
 }
 
@@ -558,9 +575,9 @@ AggregateTree::read_file(FILE *f, ErrorHandler *errh)
     return 0;
 }
 
-static void
-write_batch(FILE *f, bool binary, uint32_t *buffer, int pos,
-	    ErrorHandler *)
+void
+AggregateTree::write_batch(FILE *f, bool binary, uint32_t *buffer, int pos,
+			   ErrorHandler *)
 {
     if (binary)
 	fwrite(buffer, sizeof(uint32_t), pos, f);

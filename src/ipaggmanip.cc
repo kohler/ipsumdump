@@ -13,6 +13,7 @@
 #include <errno.h>
 
 #include "aggtree.hh"
+#include "aggwtree.hh"
 
 #define HELP_OPT	300
 #define VERSION_OPT	301
@@ -24,6 +25,9 @@
 #define POSTERIZE_ACT		401
 #define SAMPLE_ACT		402
 #define CUT_SMALLER_ACT		403
+#define CULL_HOSTS_ACT		404
+#define CULL_HOSTS_BY_PACKETS_ACT 405
+#define CULL_PACKETS_ACT	406
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -58,6 +62,9 @@ static Clp_Option options[] = {
   { "avg-var-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   { "sample", 0, SAMPLE_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-hosts", 0, CULL_HOSTS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-hosts-by-packets", 0, CULL_HOSTS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   
 };
 
@@ -87,18 +94,25 @@ standard output.\n\
 Usage: %s ACTION [ACTIONS...] [FILES] > OUTPUT\n\
 \n\
 Actions: (Results of final action sent to output.)\n\
-  -n, --num-nonzero          Number of nonzero 32-aggregates.\n\
+  -n, --num-nonzero          Number of nonzero hosts.\n\
       --nnz-in-prefixes      Number of nonzero p-aggregates for all p.\n\
       --nnz-in-left-prefixes Number nonzero left-hand p-aggregates for all p.\n\
       --nnz-discriminated-by-prefix\n\
-                             Number of nonzero 32-aggregates with\n\
-                             discriminating prefix p for all p.\n\
+                             Number of nonzero hosts with discriminating prefix\n\
+                             p for all p.\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
       --sample N             Reduce counts by randomly sampling 1 in N.\n\
+      --cull-hosts N         Reduce --num-nonzero to at most N by removing\n\
+                             randomly selected hosts.\n\
+      --cull-hosts-by-packets N\n\
+                             Reduce --num-nonzero to at most N by removing\n\
+                             randomly selected packets.\n\
+      --cull-packets N       Reduce total number of packets to at most N by
+                             removing randomly selected packets.\n\
       --cut-smaller N        Zero counts less than N.\n\
       --average-and-variance, --avg-var\n\
-                             Average and variance of nonzero 32-aggregates.\n\
+                             Average and variance of nonzero hosts.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
                              Average and variance of nonzero p-aggregates for\n\
                              all p.\n\
@@ -194,6 +208,9 @@ particular purpose.\n");
 
 	  case SAMPLE_ACT:
 	  case CUT_SMALLER_ACT:
+	  case CULL_HOSTS_ACT:
+	  case CULL_HOSTS_BY_PACKETS_ACT:
+	  case CULL_PACKETS_ACT:
 	    add_action(opt, clp->val.u);
 	    break;
 
@@ -270,7 +287,28 @@ particular purpose.\n");
 	      case CUT_SMALLER_ACT:
 		tree.cut_smaller(action_extra);
 		break;
-		
+
+	      case CULL_HOSTS_ACT: {
+		  AggregateWTree wtree(tree, false);
+		  wtree.cull_hosts(action_extra);
+		  tree = wtree;
+		  break;
+	      }
+	      
+	      case CULL_HOSTS_BY_PACKETS_ACT: {
+		  AggregateWTree wtree(tree, true);
+		  wtree.cull_hosts_by_packets(action_extra);
+		  tree = wtree;
+		  break;
+	      }
+	      
+	      case CULL_PACKETS_ACT: {
+		  AggregateWTree wtree(tree, true);
+		  wtree.cull_packets(action_extra);
+		  tree = wtree;
+		  break;
+	      }
+	      
 	    }
 	}
 
@@ -330,6 +368,9 @@ particular purpose.\n");
 	  case POSTERIZE_ACT:
 	  case SAMPLE_ACT:
 	  case CUT_SMALLER_ACT:
+	  case CULL_HOSTS_ACT:
+	  case CULL_HOSTS_BY_PACKETS_ACT:
+	  case CULL_PACKETS_ACT:
 	    tree.write_file(out, true, errh);
 	    break;
 	  

@@ -3,11 +3,13 @@
 #include <click/vector.hh>
 #include <click/error.hh>
 #include <stdio.h>
+class AggregateWTree;
 
 class AggregateTree { public:
 
     AggregateTree();
     AggregateTree(const AggregateTree &);
+    AggregateTree(const AggregateWTree &);
     ~AggregateTree();
 
     bool ok(ErrorHandler * = 0) const;
@@ -38,15 +40,16 @@ class AggregateTree { public:
     int write_file(FILE *, bool binary, ErrorHandler *) const;
 
     AggregateTree &operator=(const AggregateTree &);
-    
-  public:
-    
+    AggregateTree &operator=(const AggregateWTree &);
+
     struct Node {
 	uint32_t aggregate;
 	uint32_t count;
 	Node *child[2];
     };
 
+  private:
+    
     Node *_root;
     Node *_free;
     Vector<Node *> _blocks;
@@ -70,7 +73,10 @@ class AggregateTree { public:
     void node_sample(Node *, uint32_t);
     void node_cut_smaller(Node *, uint32_t);
 
+    static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);
+
+    friend class AggregateWTree;
     
 };
 
@@ -106,5 +112,7 @@ AggregateTree::prefix_to_mask(int p)
     assert(p >= 0 && p <= 32);
     return (p == 0 ? 0 : (0xFFFFFFFFU << (32 - p)));
 }
+
+extern int bi_ffs(uint32_t);
 
 #endif
