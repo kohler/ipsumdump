@@ -441,25 +441,26 @@ packets and one for metadata lines.
 Regular packet records have binary fields stored in the order indicated by
 the `C<!data>' line, as follows:
 
-   Field Name  Length  Description
-   timestamp      8    timestamp sec, usec
-   ip_src         4    source IP address
-   ip_dst         4    destination IP address
-   sport          2    source port
-   dport          2    destination port
-   ip_len         4    IP length field
-   ip_proto       1    IP protocol
-   ip_id          2    IP ID
-   ip_frag        1    fragment descriptor
-                       ('F', 'f', or '.')
-   ip_fragoff     2    IP fragment offset field
-   tcp_seq        4    TCP seqnece number
-   tcp_ack        4    TCP ack number
-   tcp_flags      1    TCP flags
-   tcp_opt        ?    TCP options
-   tcp_sack       ?    TCP SACK options
-   payload_len    4    payload length
-   count          4    packet count
+   Field Name     Length  Description
+   timestamp         8    timestamp sec, usec
+   first_timestamp   8    timestamp sec, usec
+   ip_src            4    source IP address
+   ip_dst            4    destination IP address
+   sport             2    source port
+   dport             2    destination port
+   ip_len            4    IP length field
+   ip_proto          1    IP protocol
+   ip_id             2    IP ID
+   ip_frag           1    fragment descriptor
+                          ('F', 'f', or '.')
+   ip_fragoff        2    IP fragment offset field
+   tcp_seq           4    TCP seqnece number
+   tcp_ack           4    TCP ack number
+   tcp_flags         1    TCP flags
+   tcp_opt           ?    TCP options
+   tcp_sack          ?    TCP SACK options
+   payload_len       4    payload length
+   count             4    packet count
 
 Each field is Length bytes long. Variable-length fields have Length `C<?>' in
 the table; in a packet record, these fields consist of a single length byte,
