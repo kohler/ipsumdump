@@ -1,5 +1,17 @@
 Ipsumdump NEWS
 
+Version 1.38   10.Jul.2004
+
+* Print information from partially-captured headers.  For example,
+  ipsumdump will print the TCP source ports of packets whose TCP options
+  were not captured (as long as the source ports were captured).
+  Previously the source ports would be printed as '-', since the whole TCP
+  header was not captured.  Requested by Vern Paxson.
+
+* '--bad-packets' now prints '!bad' lines IN ADDITION TO normal output, not
+  instead of normal output.
+
+
 Version 1.37   9.Jul.2004
 
 * Support HDLC link layers.  Requested by Vern Paxson.

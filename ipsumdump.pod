@@ -297,8 +297,10 @@ tcpdump's syntax.)
 Print lines like 'C<!bad IP header length 4>' for packets with no IP
 headers, bad IP headers, or bad TCP/UDP headers. (A bad header has an
 incorrect length or unexpected version, or is spread across multiple
-fragments.) Default is to print a normal line, but with a dash 'C<->' for
-any piece of information that came from a bad header.
+fragments.)  The 'C<!bad>' line will immediately precede the normal output
+line.  Whether or not B<--bad-packets> is true, a dash 'C<->' is printed
+for any piece of information that came from a bad header, or that came from
+a portion of the header that was not captured.
 
 =item B<--anonymize>, B<-A>
 
@@ -370,8 +372,7 @@ minutes.) A sample comment:
   !counts out 0 kdrop 0
 
 This says that B<ipsumdump> has output 0 records, and the kernel reported 0
-packet drops since B<ipsumdump> began. 'C<!bad>' lines are counted as
-records.
+packet drops since B<ipsumdump> began.
 
 =item B<--random-seed>=I<seed>
 
@@ -520,9 +521,9 @@ This is, I think, a pleasant way to write a packet processor!
 
 =head1 COMPATIBILITY
 
-Version 1.0 of the IPSummaryDump file format expressed 'ip_fragoff' fields
-in units of 8 bytes. In version 1.1 and later, these fields are expressed
-in bytes.
+Version 1.0 of the IPSummaryDump ASCII file format expressed 'ip_fragoff'
+fields in units of 8 bytes. In version 1.1 and later, these fields are
+expressed in bytes.
 
 The names of 'C<!data>' fields were formerly printed in quotes, and could
 contain spaces, like the following:
