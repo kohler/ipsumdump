@@ -1,5 +1,14 @@
 Ipsumdump NEWS
 
+Version 1.30   5.Sep.2003
+
+* Set UDP and IP lengths correctly, hopefully addressing problems reported
+  by Andrew White.
+
+* In '--multipacket', the sum of the individual packet lengths should equal
+  the total packet length.
+
+
 Version 1.29   4.Sep.2003
 
 * Fix build problems reported by Andrew White.

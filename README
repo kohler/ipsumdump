@@ -9,8 +9,8 @@ first couple lines describe the summary's contents; for example:
 !IPSummaryDump 1.1
 !creator "ipsumdump -i wvlan0"
 !host no.lcdf.org
-!starttime 996022410.322317 (Tue Jul 24 17:53:30 2001)
-!data 'ip src' 'ip dst'
+!runtime 996022410.322317 (Tue Jul 24 17:53:30 2001)
+!data ip_src ip_dst
 63.250.213.167 192.150.187.106
 63.250.213.167 192.150.187.106
 // ...

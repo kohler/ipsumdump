@@ -19,7 +19,7 @@ Here are a couple lines of B<ipsumdump> output, from `ipsumdump -sd
   !IPSummaryDump 1.1
   !creator "ipsumdump -sd /home/kohler/largedump.gz"
   !host max.lcdf.org
-  !starttime 1000943858.353723 (Wed Sep 19 16:57:38 2001)
+  !runtime 1000943858.353723 (Wed Sep 19 16:57:38 2001)
   !data ip_src ip_dst
   64.55.139.202 209.247.204.242
   18.26.4.9 64.55.139.202
@@ -397,7 +397,7 @@ B<-tsSdDp>' might produce output like this:
   !IPSummaryDump 1.1
   !creator "ipsumdump -i eth1 -tsSdDp"
   !host max.lcdf.org
-  !starttime 1000967293.569808 (Wed Sep 19 23:28:13 2001)
+  !runtime 1000967293.569808 (Wed Sep 19 23:28:13 2001)
   !data timestamp ip_src sport ip_dst dport ip_proto
   1000967303.641581 64.71.165.130 80 192.168.1.101 4450 T
   1000967303.670506 64.71.165.130 80 192.168.1.101 4450 T
@@ -411,7 +411,7 @@ Here is the same data, anonymized with B<-A>:
   !IPSummaryDump 1.1
   !creator "ipsumdump --ipsumdump -A -tsSdDp"
   !host max.lcdf.org
-  !starttime 1000968019.67508 (Wed Sep 19 23:40:19 2001)
+  !runtime 1000968019.67508 (Wed Sep 19 23:40:19 2001)
   !data timestamp ip_src sport ip_dst dport ip_proto
   1000967303.641581 29.50.142.215 80 204.196.101.50 4450 T
   1000967303.670506 29.50.142.215 80 204.196.101.50 4450 T
