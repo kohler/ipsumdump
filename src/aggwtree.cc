@@ -869,12 +869,12 @@ AggregateWTree::read_file(FILE *f, ErrorHandler *errh)
     while (fgets(s, BUFSIZ, f)) {
 	if (strlen(s) == BUFSIZ - 1 && s[BUFSIZ - 2] != '\n')
 	    return errh->error("line too long");
-	if (s[0] == '$') {
-	    if (strcmp(s, "$packed\n") == 0)
+	if (s[0] == '$' || s[0] == '!') {
+	    if (strcmp(s + 1, "packed\n") == 0)
 		read_packed_file(f, this, CLICK_BYTE_ORDER);
-	    else if (strcmp(s, "$packed_le\n") == 0)
+	    else if (strcmp(s + 1, "packed_le\n") == 0)
 		read_packed_file(f, this, CLICK_LITTLE_ENDIAN);
-	    else if (strcmp(s, "$packed_be\n") == 0)
+	    else if (strcmp(s + 1, "packed_be\n") == 0)
 		read_packed_file(f, this, CLICK_BIG_ENDIAN);
 	} else if (sscanf(s, "%u %u", &agg, &value) == 2)
 	    add(agg, value);
@@ -890,17 +890,17 @@ AggregateWTree::read_file(FILE *f, ErrorHandler *errh)
 int
 AggregateWTree::write_file(FILE *f, AggregateTree::WriteFormat format, ErrorHandler *errh) const
 {
-    fprintf(f, "$num_nonzero %u\n", _num_nonzero);
+    fprintf(f, "!num_nonzero %u\n", _num_nonzero);
     if (format == AggregateTree::WR_BINARY) {
 #if CLICK_BYTE_ORDER == CLICK_BIG_ENDIAN
-	fprintf(f, "$packed_be\n");
+	fprintf(f, "!packed_be\n");
 #elif CLICK_BYTE_ORDER == CLICK_LITTLE_ENDIAN
-	fprintf(f, "$packed_le\n");
+	fprintf(f, "!packed_le\n");
 #else
 	format = AggregateTree::WR_ASCII;
 #endif
     } else if (format == AggregateTree::WR_ASCII_IP)
-	fprintf(f, "$ip\n");
+	fprintf(f, "!ip\n");
     
     uint32_t buf[1024];
     int pos = 0;
@@ -917,7 +917,7 @@ AggregateWTree::write_file(FILE *f, AggregateTree::WriteFormat format, ErrorHand
 int
 AggregateWTree::write_hex_file(FILE *f, ErrorHandler *errh) const
 {
-    fprintf(f, "$num_nonzero %u\n", _num_nonzero);
+    fprintf(f, "!num_nonzero %u\n", _num_nonzero);
     
     AggregateTree::write_hex_nodes(_root, f, errh);
 

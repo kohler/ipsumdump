@@ -6,7 +6,7 @@
 #include <click/error.hh>
 #include <click/confparse.hh>
 #include <click/router.hh>
-#include <click/lexer.hh>
+#include <click/driver.hh>
 #include <click/straccum.hh>
 #include <click/handlercall.hh>
 #include "aggcounter.hh"
@@ -54,6 +54,7 @@
 #define AGG_UNI_FLOWS_OPT 504
 #define AGG_ADDRPAIR_OPT 505
 #define AGG_UNI_ADDRPAIR_OPT 506
+#define AGG_IP_OPT	507
 
 #define AGG_BYTES_OPT	600
 #define AGG_PACKETS_OPT	601
@@ -79,19 +80,19 @@ static Clp_Option options[] = {
     { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
     { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
+    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     { "tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
     { "read-tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
     { "ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
     { "read-ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
-    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     { "bro-conn-summary", 0, READ_BROCONN_OPT, 0, 0 },
     { "read-bro-conn-summary", 0, READ_BROCONN_OPT, 0, 0 },
     
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
-    { "binary", 'B', BINARY_OPT, 0, Clp_Negate },
-    { "ascii", 0, ASCII_OPT, 0, Clp_Negate },
+    { "binary", 'B', BINARY_OPT, 0, 0 },
+    { "ascii", 0, ASCII_OPT, 0, 0 },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
@@ -101,21 +102,22 @@ static Clp_Option options[] = {
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
 
-    { "interval", 't', INTERVAL_OPT, CLP_TIMEVAL_TYPE, 0 },
-    { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMEVAL_TYPE, 0 },
-    { "start-time", 0, START_TIME_OPT, CLP_TIMEVAL_TYPE, 0 },
-
     { "src", 's', AGG_SRC_OPT, 0, 0 },
     { "dst", 'd', AGG_DST_OPT, 0, 0 },
     { "length", 'l', AGG_LENGTH_OPT, 0, 0 },
+    { "ip", 0, AGG_IP_OPT, Clp_ArgString, 0 },
     { "flows", 0, AGG_FLOWS_OPT, 0, 0 },
     { "unidirectional-flows", 0, AGG_UNI_FLOWS_OPT, 0, 0 },
     { "uni-flows", 0, AGG_UNI_FLOWS_OPT, 0, 0 },
     { "address-pairs", 0, AGG_ADDRPAIR_OPT, 0, 0 },
     { "unidirectional-address-pairs", 0, AGG_UNI_ADDRPAIR_OPT, 0, 0 },
     { "uni-address-pairs", 0, AGG_UNI_ADDRPAIR_OPT, 0, 0 },
-    { "bytes", 'b', AGG_BYTES_OPT, 0, 0 },
+    
     { "packets", 'p', AGG_PACKETS_OPT, 0, 0 },
+    { "bytes", 'b', AGG_BYTES_OPT, 0, 0 },
+    { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMEVAL_TYPE, 0 },
+    { "interval", 't', INTERVAL_OPT, CLP_TIMEVAL_TYPE, 0 },
+    { "start-time", 0, START_TIME_OPT, CLP_TIMEVAL_TYPE, 0 },
     { "limit-aggregates", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
     { "split-aggregates", 0, SPLIT_AGG_OPT, Clp_ArgUnsigned, 0 },
     { "split-time", 0, SPLIT_TIME_OPT, CLP_TIMEVAL_TYPE, 0 },
@@ -156,6 +158,7 @@ Aggregate options (give exactly one):\n\
   -s, --src                  Aggregate by IP source address.\n\
   -d, --dst                  Aggregate by IP destination address (default).\n\
   -l, --length               Aggregate by IP length.\n\
+      --ip FIELD             Aggregate by IP FIELD (ex: 'ip src/8', 'ip ttl').\n\
       --flows                Aggregate by flow ID (agg. number meaningless).\n\
       --unidirectional-flows Aggregate by unidirectional flow ID.\n\
       --address-pairs        Aggregate by IP address pairs.\n\
@@ -170,7 +173,7 @@ Other aggregate options:\n\
       --limit-aggregates K   Stop once K aggregates are encountered.\n\
       --split-aggregates K   Output new file every K aggregates.\n\
       --split-time TIME      Output new file every TIME worth of packets.\n\
-      --split-count N        Output new file every N packets.\n\
+      --split-packets N      Output new file every N packets.\n\
       --split-bytes N        Output new file every N bytes.\n\
 \n\
 Data source options (give exactly one):\n\
@@ -213,8 +216,10 @@ catch_signal(int sig)
     signal(sig, SIG_DFL);
     if (!started)
 	kill(getpid(), sig);
-    DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
-    router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+    else {
+	DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
+	router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+    }
 }
 
 static int
@@ -227,8 +232,6 @@ parse_timeval(Clp_Parser *clp, const char *arg, int complain, void *)
     else
 	return 0;
 }
-
-extern void click_export_elements(Lexer *);
 
 static StringAccum banner_sa;
 
@@ -395,7 +398,7 @@ main(int argc, char *argv[])
 
 	  case IPSUMDUMP_FORMAT_OPT:
 	    if (ipsumdump_format)
-		die_usage("`--ipsumdump-format' already specified");
+		die_usage("`--format' already specified");
 	    ipsumdump_format = clp->arg;
 	    break;
 	    
@@ -420,11 +423,11 @@ main(int argc, char *argv[])
 	    break;
 
 	  case BINARY_OPT:
-	    binary = !clp->negated;
+	    binary = true;
 	    break;
 
 	  case ASCII_OPT:
-	    binary = clp->negated;
+	    binary = false;
 	    break;
 
 	  case SAMPLE_OPT:
@@ -479,6 +482,12 @@ main(int argc, char *argv[])
 	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
 	    agg = "ip len";
+	    break;
+
+	  case AGG_IP_OPT:
+	    if (agg || agg_flows)
+		die_usage("aggregate specified twice");
+	    agg = clp->arg;
 	    break;
 
 	  case AGG_FLOWS_OPT:
@@ -576,6 +585,10 @@ particular purpose.\n");
     // determine aggregate
     if (!agg && !agg_flows)
 	agg = "ip dst";
+    if (agg.substring(0, 3) == "src" || agg.substring(0, 3) == "dst")
+	agg = "ip " + agg;
+    if (agg.substring(0, 3) == "ip_")
+	agg = "ip " + agg.substring(3);
     
     // set random seed if appropriate
     if (do_seed && (do_sample || anonymize))
@@ -616,16 +629,16 @@ particular purpose.\n");
 	if (action != READ_IPSUMDUMP_OPT)
 	    die_usage("`--format' option requires `--ipsumdump'");
     } else if (action == READ_TUDUMP_OPT) {
-	ipsumdump_format = "timestamp 'ip src' sport 'ip dst' dport proto 'payload len'";
+	ipsumdump_format = "timestamp ip_src sport ip_dst dport proto payload_len";
 	action = READ_IPSUMDUMP_OPT;
     } else if (action == READ_IPADDR_OPT) {
-	if (agg == "ip src" || agg == "ip dst")
+	if (agg.substring(0, 6) == "ip src" || agg.substring(0, 6) == "ip dst")
 	    ipsumdump_format = "'" + agg + "'";
 	else
 	    die_usage("can't aggregate `" + agg + "' with `--ip-addresses'");
 	action = READ_IPSUMDUMP_OPT;
     } else if (action == READ_BROCONN_OPT) {
-	ipsumdump_format = "timestamp 'ip src' 'ip dst' direction";
+	ipsumdump_format = "timestamp ip_src ip_dst direction";
 	shunt_sa << " -> { input -> t :: Tee -> output; t[1] -> IPMirror -> output }\n";
 	action = READ_IPSUMDUMP_OPT;
 	allow_ipsumdump_sample = false;
@@ -739,9 +752,12 @@ particular purpose.\n");
     if (agg_flows)
 	sa << "  -> AggregateIPFlows(" << agg_flows << ")\n";
     else {
-	if (agg == "src" || agg == "dst" || agg == "ip src" || agg == "ip dst")
+	if (agg.substring(0, 6) == "ip src" || agg.substring(0, 6) == "ip dst")
 	    agg_is_ip = true;
-	sa << "  -> AggregateIP(" << agg << ")\n";
+	sa << "  -> AggregateIP(" << agg;
+	if (!binary && agg_is_ip)
+	    sa << ", UNSHIFT_IP_ADDR true";
+	sa << ")\n";
     }
 
     // elements to count aggregates
@@ -819,20 +835,14 @@ particular purpose.\n");
     }
     output_call_str = output_call_sa.take_string();
 
+    router->add_write_handler(0, "stop", stop_handler, 0);
+    router->add_write_handler(0, "output", output_handler, 0);
+    
     // lex configuration
     BailErrorHandler berrh(errh);
     VerboseFilterErrorHandler verrh(&berrh, ErrorHandler::ERRVERBOSITY_CONTEXT + 1);
-    ErrorHandler *click_errh = (verbose ? errh : &verrh);
-    Lexer *lexer = new Lexer();
-    click_export_elements(lexer);
-    int cookie = lexer->begin_parse(sa.take_string(), "<internal>", 0, click_errh);
-    while (lexer->ystatement())
-	/* do nothing */;
-    router = lexer->create_router();
-    lexer->end_parse(cookie);
-    router->add_write_handler(0, "stop", stop_handler, 0);
-    router->add_write_handler(0, "output", output_handler, 0);
-    if (errh->nerrors() > 0 || router->initialize(click_errh) < 0)
+    router = click_read_router(sa.take_string(), true, (verbose ? errh : &verrh));
+    if (!router)
 	exit(1);
     
     // run driver
