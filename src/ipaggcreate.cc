@@ -284,9 +284,11 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     }
     AggregateCounter *ac = (AggregateCounter *)(router->find("ac"));
     int result = 0;
-    if (multi_output < 0 || !ac->empty())
+    if (multi_output < 0 || !ac->empty()) {
 	result = HandlerCall::call_write(router, "ac", (binary ? "write_file" : "write_ascii_file"), cp_quote(cur_output), errh);
-    else if (multi_output >= 0)	// skip empty files
+	if (result < 0)		// file errors are fatal
+	    catch_signal(SIGINT);
+    } else if (multi_output >= 0) // skip empty files
 	multi_output--;
 
     (void) HandlerCall::call_write(router, "ac", "clear");
@@ -527,7 +529,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("ipaggcreate %s (libclick-%s)\n", "0", CLICK_VERSION);
-	    printf("Copyright (C) 2001 International Computer Science Institute\n\
+	    printf("Copyright (C) 2001-2002 International Computer Science Institute\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -810,5 +812,5 @@ particular purpose.\n");
 
     // exit
     delete router;
-    exit(0);
+    exit(errh->nerrors() > 0 ? 1 : 0);
 }
