@@ -300,6 +300,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 
 	int ok = 0;
 	uint32_t byte_count = 0;
+	uint32_t payload_len = 0;
 	for (int i = 0; i < _contents.size(); i++)
 	    switch (_contents[i]) {
 
@@ -327,6 +328,11 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 		ok += (cp_unsigned(words[i], &j) && j <= 0xFFFF);
 		iph->ip_len = htons(j);
 		byte_count = j;
+		break;
+		
+	      case W_PAYLOAD_LENGTH:
+		ok += (cp_unsigned(words[i], &j) && j <= 0xFFFF);
+		payload_len = j;
 		break;
 		
 	      case W_PROTO: {
@@ -415,6 +421,8 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	    q->take(sizeof(click_tcp));
 	if (byte_count)
 	    SET_EXTRA_LENGTH_ANNO(q, byte_count - q->length());
+	else if (payload_len)
+	    SET_EXTRA_LENGTH_ANNO(q, payload_len);
 	return q;
     }
 
