@@ -1,5 +1,6 @@
 #include <click/config.h>
 #include "aggtree.hh"
+#include <click/glue.hh>
 #include <click/confparse.hh>
 #include <click/error.hh>
 #include <click/integers.hh>	// for first_bit_set
