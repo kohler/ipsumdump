@@ -336,16 +336,14 @@ AggregateWTree::pick_random_nonzero_node(WNode *stack[], int *store_pos) const
 	uint32_t left_count = n->child_count[0];
 	uint32_t nc = left_count + self_count + n->child_count[1];
 	uint32_t v = ((uint32_t)random()) % nc;
-	if (v < left_count) {
-	    stack[pos++] = n;
+	stack[pos++] = n;
+	if (v < left_count)
 	    n = (WNode *) n->child[0];
-	} else if (v < left_count + self_count) {
+	else if (v < left_count + self_count) {
 	    *store_pos = pos;
 	    return n;
-	} else {
-	    stack[pos++] = n;
+	} else
 	    n = (WNode *) n->child[1];
-	}
     }
 
     // no nonzero nodes!
