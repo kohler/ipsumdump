@@ -190,15 +190,6 @@ parse_timeval(Clp_Parser *clp, const char *arg, int complain, void *)
 
 extern void export_elements(Lexer *);
 
-static String
-source_output_port(bool collate, int i)
-{
-    if (collate)
-	return "[" + String(i) + "]collate";
-    else
-	return "shunt";
-}
-
 static StringAccum banner_sa;
 
 static uint32_t aggctr_limit_nnz = 0;
@@ -206,7 +197,23 @@ static String::Initializer string_init;
 static String output;
 static int multi_output = -1;
 static bool binary = false;
+static bool collate = false;
 static String end_call_str;
+
+static String
+source_config(const String &filename, const String &config, int)
+{
+    return cp_quote(filename) + config;
+}
+
+static String
+source_output_port(int i)
+{
+    if (collate)
+	return "[" + String(i) + "]collate";
+    else
+	return "shunt";
+}
 
 static int
 output_handler(const String &, Element *, void *, ErrorHandler *errh)
@@ -301,7 +308,7 @@ main(int argc, char *argv[])
     bool multipacket = false;
     double sample = 0;
     bool do_sample = false;
-    bool collate = false;
+    //bool collate;
     int action = 0;
     bool do_seed = true;
     bool progress_bar_ok = true;
@@ -528,7 +535,7 @@ particular purpose.\n");
 	    end_call_sa << "src0.extend_interval " << split_time;
 	}
 	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromDump(" << cp_quote(files[i]) << config << ") -> " << source_output_port(collate, i) << ";\n";
+	    psa << "src" << i << " :: FromDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
 	sample_elt = "src0";
 	
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
@@ -538,7 +545,7 @@ particular purpose.\n");
 	if (multipacket)
 	    config += ", MULTIPACKET true";
 	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << cp_quote(files[i]) << config << ") -> " << source_output_port(collate, i) << ";\n";
+	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
 	if (do_sample) {
 	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
 	    sample_elt = "shunt/samp";
@@ -559,7 +566,7 @@ particular purpose.\n");
 	if (action == READ_TUDUMP_OPT)
 	    config += ", DEFAULT_CONTENTS timestamp 'ip src' sport 'ip dst' dport proto 'payload len'";
 	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromIPSummaryDump(" << cp_quote(files[i]) << config << ") -> " << source_output_port(collate, i) << ";\n";
+	    psa << "src" << i << " :: FromIPSummaryDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
 	sample_elt = "src0";
 	
     } else
@@ -620,24 +627,32 @@ particular purpose.\n");
     sa << "  -> d :: Discard;\n";
     sa << "ac[1] -> d;\n";
 
+    // progress bar
+    if (progress_bar_ok) {
+	sa << "progress :: ProgressBar(";
+	for (int i = 0; i < files.size(); i++)
+	    sa << "src" << i << ".filepos ";
+	sa << ", ";
+	for (int i = 0; i < files.size(); i++)
+	    sa << "src" << i << ".filesize ";
+	StringAccum pb_banner;
+	for (int i = 0; i < files.size(); i++)
+	    pb_banner << (i > 0 ? ", " : "") << files[i];
+	String banner = cp_quote(pb_banner.take_string().substring(0, 20));
+	sa << ", UPDATE .1, BANNER " << banner << ");\n";
+    }
+    
     // DriverManager
     if (!output)
 	output = "-";
-    
     stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
     sa << "DriverManager(wait_stop " << (stop_driver_count - 1);
-    // clear progress bar if appropriate
-    if (progress_bar_ok && files.size() == 1)
+    // manipulate progress bar
+    if (progress_bar_ok)
 	sa << ", write_skip progress.mark_done";
     sa << ", write_skip output);\n";
     sa << "// Outside of aciri-aggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "' instead of `write output'.\n";
 
-    // progress bar
-    if (progress_bar_ok && files.size() == 1) {
-	String banner = cp_quote(files[0].substring(0, 20));
-	sa << "progress :: ProgressBar(src0.filepos, src0.filesize, UPDATE .1, BANNER " << banner << ");\n";
-    }
-    
     // output config if required
     if (config) {
 	printf("%s", sa.cc());
