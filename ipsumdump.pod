@@ -23,12 +23,19 @@ Here are the first couple of lines from sample B<ipsumdump> output, from
   64.55.139.202 209.247.204.242
   18.26.4.9 64.55.139.202
 
-The `B<-sd>' option tells B<ipsumdump> to log source and destination IP
-addresses; `F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file.
-Each data line represents a packet; a space separates the two addresses.
-The `C<!data>' line describes the contents of each data line.
+The `B<-sd>' option tells B<ipsumdump> to log I<s>ource and I<d>estination
+IP addresses; `F</home/kohler/largedump.gz>' is a compressed tcpdump(1)
+file. Each data line represents a packet; a space separates the two
+addresses. The `C<!data>' line describes the contents of each data line.
 
 =head1 OPTIONS
+
+B<Ipsumdump> options fall into three categories. A data source option --
+there can be at most one -- says where B<ipsumdump> should read its data.
+Dump content options determine which packet characteristics go into the
+Finally, other options let you anonymize IP addresses, dump the Click
+configuration B<ipsumdump> would run, or write packets in parallel to a
+tcpdump(1) file, for example.
 
 =head2 Data Sources
 
@@ -74,14 +81,21 @@ B<Ipsumdump> pays attention to some of these fields:
   13     IP protocol                   6
   14     IP TOS bits                   0
 
+=item B<--ipsumdump>
+
+Read from one or more existing B<ipsumdump> files. Any packet
+characteristics not specified by the input B<ipsumdump> files are printed
+as 0.
+
 =back
 
 =head2 Dump Contents
 
 These options determine what actually goes in the dump. You can supply an
-arbitrary number of them. If you say `B<-sd>', for example -- or the
-equivalent `B<--src --dst>' -- the dump's data lines will contain an IP
-source address, a space, and an IP destination address:
+arbitrary number of them; in the output, fields are separated by spaces. If
+you say `B<-sd>', for example -- or the equivalent `B<--src --dst>' -- the
+dump's data lines will contain an IP source address, a space, and an IP
+destination address:
 
     192.168.1.101 18.26.4.44
 
@@ -147,7 +161,7 @@ for other IP packets. Example: C<1000>.
 Include packet count in the dump. Some kinds of logs -- such as NetFlow
 summary logs -- record information about flows, not packets. A flow
 represents multiple packets; the packet count says exactly how many.
-Example: C<1>.
+Example: C<1>. See also B<--multipacket>, below.
 
 =back
 
@@ -181,6 +195,14 @@ I<addrs> is a space- or comma-separated list of IP addresses and/or
 prefixes. When the summary dump completes, B<ipsumdump> will write those
 addresses to the standard error, paired with their anonymized counterparts.
 
+=item B<--multipacket>
+
+Supply this option if you are reading NetFlow or IP summaries -- files
+where each record might represent multiple packets -- and you would like
+the output summary to have one line per packet, instead of the default one
+line per record. See also B<--packet-count>, above. If you supply both
+B<--multipacket> and B<--packet-count>, then B<--multipacket> is ignored.
+
 =item B<--write-tcpdump>=I<file>, B<-w> I<file>
 
 Write processed packets to a tcpdump(1) I<file>, or to the standard output,
@@ -209,13 +231,66 @@ exit.
 
 =head1 EXAMPLES
 
+The `B<-tsSdDp>' option stores the most commonly useful information about
+each packet: timestamp, source address, source port, destination address,
+destination port, and protocol. Invoking `ipsumdump B<-i> eth1 B<-tsSdDp>'
+might produce output like this:
+
+  !IPSummaryDump 1.0
+  !creator "ipsumdump -i eth1 -tsSdDp"
+  !host max.lcdf.org
+  !starttime 1000967293.569808 (Wed Sep 19 23:28:13 2001)
+  !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'
+  1000967303.641581 64.71.165.130 80 192.168.1.101 4450 T
+  1000967303.670506 64.71.165.130 80 192.168.1.101 4450 T
+  1000967303.882621 18.26.4.44 - 192.168.1.101 - I
+  1000967304.253874 64.71.165.130 80 192.168.1.101 4442 T
+  1000967304.390016 192.150.187.11 53 192.168.1.101 1299 U
+  1000967304.425992 207.171.182.16 80 192.168.1.101 4451 T
+
+Here is the same data, anonymized with the B<-A> option:
+
+  !IPSummaryDump 1.0
+  !creator "ipsumdump --ipsumdump -A -tsSdDp"
+  !host max.lcdf.org
+  !starttime 1000968019.67508 (Wed Sep 19 23:40:19 2001)
+  !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'
+  1000967303.641581 29.50.142.215 80 204.196.101.50 4450 T
+  1000967303.670506 29.50.142.215 80 204.196.101.50 4450 T
+  1000967303.882621 89.142.236.79 - 204.196.101.50 - I
+  1000967304.253874 29.50.142.215 80 204.196.101.50 4442 T
+  1000967304.390016 204.224.59.219 53 204.196.101.50 1299 U
+  1000967304.425992 192.230.64.231 80 204.196.101.50 4451 T
+
+=head1 NOTE
+
+The B<ipsumdump> program uses the Click modular router, an extensible
+system for processing packets. Click routers consist of C++ components
+called elements. While some elements run only in a Linux kernel, most can
+run either in the kernel or in user space, and there are user-level
+elements for reading packets from libpcap or from tcpdump files.
+
+B<Ipsumdump> program just builds up a simple Click configuration and runs
+it, as if by the click(1) user-level driver. However, you don't need to
+install Click to run B<ipsumdump>; the F<libclick> directory contains all
+the relevant parts of Click, bundled into a library.
+
+If you're curious, try running `ipsumdump B<--config>' with some other
+options to see the Click configuration B<ipsumdump> would run. Only a
+handful of source files had to be written from scratch -- particularly,
+F<src/ipsumdump.cc>, F<src/toipsumdump.cc>, and F<src/toipsumdump.hh>. The
+rest came from Click itself.
+
+This is, I think, a pleasant way to write a packet processor!
+
 =head1 SEE ALSO
 
-tcpdump(1), tcpdpriv(1)
+tcpdump(1), tcpdpriv(1), click(1)
+
+See http://www.pdos.lcs.mit.edu/click/ for more on Click.
 
 =head1 AUTHOR
 
-Eddie Kohler <kohler@aciri.org>, based on the Click modular router. See
-http://www.pdos.lcs.mit.edu/click/ for more on Click.
+Eddie Kohler <kohler@aciri.org>, based on the Click modular router.
 
 Anonymization algorithm from tcpdpriv(1) by Greg Minshall.

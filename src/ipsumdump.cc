@@ -31,6 +31,7 @@
 #define INTERFACE_OPT	400
 #define READ_DUMP_OPT	401
 #define READ_NETFLOW_SUMMARY_OPT 402
+#define READ_IPSUMDUMP_OPT 403
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -59,6 +60,8 @@ static Clp_Option options[] = {
   { "read-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
   { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
   { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+  { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
+  { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
   { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
   { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
   { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
@@ -132,6 +135,7 @@ Data source options (give exactly one):\n\
                              interrupted.\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
+      --ipsumdump            Read from existing ipsumdump FILES.\n\
 \n\
 Other options:\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
@@ -208,6 +212,7 @@ main(int argc, char *argv[])
 	  case INTERFACE_OPT:
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
+	  case READ_IPSUMDUMP_OPT:
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
@@ -305,37 +310,49 @@ particular purpose.\n");
     if (output == "-" && write_dump == "-")
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
+    // define shunt
+    sa << "shunt :: { input -> output };\n";
+    
     // elements to read packets
     if (action == 0)
 	action = READ_DUMP_OPT;
     if (action == INTERFACE_OPT) {
-	if (files.size() != 1)
-	    p_errh->fatal("`-i' option takes exactly one DEVNAME");
-	sa << "FromDevice(" << files[0] << ", SNAPLEN 60, FORCE_IP true, BPF_FILTER " << cp_quote(filter) << ")\n";
+	if (files.size() == 0)
+	    p_errh->fatal("`-i' option takes at least one DEVNAME");
+	String filter_extra;
+#if FROMDEVICE_PCAP
+	if (filter)
+	    filter_extra = ", BPF_FILTER " + cp_quote(filter);
+	filter = String();
+#endif
+	for (int i = 0; i < files.size(); i++)
+	    sa << "FromDevice(" << files[i] << ", SNAPLEN 60, FORCE_IP true" << filter_extra << ") -> shunt;\n";
     } else if (action == READ_DUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
-	sa << "shunt :: { input -> output };\n";
 	for (int i = 0; i < files.size(); i++)
 	    sa << "FromDump(" << files[i] << ", FORCE_IP true, STOP true) -> shunt;\n";
-	sa << "shunt\n";
-	if (filter)
-	    sa << "  -> IPClassifier(" << filter << ")\n";
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
-	sa << "shunt :: { input -> output };\n";
 	for (int i = 0; i < files.size(); i++)
 	    sa << "FromNetFlowSummaryDump(" << files[i] << ", STOP true) -> shunt;\n";
-	sa << "shunt\n";
-	if (filter)
-	    sa << "  -> IPClassifier(" << filter << ")\n";
+	if (multipacket)
+	    toipsumdump_extra += ", MULTIPACKET true";
+    } else if (action == READ_IPSUMDUMP_OPT) {
+	if (files.size() == 0)
+	    files.push_back("-");
+	for (int i = 0; i < files.size(); i++)
+	    sa << "FromIPSummaryDump(" << files[i] << ", STOP true, ZERO true) -> shunt;\n";
 	if (multipacket)
 	    toipsumdump_extra += ", MULTIPACKET true";
     } else
 	die_usage("must supply a data source option");
 
-    // possible elements to anonymize packets
+    // possible elements to filter and/or anonymize
+    sa << "shunt\n";
+    if (filter)
+	sa << "  -> IPClassifier(" << filter << ")\n";
     if (anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4)\n";
     

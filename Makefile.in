@@ -104,7 +104,7 @@ distdir:
 	-rm -rf $(distdir)
 	mkdir $(distdir)
 	@-chmod 777 $(distdir)
-	$(MAKE) ipsumdump.1
+	$(MAKE) $(srcdir)/ipsumdump.1
 	@echo Copying files...
 	@for file in `cat $(srcdir)/DISTFILES`; do \
 	  d=$(srcdir); \
