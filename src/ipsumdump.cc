@@ -29,7 +29,7 @@
 // data sources
 #define INTERFACE_OPT	400
 #define READ_DUMP_OPT	401
-#define READ_BRESLAU1_DUMP_OPT 402
+#define READ_NETFLOW_SUMMARY_OPT 402
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -56,8 +56,10 @@ static Clp_Option options[] = {
   { "interface", 'i', INTERFACE_OPT, 0, 0 },
   { "read-tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
   { "from-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
-  { "read-breslau1-dump", 0, READ_BRESLAU1_DUMP_OPT, 0, 0 },
-  { "from-breslau1-dump", 0, READ_BRESLAU1_DUMP_OPT, 0, 0 },
+  { "read-breslau1-dump", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+  { "from-breslau1-dump", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+  { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+  { "from-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
   { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
   { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
   { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
@@ -109,27 +111,27 @@ and summarizes their contents in an ASCII log.\n\
 \n\
 Usage: %s [CONTENT OPTIONS] [-i DEVNAMES | FILES] > LOGFILE\n\
 \n\
-Options that determine log contents (can give multiple options):\n\
-  -t, --timestamps           Log packet timestamps.\n\
-  -s, --src                  Log IP source addresses.\n\
-  -d, --dst                  Log IP destination addresses.\n\
-  -S, --sport                Log TCP/UDP source ports.\n\
-  -D, --dport                Log TCP/UDP destination ports.\n\
-  -l, --length               Log IP lengths.\n\
-  -p, --protocol             Log IP protocols.\n\
-      --id                   Log IP IDs.\n\
-  -Q, --tcp-seq              Log TCP sequence numbers.\n\
-  -K, --tcp-ack              Log TCP acknowledgement numbers.\n\
-  -F, --tcp-flags            Log TCP flags words.\n\
-  -L, --payload-length       Log payload lengths (no IP/UDP/TCP headers).\n\
-  -c, --packet-count         Log packet count (usually 1).\n\
+Options that determine summary dump contents (can give multiple options):\n\
+  -t, --timestamp            Include packet timestamps.\n\
+  -s, --src                  Include IP source addresses.\n\
+  -d, --dst                  Include IP destination addresses.\n\
+  -S, --sport                Include TCP/UDP source ports.\n\
+  -D, --dport                Include TCP/UDP destination ports.\n\
+  -l, --length               Include IP lengths.\n\
+  -p, --protocol             Include IP protocols.\n\
+      --id                   Include IP IDs.\n\
+  -Q, --tcp-seq              Include TCP sequence numbers.\n\
+  -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
+  -F, --tcp-flags            Include TCP flags words.\n\
+  -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
+  -c, --packet-count         Include packet count (usually 1).\n\
 Default contents option is `-sd' (log source and destination addresses).\n\
 \n\
 Data source options (give exactly one):\n\
   -i, --interface            Read packets from network devices DEVNAMES until\n\
                              interrupted.\n\
-  -r, --read-tcpdump         Read packets from tcpdump(1) file FILES (default).\n\
-      --read-breslau1-dump   Read Breslau1 summarized NetFlow format FILES.\n\
+  -r, --read-tcpdump         Read packets from tcpdump(1) FILES (default).\n\
+      --read-netflow-summary Read summarized NetFlow FILES.\n\
 \n\
 Other options:\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
@@ -202,7 +204,7 @@ main(int argc, char *argv[])
 	    
 	  case INTERFACE_OPT:
 	  case READ_DUMP_OPT:
-	  case READ_BRESLAU1_DUMP_OPT:
+	  case READ_NETFLOW_SUMMARY_OPT:
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
@@ -312,12 +314,12 @@ particular purpose.\n");
 	sa << "shunt\n";
 	if (filter)
 	    sa << "  -> IPClassifier(" << filter << ")\n";
-    } else if (action == READ_BRESLAU1_DUMP_OPT) {
+    } else if (action == READ_NETFLOW_SUMMARY_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
 	sa << "shunt :: { input -> output };\n";
 	for (int i = 0; i < files.size(); i++)
-	    sa << "FromBreslau1Dump(" << files[i] << ", STOP true) -> shunt;\n";
+	    sa << "FromNetFlowSummaryDump(" << files[i] << ", STOP true) -> shunt;\n";
 	sa << "shunt\n";
 	if (filter)
 	    sa << "  -> IPClassifier(" << filter << ")\n";

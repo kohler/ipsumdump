@@ -1,6 +1,5 @@
 /*
- * frombreslau1dump.{cc,hh} -- element reads packets from Lee Breslau-style
- * NetFlow dump file
+ * fromnetflowsumdump.{cc,hh} -- element reads packets from NetFlow summary
  * Eddie Kohler
  *
  * Copyright (c) 2001 International Computer Science Institute
@@ -18,7 +17,7 @@
 
 #include <click/config.h>
 
-#include "frombreslau1dump.hh"
+#include "fromnetflowsumdump.hh"
 #include <click/confparse.hh>
 #include <click/router.hh>
 #include <click/standard/scheduleinfo.hh>
@@ -33,20 +32,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-FromBreslau1Dump::FromBreslau1Dump()
+FromNetFlowSummaryDump::FromNetFlowSummaryDump()
     : Element(0, 1), _fd(-1), _pos(0), _len(0), _task(this), _pipe(0)
 {
     MOD_INC_USE_COUNT;
 }
 
-FromBreslau1Dump::~FromBreslau1Dump()
+FromNetFlowSummaryDump::~FromNetFlowSummaryDump()
 {
     MOD_DEC_USE_COUNT;
     uninitialize();
 }
 
 int
-FromBreslau1Dump::configure(const Vector<String> &conf, ErrorHandler *errh)
+FromNetFlowSummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
 {
     bool stop = false, active = true, zero = false;
     
@@ -66,7 +65,7 @@ FromBreslau1Dump::configure(const Vector<String> &conf, ErrorHandler *errh)
 }
 
 int
-FromBreslau1Dump::error_helper(ErrorHandler *errh, const char *x)
+FromNetFlowSummaryDump::error_helper(ErrorHandler *errh, const char *x)
 {
     if (errh)
 	errh->error("%s: %s", _filename.cc(), x);
@@ -76,7 +75,7 @@ FromBreslau1Dump::error_helper(ErrorHandler *errh, const char *x)
 }
 
 int
-FromBreslau1Dump::read_buffer(ErrorHandler *errh)
+FromNetFlowSummaryDump::read_buffer(ErrorHandler *errh)
 {
     if (_pos == 0 && _len == _buffer.length())
 	_buffer.append_garbage(BUFFER_SIZE);
@@ -105,7 +104,7 @@ FromBreslau1Dump::read_buffer(ErrorHandler *errh)
 }
 
 int
-FromBreslau1Dump::read_line(String &result, ErrorHandler *errh)
+FromNetFlowSummaryDump::read_line(String &result, ErrorHandler *errh)
 {
     int epos = _pos;
 
@@ -139,7 +138,7 @@ FromBreslau1Dump::read_line(String &result, ErrorHandler *errh)
 }
 
 int
-FromBreslau1Dump::initialize(ErrorHandler *errh)
+FromNetFlowSummaryDump::initialize(ErrorHandler *errh)
 {
     _pipe = 0;
     if (_filename == "-") {
@@ -193,7 +192,7 @@ FromBreslau1Dump::initialize(ErrorHandler *errh)
 }
 
 void
-FromBreslau1Dump::uninitialize()
+FromNetFlowSummaryDump::uninitialize()
 {
     if (_pipe)
 	pclose(_pipe);
@@ -206,7 +205,7 @@ FromBreslau1Dump::uninitialize()
 }
 
 Packet *
-FromBreslau1Dump::read_packet(ErrorHandler *errh)
+FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
 {
     WritablePacket *q = Packet::make((const char *)0, sizeof(click_ip) + sizeof(click_tcp));
     if (!q) {
@@ -293,7 +292,7 @@ FromBreslau1Dump::read_packet(ErrorHandler *errh)
 }
 
 void
-FromBreslau1Dump::run_scheduled()
+FromNetFlowSummaryDump::run_scheduled()
 {
     if (!_active)
 	return;
@@ -310,7 +309,7 @@ FromBreslau1Dump::run_scheduled()
 }
 
 Packet *
-FromBreslau1Dump::pull(int)
+FromNetFlowSummaryDump::pull(int)
 {
     if (!_active)
 	return 0;
@@ -322,9 +321,9 @@ FromBreslau1Dump::pull(int)
 }
 
 String
-FromBreslau1Dump::read_handler(Element *e, void *thunk)
+FromNetFlowSummaryDump::read_handler(Element *e, void *thunk)
 {
-    FromBreslau1Dump *fd = static_cast<FromBreslau1Dump *>(e);
+    FromNetFlowSummaryDump *fd = static_cast<FromNetFlowSummaryDump *>(e);
     switch ((int)thunk) {
       case 1:
 	return cp_unparse_bool(fd->_active) + "\n";
@@ -334,9 +333,9 @@ FromBreslau1Dump::read_handler(Element *e, void *thunk)
 }
 
 int
-FromBreslau1Dump::write_handler(const String &s_in, Element *e, void *thunk, ErrorHandler *errh)
+FromNetFlowSummaryDump::write_handler(const String &s_in, Element *e, void *thunk, ErrorHandler *errh)
 {
-    FromBreslau1Dump *fd = static_cast<FromBreslau1Dump *>(e);
+    FromNetFlowSummaryDump *fd = static_cast<FromNetFlowSummaryDump *>(e);
     String s = cp_uncomment(s_in);
     switch ((int)thunk) {
       case 1: {
@@ -355,7 +354,7 @@ FromBreslau1Dump::write_handler(const String &s_in, Element *e, void *thunk, Err
 }
 
 void
-FromBreslau1Dump::add_handlers()
+FromNetFlowSummaryDump::add_handlers()
 {
     add_read_handler("active", read_handler, (void *)1);
     add_write_handler("active", write_handler, (void *)1);
@@ -364,4 +363,4 @@ FromBreslau1Dump::add_handlers()
 }
 
 ELEMENT_REQUIRES(userlevel)
-EXPORT_ELEMENT(FromBreslau1Dump)
+EXPORT_ELEMENT(FromNetFlowSummaryDump)

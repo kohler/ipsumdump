@@ -1,0 +1,55 @@
+=head1 NAME
+
+ipsumdump - produce ASCII summary of network traffic or tcpdump(1) file
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--timestamp>, B<-t>
+
+Include packet timestamp in summary. Example: `C<1000212480.005813>'.
+
+=item B<--src>, B<-s>
+
+Include IP source address in summary. Example: `C<192.168.1.101>'.
+
+=item B<--dst>, B<-d>
+
+Include IP destination address in summary. Example: `C<18.26.4.44>'.
+
+=item B<--sport>, B<-S>
+
+Include TCP or UDP source port in summary. Example: `C<8928>'. Non-TCP or
+UDP packets have a single dash, `C<->', for this field in the summary.
+
+=item B<--dport>, B<-D>
+
+Similarly, include TCP or UDP destination port in summary. Example:
+`C<80>'.
+
+=item B<--length>, B<-l>
+
+Include packet length in summary. Example: `C<1536>'.
+
+=item B<--protocol>, B<-p>
+
+Include IP protocol in summary. Can be `C<T>' for TCP, `C<U>' for UDP, `C<I>' for ICMP, or a number for some other protocol.
+
+=item B<--id>
+
+=item B<--tcp-seq>, B<-Q>
+
+=item B<--tcp-ack>, B<-K>
+
+=item B<--tcp-flags>, B<-F>
+
+=item B<--payload-length>, B<-L>
+
+=item B<--packet-count>, B<-c>
+
+=back

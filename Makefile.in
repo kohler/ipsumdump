@@ -46,6 +46,8 @@ install-libclick: always
 elemlist elemlists: always
 	@cd src && $(MAKE) elemlist
 
+$(srcdir)/ipsumdump.1: $(srcdir)/ipsumdump.pod
+	pod2man -c '' -s 1 -r 'Version $(VERSION)' $(srcdir)/ipsumdump.pod > $(srcdir)/ipsumdump.1
 always:
 	@:
 
@@ -96,6 +98,7 @@ distdir:
 	-rm -rf $(distdir)
 	mkdir $(distdir)
 	@-chmod 777 $(distdir)
+	$(MAKE) ipsumdump.1
 	@echo Copying files...
 	@for file in `cat $(srcdir)/DISTFILES`; do \
 	  d=$(srcdir); \
