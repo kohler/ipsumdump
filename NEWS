@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.21   26.Mar.2002
+
+* Update endianness test (Click failed to compile on Solaris). Reported by
+  Ahmed Aslam <aaslam@csee.usf.edu>.
+
+
 Version 1.20   8.Jan.2002
 
 * Add `--interval' option.
