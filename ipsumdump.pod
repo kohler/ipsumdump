@@ -287,7 +287,7 @@ addresses to the standard error, paired with their anonymized counterparts.
 
 =item B<--record-counts>=I<time>
 
-Useful for when reading from interfaces. This option causes B<ipsumdump> to
+Useful when reading from interfaces. This option causes B<ipsumdump> to
 write a comment recording the cumulative number of packets output, and the
 number of packets dropped by the kernel before B<ipsumdump> could process
 them, every I<time> seconds. (But you can say, for example, `2m' for 2
