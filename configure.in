@@ -10,6 +10,9 @@ LIBCLICK_VERSION=1.2.1a
 AC_SUBST(LIBCLICK_VERSION)
 AC_CONFIG_AUX_DIR(libclick-$LIBCLICK_VERSION)
 
+auxprogdir='$(top_srcdir)/'"$LIBCLICK_VERSION"
+AC_SUBST(auxprogdir)
+
 IPSUMDUMP_VERSION=0.1
 AC_SUBST(IPSUMDUMP_VERSION)
 
@@ -166,19 +169,17 @@ dnl
 dnl find autoconf
 dnl
 
-missing_dir=`cd $srcdir && pwd`
-
 AC_MSG_CHECKING(for working autoconf)
 AUTOCONF=${AUTOCONF-autoconf}
 if ($AUTOCONF --version) < /dev/null > conftest.out 2>&1; then
   if test `head -1 conftest.out | sed 's/.*2\.\([[0-9]]*\).*/\1/'` -ge 13 2>/dev/null; then
     AC_MSG_RESULT(found)
   else
-    AUTOCONF="$missing_dir/missing autoconf"
+    AUTOCONF='$(auxprogdir)/missing autoconf'
     AC_MSG_RESULT(old)
   fi
 else
-  AUTOCONF="$missing_dir/missing autoconf"
+  AUTOCONF='$(auxprogdir)/missing autoconf'
   AC_MSG_RESULT(missing)
 fi
 

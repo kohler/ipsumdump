@@ -9,16 +9,19 @@ VERSION = @IPSUMDUMP_VERSION@
 LIBCLICK_VERSION = @LIBCLICK_VERSION@
 libclick = libclick-$(LIBCLICK_VERSION)
 
-top_srcdir = @top_srcdir@
-srcdir = @srcdir@
+top_srcdir := @top_srcdir@
+srcdir := @srcdir@
+auxprogdir := @auxprogdir@
+
 top_builddir = .
 subdir = .
+
 AUTOCONF = @AUTOCONF@
 INSTALL = @INSTALL@
 INSTALL_IF_CHANGED = @INSTALL_IF_CHANGED@
 INSTALL_DATA = @INSTALL@ -m 644
 INSTALL_DATA_IF_CHANGED = @INSTALL_IF_CHANGED@ -m 644
-mkinstalldirs = @top_srcdir@/mkinstalldirs
+mkinstalldirs = $(auxprogdir)/mkinstalldirs
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@

@@ -7,6 +7,7 @@ subdir := src
 
 srcdir := @srcdir@
 top_srcdir := @top_srcdir@
+auxprogdir := @auxprogdir@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -32,7 +33,7 @@ AR = @AR@
 RANLIB = @RANLIB@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL@ -m 644
-mkinstalldirs = @top_srcdir@/mkinstalldirs
+mkinstalldirs = $(auxprogdir)/mkinstalldirs
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .o .ii
