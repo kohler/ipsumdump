@@ -61,3 +61,9 @@ AUTHORS
     The anonymization algorithm was borrowed from tcpdpriv by Greg Minshall.
 
     Thanks to Vern Paxson and Lee Breslau for comments and suggestions.
+
+LICENSE
+-------
+
+    Ipsumdump is available under the Click license, a BSD-like license. See
+the file `libclick*/LICENSE' for full license terms.
