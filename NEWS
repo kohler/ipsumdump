@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.15   28.Nov.2001
+
+* --length, --payload-length, and --payload deal with IP length, ignoring
+  any link-level padding at the end.
+
+
 Version 1.14   28.Nov.2001
 
 * Don't generate mistaken output for bad IP, TCP, or UDP headers (print
