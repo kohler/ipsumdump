@@ -607,6 +607,8 @@ particular purpose.\n");
 	sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
 	for (int i = 0; i < log_contents.size(); i++)
 	    sa << ' ' << cp_quote(FromIPSummaryDump::unparse_content(log_contents[i]));
+	if (action == READ_DUMP_OPT)
+	    sa << ", CAREFUL_TRUNC false";
 	sa << ", VERBOSE true, BAD_PACKETS " << bad_packets << ", BANNER ";
 	// create banner
 	StringAccum banner;
