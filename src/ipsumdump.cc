@@ -164,15 +164,6 @@ catch_signal(int sig)
     router->please_stop_driver();
 }
 
-static String
-Clp_CurOptionName(Clp_Parser *clp)
-{
-    char buf[1024];
-    buf[0] = 0;
-    Clp_CurOptionName(clp, buf, 1024);
-    return buf;
-}
-
 static void
 write_drops_message(Router *r)
 {
@@ -283,7 +274,7 @@ main(int argc, char *argv[])
 	      for (int i = 0; i < v.size(); i++) {
 		  IPAddress addr, mask;
 		  if (!cp_ip_prefix(v[i], &addr, &mask, true))
-		      die_usage("can't parse `" + v[i] + "' as an IP address (" + Clp_CurOptionName(clp) + ")");
+		      die_usage("can't parse `" + v[i] + "' as an IP address (" + String(Clp_CurOptionName(clp)) + ")");
 		  map_prefixes.push_back(addr.addr());
 		  map_prefixes.push_back(mask.addr());
 	      }
