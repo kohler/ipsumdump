@@ -349,6 +349,30 @@ AggregateTree::sum_and_sum_sq(double *sum, double *sum_sq) const
 }
 
 
+static uint32_t *
+node_nonzero_sizes(AggregateTree::Node *n, uint32_t *vec)
+{
+    if (n->count)
+	*vec++ = n->count;
+    if (n->child[0]) {
+	vec = node_nonzero_sizes(n->child[0], vec);
+	vec = node_nonzero_sizes(n->child[1], vec);
+    }
+    return vec;
+}
+
+void
+AggregateTree::nonzero_sizes(Vector<uint32_t> &vec) const
+{
+    vec.resize(_num_nonzero);
+    if (_num_nonzero) {
+	uint32_t *end_vec = node_nonzero_sizes(_root, &vec[0]);
+	assert((uint32_t)(end_vec - &vec[0]) == _num_nonzero);
+	(void) end_vec;
+    }
+}
+
+
 //
 // POSTERIZATION
 //

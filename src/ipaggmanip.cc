@@ -37,6 +37,8 @@
 #define AVG_VAR_ACT		504
 #define AVG_VAR_PREFIX_ACT	505
 #define HAAR_WAVELET_ENERGY_ACT	506
+#define SIZES_ACT		507
+#define SORTED_SIZES_ACT	508
 
 static Clp_Option options[] = {
 
@@ -67,6 +69,8 @@ static Clp_Option options[] = {
   { "cull-hosts-by-packets", 0, CULL_HOSTS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "haar-wavelet-energy", 0, HAAR_WAVELET_ENERGY_ACT, 0, 0 },
+  { "sizes", 0, SIZES_ACT, 0, 0 },
+  { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   
 };
 
@@ -102,6 +106,9 @@ Actions: (Results of final action sent to output.)\n\
       --nnz-discriminated-by-prefix\n\
                              Number of nonzero hosts with discriminating prefix\n\
                              p for all p.\n\
+      --sizes                All nonzero aggregate sizes in arbitrary order.\n\
+      --sorted-sizes         All nonzero aggregate sizes in decreasing order\n\
+                             by size.\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
       --sample N             Reduce counts by randomly sampling 1 in N.\n\
@@ -147,6 +154,14 @@ add_action(int action, uint32_t extra = 0)
 	die_usage("can't add another action after that");
     actions.push_back(action);
     extras.push_back(extra);
+}
+
+static int
+uint32_rev_compar(const void *ap, const void *bp)
+{
+    uint32_t a = *(reinterpret_cast<const uint32_t *>(ap));
+    uint32_t b = *(reinterpret_cast<const uint32_t *>(bp));
+    return b - a;
 }
 
 int
@@ -201,6 +216,8 @@ particular purpose.\n");
 	  case AVG_VAR_ACT:
 	  case AVG_VAR_PREFIX_ACT:
 	  case HAAR_WAVELET_ENERGY_ACT:
+	  case SIZES_ACT:
+	  case SORTED_SIZES_ACT:
 	    add_action(opt);
 	    break;
 
@@ -377,6 +394,16 @@ particular purpose.\n");
 	      break;
 	  }
 
+	  case SIZES_ACT:
+	  case SORTED_SIZES_ACT: {
+	      Vector<uint32_t> sizes;
+	      tree.nonzero_sizes(sizes);
+	      if (action == SORTED_SIZES_ACT && sizes.size())
+		  qsort(&sizes[0], sizes.size(), sizeof(uint32_t), uint32_rev_compar);
+	      write_vector(sizes, out);
+	      break;
+	  }
+	  
 	  case PREFIX_ACT:
 	  case POSTERIZE_ACT:
 	  case SAMPLE_ACT:
@@ -392,3 +419,4 @@ particular purpose.\n");
     
     exit(0);
 }
+

@@ -36,6 +36,8 @@ class AggregateTree { public:
 
     void haar_wavelet_energy_coeff(Vector<double> &) const;
 
+    void nonzero_sizes(Vector<uint32_t> &) const;
+    
     void sum_and_sum_sq(double *, double *) const;
 
     int read_file(FILE *, ErrorHandler *);
