@@ -239,12 +239,14 @@ FromIPSummaryDump::bang_data(const String &line, ErrorHandler *errh)
     cp_spacevec(line, words);
 
     _contents.clear();
+    uint32_t all_contents = 0;
     for (int i = 1; i < words.size(); i++) {
 	String word = cp_unquote(words[i]);
 	int what = ToIPSummaryDump::parse_content(word);
-	if (what > W_NONE && what < W_LAST)
+	if (what > W_NONE && what < W_LAST) {
 	    _contents.push_back(what);
-	else {
+	    all_contents |= (1 << (what - W_NONE - 1));
+	} else {
 	    error_helper(errh, "warning: unknown content type `" + word + "'");
 	    _contents.push_back(W_NONE);
 	}
@@ -252,6 +254,12 @@ FromIPSummaryDump::bang_data(const String &line, ErrorHandler *errh)
 
     if (_contents.size() == 0)
 	error_helper(errh, "no contents specified");
+
+    // If we have W_FRAGOFF, ignore W_FRAG.
+    if (all_contents & (1 << (W_FRAGOFF - W_NONE - 1)))
+	for (int i = 0; i < _contents.size(); i++)
+	    if (_contents[i] == W_FRAG)
+		_contents[i] = W_NONE;
 }
 
 Packet *
@@ -269,6 +277,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
     iph->ip_v = 4;
     iph->ip_hl = sizeof(click_ip) >> 2;
     iph->ip_p = _default_proto;
+    iph->ip_off = 0;
     
     String line;
     Vector<String> words;
@@ -362,6 +371,26 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 		    iph->ip_id = htons(j), ok++;
 		break;
 
+	      case W_FRAG:
+		if (words[i].length() == 1) {
+		    if (words[i][0] == 'F')
+			iph->ip_off = htons(IP_MF), ok++;
+		    else if (words[i][0] == 'f')
+			iph->ip_off = htons(10), ok++; // random number
+		    else if (words[i][0] == '.')
+			ok++;
+		}
+		break;
+
+	      case W_FRAGOFF: {
+		  String s = words[i];
+		  if (s.length() > 1 && s.back() == '+')
+		      iph->ip_off |= htons(IP_MF), s = s.substring(0, s.length() - 1);
+		  if (cp_unsigned(s, &j) && j <= IP_OFFMASK)
+		      iph->ip_off |= htons(j), ok++;
+		  break;
+	      }
+
 	      case W_SPORT:
 		if (cp_unsigned(words[i], &j) && j <= 0xFFFF)
 		    q->udp_header()->uh_sport = htons(j), ok++;
@@ -413,9 +442,9 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	    break;
 
 	// set TCP offset to a reasonable value; possibly reduce packet length
-	if (iph->ip_p == IP_PROTO_TCP)
+	if (iph->ip_p == IP_PROTO_TCP && IP_FIRSTFRAG(iph))
 	    q->tcp_header()->th_off = sizeof(click_tcp) >> 2;
-	else if (iph->ip_p == IP_PROTO_UDP)
+	else if (iph->ip_p == IP_PROTO_UDP && IP_FIRSTFRAG(iph))
 	    q->take(sizeof(click_tcp) - sizeof(click_udp));
 	else
 	    q->take(sizeof(click_tcp));
@@ -473,8 +502,8 @@ FromIPSummaryDump::run_scheduled()
 	if (_multipacket)
 	    p = handle_multipacket(p);
 	// check sampling probability
-	if (_sampling_prob < (1 << SAMPLING_SHIFT)
-	    && (uint32_t)(random() & ((1 << SAMPLING_SHIFT) - 1)) < _sampling_prob)
+	if (_sampling_prob >= (1 << SAMPLING_SHIFT)
+	    || (uint32_t)(random() & ((1 << SAMPLING_SHIFT) - 1)) < _sampling_prob)
 	    break;
 	if (p)
 	    p->kill();
@@ -502,8 +531,8 @@ FromIPSummaryDump::pull(int)
 	if (_multipacket)
 	    p = handle_multipacket(p);
 	// check sampling probability
-	if (_sampling_prob < (1 << SAMPLING_SHIFT)
-	    && (uint32_t)(random() & ((1 << SAMPLING_SHIFT) - 1)) < _sampling_prob)
+	if (_sampling_prob >= (1 << SAMPLING_SHIFT)
+	    || (uint32_t)(random() & ((1 << SAMPLING_SHIFT) - 1)) < _sampling_prob)
 	    break;
 	if (p)
 	    p->kill();

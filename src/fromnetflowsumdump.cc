@@ -225,6 +225,7 @@ FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
     click_ip *iph = q->ip_header();
     iph->ip_v = 4;
     iph->ip_hl = sizeof(click_ip) >> 2;
+    iph->ip_off = 0;
     
     String line;
     String words[15];

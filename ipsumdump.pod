@@ -116,7 +116,8 @@ Include IP destination address in the dump. Example: C<18.26.4.44>.
 =item B<--sport>, B<-S>
 
 Include TCP or UDP source port in the dump. Example: C<8928>. For non-TCP
-or UDP packets, this field is a single dash C<->.
+or UDP packets, and for fragments after the first, this field is a single
+dash C<->.
 
 =item B<--dport>, B<-D>
 
@@ -136,20 +137,35 @@ C<I> for ICMP, or a number for some other protocol.
 
 Include IP ID field in the dump. Example: C<19371>.
 
+=item B<--fragment>, B<-g>
+
+Include IP fragment test in the dump. The field value is C<F> for first
+fragments, C<f> for second and subsequent fragments, and C<.> (a single
+period) for nonfragments.
+
+=item B<--fragment-offset>, B<--fragoff>, B<-G>
+
+Include IP fragment offset in the dump. The MF (more fragments) flag is
+indicated by a C<+> suffix. Examples: C<0+> (fragment offset 0, more
+fragments forthcoming), C<555> (fragment offset 555, this is the last
+fragment).
+
 =item B<--tcp-seq>, B<-Q>
 
 Include TCP sequence number in the dump. Example: C<4009339012>. For
-non-TCP packets, this field is a single dash C<->.
+non-TCP packets, and for fragments after the first, this field is a single
+dash C<->.
 
 =item B<--tcp-ack>, B<-K>
 
-Include TCP acknowledgement number in the dump. Example: C<4009339012>.
-For non-TCP packets, this field is a single dash C<->.
+Include TCP acknowledgement number in the dump. Example: C<4009339012>. For
+non-TCP packets, and for fragments after the first, this field is a single
+dash C<->.
 
 =item B<--tcp-flags>, B<-F>
 
-Include TCP flags byte in the dump. Example: C<54>. For non-TCP
-packets, this field is a single dash C<->.
+Include TCP flags byte in the dump. Example: C<54>. For non-TCP packets,
+and for fragments after the first, this field is a single dash C<->.
 
 =item B<--payload-length>, B<-L>
 

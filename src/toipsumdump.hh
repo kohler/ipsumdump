@@ -34,6 +34,10 @@ contain those fields. Valid field names, with examples, are:
    ts usec      Microseconds portion of timestamp: `451094'
    ip src       IP source address: `192.150.187.37'
    ip dst       IP destination address: `192.168.1.100'
+   ip frag      IP fragment: `F' (1st frag), `f' (2nd or
+                later frag), or `.' (not frag)
+   ip fragoff   IP fragmentation offset: `0', `0+' (suffix
+                `+' means MF is set)
    len          Packet length: `132'
    proto        IP protocol: `10', or `I' for ICMP, `T' for
                 TCP, `U' for UDP
@@ -138,7 +142,7 @@ class ToIPSummaryDump : public Element { public:
 	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
 	W_SRC, W_DST, W_LENGTH, W_PROTO, W_IPID,
 	W_SPORT, W_DPORT, W_TCP_SEQ, W_TCP_ACK, W_TCP_FLAGS,
-	W_PAYLOAD_LENGTH, W_COUNT,
+	W_PAYLOAD_LENGTH, W_COUNT, W_FRAG, W_FRAGOFF,
 	W_LAST
     };
     static int parse_content(const String &);

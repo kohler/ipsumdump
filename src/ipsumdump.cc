@@ -55,6 +55,8 @@
 #define TCP_FLAGS_OPT	(1000 + ToIPSummaryDump::W_TCP_FLAGS)
 #define PAYLOAD_LEN_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD_LENGTH)
 #define COUNT_OPT	(1000 + ToIPSummaryDump::W_COUNT)
+#define FRAG_OPT	(1000 + ToIPSummaryDump::W_FRAG)
+#define FRAGOFF_OPT	(1000 + ToIPSummaryDump::W_FRAGOFF)
 
 static Clp_Option options[] = {
 
@@ -97,6 +99,9 @@ static Clp_Option options[] = {
     { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, 0 },
     { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
     { "packet-count", 'c', COUNT_OPT, 0, 0 },
+    { "fragment", 'g', FRAG_OPT, 0, 0 },
+    { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
+    { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
 
 };
 
@@ -135,6 +140,8 @@ Options that determine summary dump contents (can give multiple options):\n\
   -l, --length               Include IP lengths.\n\
   -p, --protocol             Include IP protocols.\n\
       --id                   Include IP IDs.\n\
+  -g, --fragment             Include IP fragment flags (`F' or `.').\n\
+  -G, --fragment-offset      Include IP fragment offsets.\n\
   -Q, --tcp-seq              Include TCP sequence numbers.\n\
   -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
   -F, --tcp-flags            Include TCP flags words.\n\

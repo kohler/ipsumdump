@@ -141,7 +141,7 @@ static const char *content_names[] = {
     "??", "timestamp", "ts sec", "ts usec",
     "ip src", "ip dst", "ip len", "ip proto", "ip id",
     "sport", "dport", "tcp seq", "tcp ack", "tcp flags",
-    "payload len", "count"
+    "payload len", "count", "ip frag", "ip fragoff"
 };
 
 const char *
@@ -170,6 +170,10 @@ ToIPSummaryDump::parse_content(const String &word)
 	return W_SPORT;
     else if (word == "dport")
 	return W_DPORT;
+    else if (word == "frag" || word == "ip frag")
+	return W_FRAG;
+    else if (word == "fragoff" || word == "ip fragoff")
+	return W_FRAGOFF;
     else if (word == "len" || word == "length" || word == "ip len")
 	return W_LENGTH;
     else if (word == "id" || word == "ip id")
@@ -221,13 +225,25 @@ ToIPSummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 	    if (!iph) goto no_data;
 	    sa << IPAddress(iph->ip_dst);
 	    break;
+	  case W_FRAG:
+	    if (!iph) goto no_data;
+	    sa << (IP_ISFRAG(iph) ? (IP_FIRSTFRAG(iph) ? 'F' : 'f') : '.');
+	    break;
+	  case W_FRAGOFF:
+	    if (!iph) goto no_data;
+	    sa << (htons(iph->ip_off) & IP_OFFMASK);
+	    if (iph->ip_off & htons(IP_MF))
+		sa << '+';
+	    break;
 	  case W_SPORT:
-	    if (!iph || (iph->ip_p != IP_PROTO_TCP && iph->ip_p != IP_PROTO_UDP))
+	    if (!iph || !IP_FIRSTFRAG(iph)
+		|| (iph->ip_p != IP_PROTO_TCP && iph->ip_p != IP_PROTO_UDP))
 		goto no_data;
 	    sa << ntohs(udph->uh_sport);
 	    break;
 	  case W_DPORT:
-	    if (!iph || (iph->ip_p != IP_PROTO_TCP && iph->ip_p != IP_PROTO_UDP))
+	    if (!iph || !IP_FIRSTFRAG(iph)
+		|| (iph->ip_p != IP_PROTO_TCP && iph->ip_p != IP_PROTO_UDP))
 		goto no_data;
 	    sa << ntohs(udph->uh_dport);
 	    break;
@@ -245,17 +261,17 @@ ToIPSummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 	    }
 	    break;
 	  case W_TCP_SEQ:
-	    if (!iph || iph->ip_p != IP_PROTO_TCP)
+	    if (!iph || !IP_FIRSTFRAG(iph) || iph->ip_p != IP_PROTO_TCP)
 		goto no_data;
 	    sa << ntohl(tcph->th_seq);
 	    break;
 	  case W_TCP_ACK:
-	    if (!iph || iph->ip_p != IP_PROTO_TCP)
+	    if (!iph || !IP_FIRSTFRAG(iph) || iph->ip_p != IP_PROTO_TCP)
 		goto no_data;
 	    sa << ntohl(tcph->th_ack);
 	    break;
 	  case W_TCP_FLAGS: {
-	      if (!iph || iph->ip_p != IP_PROTO_TCP)
+	      if (!iph || !IP_FIRSTFRAG(iph) || iph->ip_p != IP_PROTO_TCP)
 		  goto no_data;
 	      int flags = tcph->th_flags;
 	      for (int i = 0; i < 7; i++)
@@ -276,7 +292,9 @@ ToIPSummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 	      uint32_t len = p->length() + EXTRA_LENGTH_ANNO(p);
 	      if (iph) {
 		  len -= p->transport_header_offset();
-		  if (iph->ip_p == IP_PROTO_TCP)
+		  if (!IP_FIRSTFRAG(iph))
+		      /* nada */;
+		  else if (iph->ip_p == IP_PROTO_TCP)
 		      len -= (tcph->th_off << 2);
 		  else if (iph->ip_p == IP_PROTO_UDP)
 		      len -= sizeof(click_udp);
