@@ -1,5 +1,12 @@
 Ipsumdump NEWS
 
+Version 1.12   31.Oct.2001
+
+* Remove default dump content options. If you don't supply any dump
+  contents, ipsumdump won't create a summary dump. It still will create any
+  --write-tcpdump file, though. For Vern.
+
+
 Version 1.11   29.Oct.2001
 
 * Add progress bar.

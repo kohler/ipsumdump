@@ -99,6 +99,10 @@ destination address:
 
     192.168.1.101 18.26.4.44
 
+If you supply no dump content options, B<ipsumdump> will not create a
+summary dump. This may be useful if you're only interested in creating a
+tcpdump file with B<--write-tcpdump>.
+
 =over 4
 
 =item B<--timestamp>, B<-t>

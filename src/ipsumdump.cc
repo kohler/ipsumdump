@@ -149,7 +149,6 @@ Options that determine summary dump contents (can give multiple options):\n\
   -F, --tcp-flags            Include TCP flags words.\n\
   -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
   -c, --packet-count         Include packet count (usually 1).\n\
-Default contents option is `-sd' (log source and destination addresses).\n\
 \n\
 Data source options (give exactly one):\n\
   -i, --interface            Read packets from network devices DEVNAMES until\n\
@@ -203,7 +202,8 @@ catch_sighup(int sig)
     }
     signal(sig, catch_sighup);
     ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(router->find("to_dump"));
-    td->flush_buffer();
+    if (td)
+	td->flush_buffer();
 }
 
 static void
@@ -214,8 +214,8 @@ write_sampling_prob_message(Router *r, const String &sample_elt)
     if (sample && hi >= 0) {
 	String s = r->handler(hi).call_read(sample);
 	ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(r->find("to_dump"));
-	assert(td);
-	td->write_string("!sampling_prob " + s);
+	if (td)
+	    td->write_string("!sampling_prob " + s);
     }
 }
 
@@ -240,14 +240,15 @@ record_drops_hook(const String &, Element *, void *, ErrorHandler *)
     }
 
     ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(router->find("to_dump"));
-    String head = "!counts out " + String(td->output_count()) + " kdrop ";
-    assert(td);
-    if (!all_known)
-	td->write_string(head + "??\n");
-    else if (less_than)
-	td->write_string(head + "<" + String(max_drops) + "\n");
-    else
-	td->write_string(head + String(max_drops) + "\n");
+    if (td) {
+	String head = "!counts out " + String(td->output_count()) + " kdrop ";
+	if (!all_known)
+	    td->write_string(head + "??\n");
+	else if (less_than)
+	    td->write_string(head + "<" + String(max_drops) + "\n");
+	else
+	    td->write_string(head + String(max_drops) + "\n");
+    }
 
     return 0;
 }
@@ -431,7 +432,7 @@ particular purpose.\n");
     // check file usage
     if (!output)
 	output = "-";
-    if (output == "-" && write_dump == "-")
+    if (output == "-" && write_dump == "-" && log_contents.size() > 0)
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
     // set random seed if appropriate
@@ -534,21 +535,23 @@ particular purpose.\n");
     
     // elements to dump summary log
     if (log_contents.size() == 0) {
-	log_contents.push_back(ToIPSummaryDump::W_SRC);
-	log_contents.push_back(ToIPSummaryDump::W_DST);
+	if (!write_dump)
+	    errh->warning("no dump content options, so I'm not creating a summary dump");
+	sa << "  -> Discard;\n";
+    } else {
+	if (!output)
+	    output = "-";
+	sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
+	for (int i = 0; i < log_contents.size(); i++)
+	    sa << ' ' << cp_quote(FromIPSummaryDump::unparse_content(log_contents[i]));
+	sa << ", VERBOSE true, BANNER ";
+	// create banner
+	StringAccum banner;
+	for (int i = 0; i < argc; i++)
+	    banner << argv[i] << ' ';
+	banner.pop_back();
+	sa << cp_quote(banner.take_string()) << ");\n";
     }
-    if (!output)
-	output = "-";
-    sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
-    for (int i = 0; i < log_contents.size(); i++)
-	sa << ' ' << cp_quote(FromIPSummaryDump::unparse_content(log_contents[i]));
-    sa << ", VERBOSE true, BANNER ";
-    // create banner
-    StringAccum banner;
-    for (int i = 0; i < argc; i++)
-	banner << argv[i] << ' ';
-    banner.pop_back();
-    sa << cp_quote(banner.take_string()) << ");\n";
 
     // record drops
     if (record_drops)
