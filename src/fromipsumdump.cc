@@ -299,6 +299,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	    break;		// bad format
 
 	int ok = 0;
+	uint32_t byte_count = 0;
 	for (int i = 0; i < _contents.size(); i++)
 	    switch (_contents[i]) {
 
@@ -325,8 +326,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	      case W_LENGTH:
 		ok += (cp_unsigned(words[i], &j) && j <= 0xFFFF);
 		iph->ip_len = htons(j);
-		if (j > q->length())
-		    SET_EXTRA_LENGTH_ANNO(q, j - q->length());
+		byte_count = j;
 		break;
 		
 	      case W_PROTO: {
@@ -405,6 +405,16 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 
 	if (!ok)
 	    break;
+
+	// set TCP offset to a reasonable value; possibly reduce packet length
+	if (iph->ip_p == IP_PROTO_TCP)
+	    q->tcp_header()->th_off = sizeof(click_tcp) >> 2;
+	else if (iph->ip_p == IP_PROTO_UDP)
+	    q->take(sizeof(click_tcp) - sizeof(click_udp));
+	else
+	    q->take(sizeof(click_tcp));
+	if (byte_count)
+	    SET_EXTRA_LENGTH_ANNO(q, byte_count - q->length());
 	return q;
     }
 
