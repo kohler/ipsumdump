@@ -48,6 +48,10 @@
 #define AGG_SRC_OPT	500
 #define AGG_DST_OPT	501
 #define AGG_LENGTH_OPT	502
+#define AGG_FLOWS_OPT	503
+#define AGG_UNI_FLOWS_OPT 504
+#define AGG_ADDRPAIR_OPT 505
+#define AGG_UNI_ADDRPAIR_OPT 506
 
 #define AGG_BYTES_OPT	600
 #define AGG_PACKETS_OPT	601
@@ -99,6 +103,12 @@ static Clp_Option options[] = {
     { "src", 's', AGG_SRC_OPT, 0, 0 },
     { "dst", 'd', AGG_DST_OPT, 0, 0 },
     { "length", 'l', AGG_LENGTH_OPT, 0, 0 },
+    { "flows", 0, AGG_FLOWS_OPT, 0, 0 },
+    { "unidirectional-flows", 0, AGG_UNI_FLOWS_OPT, 0, 0 },
+    { "uni-flows", 0, AGG_UNI_FLOWS_OPT, 0, 0 },
+    { "address-pairs", 0, AGG_ADDRPAIR_OPT, 0, 0 },
+    { "unidirectional-address-pairs", 0, AGG_UNI_ADDRPAIR_OPT, 0, 0 },
+    { "uni-address-pairs", 0, AGG_UNI_ADDRPAIR_OPT, 0, 0 },
     { "bytes", 'b', AGG_BYTES_OPT, 0, 0 },
     { "packets", 'p', AGG_PACKETS_OPT, 0, 0 },
     { "limit-aggregates", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
@@ -140,6 +150,10 @@ Aggregate options (give exactly one):\n\
   -s, --src                  Aggregate by IP source address.\n\
   -d, --dst                  Aggregate by IP destination address (default).\n\
   -l, --length               Aggregate by IP length.\n\
+      --flows                Aggregate by flow ID (agg. number meaningless).\n\
+      --unidirectional-flows Aggregate by unidirectional flow ID.\n\
+      --address-pairs        Aggregate by IP address pairs.\n\
+      --unidirectional-address-pairs\n\
 \n\
 Other aggregate options:\n\
   -p, --packets              Count number of packets (default).\n\
@@ -321,6 +335,7 @@ main(int argc, char *argv[])
     //String output;
     String filter;
     String agg;
+    int agg_flows = 0;
     String aggctr_pb;
     String ipsumdump_format;
     uint32_t aggctr_limit_nnz = 0;
@@ -433,21 +448,30 @@ main(int argc, char *argv[])
 	    break;
 
 	  case AGG_SRC_OPT:
-	    if (agg)
+	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
 	    agg = "ip src";
 	    break;
 	    
 	  case AGG_DST_OPT:
-	    if (agg)
+	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
 	    agg = "ip dst";
 	    break;
 	    	    
 	  case AGG_LENGTH_OPT:
-	    if (agg)
+	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
 	    agg = "ip len";
+	    break;
+
+	  case AGG_FLOWS_OPT:
+	  case AGG_UNI_FLOWS_OPT:
+	  case AGG_ADDRPAIR_OPT:
+	  case AGG_UNI_ADDRPAIR_OPT:
+	    if (agg || agg_flows)
+		die_usage("aggregate specified twice");
+	    agg_flows = opt;
 	    break;
 
 	  case AGG_BYTES_OPT:
@@ -672,6 +696,8 @@ particular purpose.\n");
     }
     
     // elements to aggregate
+    if (agg_flows)
+	sa << "  -> FlowToAddress(BIDI " << (agg_flows == AGG_FLOWS_OPT || agg_flows == AGG_ADDRPAIR_OPT) << ", PORTS " << (agg_flows == AGG_FLOWS_OPT || agg_flows == AGG_UNI_FLOWS_OPT) << ")\n";
     sa << "  -> AggregateIP(" << agg << ")\n";
 
     // elements to count aggregates
