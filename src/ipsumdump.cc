@@ -214,7 +214,7 @@ static void
 catch_signal(int sig)
 {
     signal(sig, SIG_DFL);
-    if (!started || !router)
+    if (!started)
 	kill(getpid(), sig);
     else {
 	DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
@@ -225,7 +225,7 @@ catch_signal(int sig)
 static void
 catch_sighup(int sig)
 {
-    if (!started || !router) {
+    if (!started) {
 	signal(sig, SIG_DFL);
 	kill(getpid(), sig);
     } else {

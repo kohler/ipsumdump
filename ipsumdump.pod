@@ -85,8 +85,14 @@ B<Ipsumdump> pays attention to some of these fields:
 
 =item B<--ipsumdump>
 
-Read from one or more B<ipsumdump> output files. Any packet characteristics
-not specified by the input files are set to 0.
+Read from one or more B<ipsumdump> files. Any packet characteristics not
+specified by the input files are set to 0.
+
+=item B<--format>=I<format>
+
+Read from one or more B<ipsumdump> files, using the specified default
+format. The I<format> should be a space-separated list of content types;
+see L<ToIPSummaryDump(n)> for a list.
 
 =back
 
