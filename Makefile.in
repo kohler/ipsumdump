@@ -38,7 +38,7 @@ $(libclick): always
 src: always stamp-h
 	@cd src && $(MAKE) all-local
 
-install: always $(libclick) stamp-h
+install: always @LIBCLICK_TARGET@ stamp-h
 	@cd src && $(MAKE) install
 install-libclick: always
 	@cd $(libclick) && $(MAKE) install

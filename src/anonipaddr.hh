@@ -86,6 +86,12 @@ very concerned about leaking your network topology, I would not
 recommend giving out trace information privatized with the I<-A50>
 option.  I wouldn't expect this to be the case for most organizations."
 
+=h CLICK_LLRPC_MAP_IPADDRESS llrpc
+
+Argument is a pointer to an IP address. An IP address is read from that
+location; the corresponding anonymized IP address is then stored into that
+location.
+
 =a
 
 tcpdpriv(1) */

@@ -40,12 +40,13 @@ contain those fields. Valid field names, with examples, are:
    sport       TCP/UDP source port: `22'
    dport       TCP/UDP destination port: `2943'
 
-(You must quote field names that contain a space.) Default CONTENTS is `src dst'.
+(You must quote field names that contain a space.) Default CONTENTS is `src
+dst'.
 
 =item VERBOSE
 
 Boolean. If true, then print out a couple comments at the beginning of the
-dump describing the hostname, starting time, and data contents.
+dump describing the hostname and starting time, in addition to the `C<!data>' line describing the log contents.
 
 =item BANNER
 
