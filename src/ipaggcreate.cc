@@ -33,6 +33,7 @@
 #define TIME_OFFSET_OPT	316
 #define BINARY_OPT	317
 #define ASCII_OPT	318
+#define START_TIME_OPT	319
 #define QUIET_OPT	320
 
 // data sources
@@ -99,6 +100,7 @@ static Clp_Option options[] = {
 
     { "interval", 't', INTERVAL_OPT, CLP_TIMEVAL_TYPE, 0 },
     { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMEVAL_TYPE, 0 },
+    { "start-time", 0, START_TIME_OPT, CLP_TIMEVAL_TYPE, 0 },
 
     { "src", 's', AGG_SRC_OPT, 0, 0 },
     { "dst", 'd', AGG_DST_OPT, 0, 0 },
@@ -160,6 +162,7 @@ Other aggregate options:\n\
   -b, --bytes                Count number of bytes.\n\
   -T, --time-offset TIME     Ignore first TIME in input.\n\
   -t, --interval TIME        Output TIME worth of packets. Example: `1hr'.\n\
+      --start-time TIME\n\
       --limit-aggregates K   Stop once K aggregates are encountered.\n\
       --split-aggregates K   Output new file every K aggregates.\n\
       --split-time TIME      Output new file every TIME worth of packets.\n\
@@ -354,10 +357,12 @@ main(int argc, char *argv[])
     struct timeval time_offset;
     struct timeval interval;
     struct timeval split_time;
+    struct timeval start_time;
     Vector<String> files;
     timerclear(&time_offset);
     timerclear(&interval);
     timerclear(&split_time);
+    timerclear(&start_time);
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -440,6 +445,10 @@ main(int argc, char *argv[])
 	    
 	  case TIME_OFFSET_OPT:
 	    time_offset = *((const struct timeval *)&clp->val);
+	    break;
+	    
+	  case START_TIME_OPT:
+	    start_time = *((const struct timeval *)&clp->val);
 	    break;
 	    
 	  case INTERVAL_OPT:
@@ -566,8 +575,12 @@ particular purpose.\n");
 
     // figure out time argument
     StringAccum time_config_sa;
-    if (timerisset(&time_offset))
+    if (timerisset(&start_time) && timerisset(&time_offset))
+	p_errh->fatal("specify at most one of `--start-time' and `--time-offset'");
+    else if (timerisset(&time_offset))
 	time_config_sa << ", START_AFTER " << time_offset;
+    else if (timerisset(&start_time))
+	time_config_sa << ", START " << start_time;
     if (timerisset(&interval) && timerisset(&split_time))
 	p_errh->fatal("supply at most one of `--interval' and `--split-time'");
     else if (timerisset(&interval))
