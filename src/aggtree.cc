@@ -718,9 +718,9 @@ node_balance_histogram(AggregateTree::Node *n, AggregateTree::Node **last,
 	    *last = 0;
 	} else {
 	    if (*last)
-		v[0]++;
-	    if (n->aggregate & ~prefix_mask) {
 		v.back()++;
+	    if (n->aggregate & ~prefix_mask) {
+		v[0]++;
 		*last = 0;
 	    } else
 		*last = n;
