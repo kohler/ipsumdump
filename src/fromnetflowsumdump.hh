@@ -74,6 +74,10 @@ attention to some of these fields:
 
 Value is a Boolean.
 
+=h encap read-only
+
+Returns `IP'. Useful for ToDump's USE_ENCAP_FROM option.
+
 =a
 
 FromDump, FromIPSummaryDump */

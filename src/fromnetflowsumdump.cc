@@ -327,6 +327,8 @@ FromNetFlowSummaryDump::read_handler(Element *e, void *thunk)
     switch ((int)thunk) {
       case 1:
 	return cp_unparse_bool(fd->_active) + "\n";
+      case 2:
+	return "IP\n";
       default:
 	return "<error>\n";
     }
@@ -358,6 +360,7 @@ FromNetFlowSummaryDump::add_handlers()
 {
     add_read_handler("active", read_handler, (void *)1);
     add_write_handler("active", write_handler, (void *)1);
+    add_read_handler("encap", read_handler, (void *)2);
     if (output_is_push(0))
 	add_task_handlers(&_task);
 }
