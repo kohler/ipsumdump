@@ -47,7 +47,7 @@ mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 
 OBJS = fromdevice.o fromdump.o fromipsumdump.o frombreslau1dump.o \
 	anonipaddr.o toipsumdump.o todump.o \
-	bailerror.o aciri-ipsumdump.o elements.o
+	bailerror.o ipsumdump.o elements.o
 
 CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL
 CFLAGS = @CFLAGS@
@@ -62,10 +62,10 @@ CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(CXXFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 
-all: aciri-ipsumdump
-all-local: aciri-ipsumdump
+all: ipsumdump
+all-local: ipsumdump
 
-aciri-ipsumdump: $(OBJS) @CLICKLIBFILE@
+ipsumdump: $(OBJS) @CLICKLIBFILE@
 	$(CXXLINK) -rdynamic $(OBJS) $(LIBS)
 
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
@@ -81,9 +81,9 @@ elements.cc: elements.conf $(CLICK_BUILDTOOL)
 	$(CLICK_BUILDTOOL) elem2export -S < elements.conf > elements.cc
 	@rm -f elements.d
 
-install: aciri-ipsumdump
+install: ipsumdump
 	$(mkinstalldirs) $(bindir)
-	$(INSTALL) aciri-ipsumdump $(bindir)/aciri-ipsumdump
+	$(INSTALL) ipsumdump $(bindir)/ipsumdump
 
 always:
 	@:
@@ -96,7 +96,7 @@ endif
 #!end gmake
 
 clean:
-	-rm -f *.d *.o elements.mk elements.cc elements.conf aciri-ipsumdump
+	-rm -f *.d *.o elements.mk elements.cc elements.conf ipsumdump
 distclean: clean
 	-rm -f Makefile
 

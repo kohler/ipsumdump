@@ -358,12 +358,12 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 		break;
 
 	      case W_TCP_SEQ:
-		if (cp_unsigned(words[i], &j) && j <= 0xFFFF)
+		if (cp_unsigned(words[i], &j))
 		    q->tcp_header()->th_seq = htonl(j), ok++;
 		break;
 
 	      case W_TCP_ACK:
-		if (cp_unsigned(words[i], &j) && j <= 0xFFFF)
+		if (cp_unsigned(words[i], &j))
 		    q->tcp_header()->th_ack = htonl(j), ok++;
 		break;
 

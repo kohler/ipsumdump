@@ -67,19 +67,19 @@ static Clp_Option options[] = {
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "config", 0, CONFIG_OPT, 0, 0 },
 
-  { "timestamps", 't', TIMESTAMP_OPT, 0, Clp_Negate },
-  { "src", 's', SRC_OPT, 0, Clp_Negate },
-  { "dst", 'd', DST_OPT, 0, Clp_Negate },
-  { "sport", 'S', SPORT_OPT, 0, Clp_Negate },
-  { "dport", 'D', DPORT_OPT, 0, Clp_Negate },
-  { "length", 'l', LENGTH_OPT, 0, Clp_Negate },
-  { "id", 0, IPID_OPT, 0, Clp_Negate },
-  { "protocol", 'p', PROTO_OPT, 0, Clp_Negate },
-  { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, Clp_Negate },
-  { "tcp-ack", 'K', TCP_ACK_OPT, 0, Clp_Negate },
-  { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, Clp_Negate },
-  { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, Clp_Negate },
-  { "packet-count", 'c', COUNT_OPT, 0, Clp_Negate },
+  { "timestamps", 't', TIMESTAMP_OPT, 0, 0 },
+  { "src", 's', SRC_OPT, 0, 0 },
+  { "dst", 'd', DST_OPT, 0, 0 },
+  { "sport", 'S', SPORT_OPT, 0, 0 },
+  { "dport", 'D', DPORT_OPT, 0, 0 },
+  { "length", 'l', LENGTH_OPT, 0, 0 },
+  { "id", 0, IPID_OPT, 0, 0 },
+  { "protocol", 'p', PROTO_OPT, 0, 0 },
+  { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, 0 },
+  { "tcp-ack", 'K', TCP_ACK_OPT, 0, 0 },
+  { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, 0 },
+  { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
+  { "packet-count", 'c', COUNT_OPT, 0, 0 },
   
 };
 
@@ -104,10 +104,10 @@ void
 usage()
 {
   printf("\
-`Aciri-ipsumdump' reads IP packets from the network or a tcpdump(1) file and\n\
-summarizes their contents in an ASCII log. It generally runs until interrupted.\n\
+`Ipsumdump' reads IP packets from the tcpdump(1) files, or network interfaces,\n\
+and summarizes their contents in an ASCII log.\n\
 \n\
-Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES] > LOGFILE\n\
+Usage: %s [CONTENT OPTIONS] [-i DEVNAMES | FILES] > LOGFILE\n\
 \n\
 Options that determine log contents (can give multiple options):\n\
   -t, --timestamps           Log packet timestamps.\n\
@@ -126,7 +126,8 @@ Options that determine log contents (can give multiple options):\n\
 Default contents option is `-sd' (log source and destination addresses).\n\
 \n\
 Data source options (give exactly one):\n\
-  -i, --interface            Read packets from network devices DEVNAMES.\n\
+  -i, --interface            Read packets from network devices DEVNAMES until\n\
+                             interrupted.\n\
   -r, --read-tcpdump         Read packets from tcpdump(1) file FILES (default).\n\
       --read-breslau1-dump   Read Breslau1 summarized NetFlow format FILES.\n\
 \n\
@@ -185,7 +186,7 @@ main(int argc, char *argv[])
     bool config = false;
     bool verbose = false;
     bool anonymize = false;
-    int log_contents = -1;
+    Vector<int> log_contents;
     int action = 0;
     Vector<String> files;
     
@@ -254,7 +255,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case VERSION_OPT:
-	    printf("aciri-ipsumdump %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
+	    printf("ipsumdump %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
 	    printf("Copyright (C) 2001 International Computer Science Institute\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
@@ -279,12 +280,7 @@ particular purpose.\n");
 
 	  default:
 	    assert(opt >= FIRST_LOG_OPT);
-	    if (log_contents < 0)
-		log_contents = 0;
-	    if (clp->negated)
-		log_contents &= ~(1 << (opt - FIRST_LOG_OPT));
-	    else
-		log_contents |= (1 << (opt - FIRST_LOG_OPT));
+	    log_contents.push_back(opt - FIRST_LOG_OPT);
 	    break;
 	    
 	}
@@ -338,16 +334,15 @@ particular purpose.\n");
 	sa << "  -> { input -> t :: Tee -> output; t[1] -> ToDump(" << write_dump << ") }\n";
     
     // elements to dump summary log
-    if (log_contents < 0)
-	log_contents = (1 << ToIPSummaryDump::W_SRC) | (1 << ToIPSummaryDump::W_DST);
-    else if (!log_contents)
-	die_usage("nothing to log! (Supply one or more log contents options.)");
+    if (log_contents.size() == 0) {
+	log_contents.push_back(ToIPSummaryDump::W_SRC);
+	log_contents.push_back(ToIPSummaryDump::W_DST);
+    }
     if (!output)
 	output = "-";
     sa << "  -> ToIPSummaryDump(" << output << ", CONTENTS";
-    for (int i = 0; i < 31; i++)
-	if (log_contents & (1 << i))
-	    sa << ' ' << cp_quote(ToIPSummaryDump::unparse_content(i));
+    for (int i = 0; i < log_contents.size(); i++)
+	sa << ' ' << cp_quote(ToIPSummaryDump::unparse_content(log_contents[i]));
     sa << ", VERBOSE true, BANNER ";
     // create banner
     StringAccum banner;
