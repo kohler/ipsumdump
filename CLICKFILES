@@ -24,6 +24,9 @@ elements/analysis/fromdagdump.cc:s{"elements/userlevel/}{"}
 elements/analysis/fromdagdump.hh:s{"elements/userlevel/}{"}
 elements/analysis/ipsumdumpinfo.cc
 elements/analysis/ipsumdumpinfo.hh
+elements/analysis/ipsumdump_anno.cc
+elements/analysis/ipsumdump_ip.cc
+elements/analysis/ipsumdump_tcp.cc
 elements/analysis/timesortedsched.cc
 elements/analysis/timesortedsched.hh
 elements/analysis/timefilter.cc
