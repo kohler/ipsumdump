@@ -50,6 +50,7 @@
 #define AGG_PACKETS_OPT	601
 #define LIMIT_AGG_OPT	602
 #define SPLIT_AGG_OPT	603
+#define SPLIT_TIME_OPT	604
 
 #define CLP_TIMEVAL_TYPE	(Clp_MaxDefaultType + 1)
 
@@ -92,6 +93,7 @@ static Clp_Option options[] = {
     { "packets", 'p', AGG_PACKETS_OPT, 0, 0 },
     { "limit-aggregates", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
     { "split-aggregates", 0, SPLIT_AGG_OPT, Clp_ArgUnsigned, 0 },
+    { "split-time", 0, SPLIT_TIME_OPT, CLP_TIMEVAL_TYPE, 0 },
 
 };
 
@@ -133,6 +135,7 @@ Other aggregate options:\n\
   -t, --interval TIME        Output TIME worth of packets. Example: `1hr'.\n\
       --limit-aggregates K   Stop once K aggregates are encountered.\n\
       --split-aggregates K   Output new file every K aggregates.\n\
+      --split-time TIME      Output new file every TIME worth of packets.\n\
 \n\
 Data source options (give exactly one):\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
@@ -203,6 +206,7 @@ static String::Initializer string_init;
 static String output;
 static int multi_output = -1;
 static bool binary = false;
+static String end_call_str;
 
 static int
 output_handler(const String &, Element *, void *, ErrorHandler *errh)
@@ -230,8 +234,10 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     }
     AggregateCounter *ac = (AggregateCounter *)(router->find("ac"));
     int result = 0;
-    if (multi_output <= 1 || !ac->empty())
+    if (multi_output < 0 || !ac->empty())
 	result = HandlerCall::call_write(router, "ac", (binary ? "write_file" : "write_ascii_file"), cp_quote(cur_output), errh);
+    else if (multi_output >= 0)	// skip empty files
+	multi_output--;
 
     (void) HandlerCall::call_write(router, "ac", "clear");
     (void) HandlerCall::call_write(router, "tr", "reset");
@@ -239,6 +245,8 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     if (multi_output >= 0) {
 	if (aggctr_limit_nnz)
 	    (void) HandlerCall::call_write(router, "ac", "call_after_agg", String(aggctr_limit_nnz) + " output", errh);
+	else if (end_call_str)
+	    (void) HandlerCall::call_write(router, end_call_str, errh);
     }
     
     return result;
@@ -300,9 +308,11 @@ main(int argc, char *argv[])
     //bool binary;
     struct timeval time_offset;
     struct timeval interval;
+    struct timeval split_time;
     Vector<String> files;
     timerclear(&time_offset);
     timerclear(&interval);
+    timerclear(&split_time);
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -413,7 +423,16 @@ main(int argc, char *argv[])
 	    break;
 
 	  case SPLIT_AGG_OPT:
+	    if (multi_output >= 0)
+		die_usage("supply at most one of `--split-aggregates' and `--split-time'");
 	    aggctr_limit_nnz = clp->val.u;
+	    multi_output = 0;
+	    break;
+
+	  case SPLIT_TIME_OPT:
+	    if (multi_output >= 0)
+		die_usage("supply at most one of `--split-aggregates' and `--split-time'");
+	    split_time = *((const struct timeval *)&clp->val);
 	    multi_output = 0;
 	    break;
 	    
@@ -474,13 +493,18 @@ particular purpose.\n");
     StringAccum time_config_sa;
     if (timerisset(&time_offset))
 	time_config_sa << ", START_AFTER " << time_offset;
-    if (timerisset(&interval))
+    if (timerisset(&interval) && timerisset(&split_time))
+	p_errh->fatal("supply at most one of `--interval' and `--split-time'");
+    else if (timerisset(&interval))
 	time_config_sa << ", INTERVAL " << interval;
+    else if (timerisset(&split_time))
+	time_config_sa << ", INTERVAL " << split_time;
     String time_config = (time_config_sa ? time_config_sa.take_string().substring(2) : String());
     
     // other setup
     String shunt_internals = "";
     StringAccum psa;
+    StringAccum end_call_sa;
     String sample_elt;
     int snaplen = (write_dump ? 2000 : 68);
     if (collate && files.size() < 2)
@@ -498,6 +522,10 @@ particular purpose.\n");
 	if (time_config && files.size() == 1) {
 	    config += ", " + time_config;
 	    time_config = String();
+	}
+	if (timerisset(&split_time)) {
+	    config += ", END_CALL output";
+	    end_call_sa << "src0.extend_interval " << split_time;
 	}
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromDump(" << cp_quote(files[i]) << config << ") -> " << source_output_port(collate, i) << ";\n";
@@ -546,13 +574,22 @@ particular purpose.\n");
     
     // possible elements to filter and/or anonymize
     sa << "shunt\n";
-    if (time_config)
-	sa << "  -> TimeFilter(" << time_config << ", SIMPLE true, STOP true)\n";
+    if (time_config || (timerisset(&split_time) && !end_call_sa)) {
+	sa << "  -> time :: TimeFilter(";
+	if (time_config)
+	    sa << time_config << ", ";
+	if (timerisset(&split_time)) {
+	    sa << "END_CALL output";
+	    end_call_sa << "time.extend_interval " << split_time;
+	} else
+	    sa << "STOP true";
+	sa << ")\n";
+    }
     if (filter)
 	sa << "  -> IPFilter(0 " << filter << ")\n";
     if (anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
-    
+
     // possible elements to write tcpdump file
     if (write_dump) {
 	sa << "  -> { input -> t :: Tee -> output;\n        t[1] -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
@@ -587,19 +624,18 @@ particular purpose.\n");
     if (!output)
 	output = "-";
     
-    sa << "DriverManager(";
-    if (files.size() > 1 || collate) {
-	sa << "wait_stop " << (files.size() - 1) + (collate ? 1 : 0);
-	stop_driver_count = files.size() + (collate ? 1 : 0);
-    }
-    // print `!counts' message if appropriate
-    sa << ", wait_stop, write output);\n";
-    sa << "// Outside of aciri-aggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "'.\n";
+    stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
+    sa << "DriverManager(wait_stop " << (stop_driver_count - 1);
+    // clear progress bar if appropriate
+    if (progress_bar_ok && files.size() == 1)
+	sa << ", write_skip progress.mark_done";
+    sa << ", write_skip output);\n";
+    sa << "// Outside of aciri-aggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "' instead of `write output'.\n";
 
     // progress bar
     if (progress_bar_ok && files.size() == 1) {
 	String banner = cp_quote(files[0].substring(0, 20));
-	sa << "ProgressBar(src0.filepos, src0.filesize, UPDATE .1, BANNER " << banner << ");\n";
+	sa << "progress :: ProgressBar(src0.filepos, src0.filesize, UPDATE .1, BANNER " << banner << ");\n";
     }
     
     // output config if required
@@ -625,6 +661,7 @@ particular purpose.\n");
 	banner_sa << "!creator " << cp_quote(bsa.take_string()) << "\n";
 	banner_sa << "!counts " << (aggctr_pb == "BYTES false" ? "packets\n" : "bytes\n");
     }
+    end_call_str = end_call_sa.take_string();
 
     // lex configuration
     BailErrorHandler berrh(errh);
