@@ -1,4 +1,5 @@
 Makefile.in
+NEWS
 README
 acclick.m4
 configure
