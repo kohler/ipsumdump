@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.40   16.Aug.2004
+
+* Fix ERF/DAG timestamps.  Again, reported by Holger Dreger.
+
+
 Version 1.39   10.Aug.2004
 
 * Support new-style ERF/DAG dumps.  Reported by Holger Dreger.
