@@ -1,3 +1,99 @@
+2001-12-30 Sunday 02:03  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.34), ipsumdump.pod (1.21): to version 1.18
+
+2001-12-30 Sunday 02:02  Eddie Kohler <kohler@aciri.org>
+
+	* test/: bad-contents.trace (1.1), bad-hdr.trace (1.1),
+	embedded-NUL.trace (1.1), one-byte-payload.trace (1.1): add test
+	files
+
+2001-12-30 Sunday 02:01  Eddie Kohler <kohler@aciri.org>
+
+	* src/toipsumdump.cc (1.19): fix "payload" content type: had bad
+	length
+
+2001-12-18 Tuesday 09:53  Eddie Kohler <kohler@aciri.org>
+
+	* src/ipsumdump.cc (1.40): --help nit
+
+2001-12-18 Tuesday 09:36  Eddie Kohler <kohler@aciri.org>
+
+	* src/ipsumdump.cc (1.39): add --payload option to --help
+
+2001-12-17 Monday 15:48  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.33), src/ipsumdump.cc (1.38), src/toipsumdump.cc
+	(1.18), src/toipsumdump.hh (1.21): to 1.17: Brecht's fix
+
+2001-12-11 Tuesday 10:48  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.32): update libclick version
+
+2001-11-30 Friday 16:58  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.31), ipsumdump.pod (1.20), src/ipsumdump.cc
+	(1.37): to 1.16
+
+2001-11-28 Wednesday 15:47  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.30), src/toipsumdump.cc (1.17): to 1.15: fix IP
+	length bug
+
+2001-11-28 Wednesday 15:27  Eddie Kohler <kohler@aciri.org>
+
+	* ipsumdump.pod (1.18), ipsumdump.pod (1.19): nit
+
+2001-11-28 Wednesday 15:08  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.29), ipsumdump.pod (1.17), src/fromipsumdump.cc
+	(1.11), src/fromipsumdump.hh (1.9), src/fromnetflowsumdump.cc
+	(1.8), src/ipsumdump.cc (1.36), src/toipsumdump.cc (1.16),
+	src/toipsumdump.hh (1.20): to version 1.14
+
+2001-11-04 Sunday 12:40  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.28), src/anonipaddr.hh (1.4),
+	src/fromipsumdump.cc (1.10), src/fromipsumdump.hh (1.8),
+	src/fromnetflowsumdump.cc (1.7), src/fromnetflowsumdump.hh (1.6),
+	src/toipsumdump.cc (1.15), src/toipsumdump.hh (1.19): to 1.13:
+	ipsumdump improvements
+
+2001-10-31 Wednesday 09:23  Eddie Kohler <kohler@aciri.org>
+
+	* README (1.4): clarify license
+
+2001-10-31 Wednesday 09:06  Eddie Kohler <kohler@aciri.org>
+
+	* CLICKFILES (1.11), DISTFILES (1.12), src/fromnetflowsumdump.cc
+	(1.6), src/fromnetflowsumdump.hh (1.5): update FromNetFlow...: add
+	filepos, filesize
+
+2001-10-31 Wednesday 09:02  Eddie Kohler <kohler@aciri.org>
+
+	* src/ipsumdump.cc (1.35): fix signal
+
+2001-10-31 Wednesday 08:59  Eddie Kohler <kohler@aciri.org>
+
+	* CLICKFILES (1.10), acclick.m4 (1.6), aclocal.m4 (1.6),
+	configure.in (1.27), ipsumdump.pod (1.16), src/Makefile.in (1.19),
+	src/ipsumdump.cc (1.34): to 1.12: remove default dump content
+	options
+
+2001-10-30 Tuesday 22:34  Eddie Kohler <kohler@aciri.org>
+
+	* ipsumdump.pod (1.15), src/ipsumdump.cc (1.33): now NetFlow
+	elements support filepos handlers, so ProgressBar is OK
+
+2001-10-29 Monday 13:07  Eddie Kohler <kohler@aciri.org>
+
+	* CLICKFILES (1.9), DISTFILES (1.11), src/fromipsumdump.hh (1.7),
+	src/ipsumdump.cc (1.32): to 1.11
+
+2001-10-29 Monday 08:28  Eddie Kohler <kohler@aciri.org>
+
+	* DISTFILES (1.10): add NEWS
+
 2001-10-29 Monday 08:21  Eddie Kohler <kohler@aciri.org>
 
 	* configure.in (1.26): to 1.11
