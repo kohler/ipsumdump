@@ -306,7 +306,52 @@ AggregateTree::nnz_match(uint32_t mask, uint32_t value) const
     assert((value & mask) == value);
     return node_count_match(_root, mask, value, false);
 }
-    
+
+
+static void
+node_sum_and_sum_sq(AggregateTree::Node *n, double *sum, double *sum_sq)
+{
+    *sum += n->count;
+    *sum_sq += ((double)n->count) * n->count;
+    if (n->child[0]) {
+	node_sum_and_sum_sq(n->child[0], sum, sum_sq);
+	node_sum_and_sum_sq(n->child[1], sum, sum_sq);
+    }
+}
+
+void
+AggregateTree::sum_and_sum_sq(double *sum, double *sum_sq) const
+{
+    double s = 0, ss = 0;
+    node_sum_and_sum_sq(_root, &s, &ss);
+    if (sum)
+	*sum = s;
+    if (sum_sq)
+	*sum_sq = ss;
+}
+
+
+//
+// POSTERIZATION
+//
+
+static void
+node_posterize(AggregateTree::Node *n)
+{
+    if (n->count)
+	n->count = 1;
+    if (n->child[0]) {
+	node_posterize(n->child[0]);
+	node_posterize(n->child[1]);
+    }
+}
+
+void
+AggregateTree::posterize()
+{
+    node_posterize(_root);
+}
+
 
 //
 // PREFIXES

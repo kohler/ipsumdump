@@ -19,12 +19,17 @@ class AggregateTree { public:
     uint32_t nnz_match(uint32_t mask, uint32_t value) const;
     
     void add(uint32_t aggregate, uint32_t count = 1);
+
+    void posterize();
     
     void mask_data_to_prefix(int prefix_len);
     void make_prefix(int prefix_len, AggregateTree &);
+    
     void nnz_in_prefixes(Vector<uint32_t> &) const;
     void nnz_in_left_prefixes(Vector<uint32_t> &) const;
     void nnz_discriminated_by_prefix(Vector<uint32_t> &) const;
+
+    void sum_and_sum_sq(double *, double *) const;
 
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;

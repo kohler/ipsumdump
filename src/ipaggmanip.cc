@@ -19,11 +19,17 @@
 #define READ_FILE_OPT	302
 #define OUTPUT_OPT	303
 
-#define NNZ_ACT			400
-#define NNZ_PREFIX_ACT		401
-#define NNZ_LEFT_PREFIX_ACT	402
-#define NNZ_DISCRIM_ACT		403
-#define PREFIX_ACT		404
+#define FIRST_ACT		400
+#define PREFIX_ACT		400
+#define POSTERIZE_ACT		401
+
+#define FIRST_END_ACT		500
+#define NNZ_ACT			500
+#define NNZ_PREFIX_ACT		501
+#define NNZ_LEFT_PREFIX_ACT	502
+#define NNZ_DISCRIM_ACT		503
+#define AVG_VAR_ACT		504
+#define AVG_VAR_PREFIX_ACT	505
 
 static Clp_Option options[] = {
 
@@ -43,12 +49,16 @@ static Clp_Option options[] = {
   { "num-discriminated-by-prefix", 0, NNZ_DISCRIM_ACT, 0, 0 },
   { "nnz-discriminated-by-prefix", 0, NNZ_DISCRIM_ACT, 0, 0 },
   { "prefix", 'p', PREFIX_ACT, Clp_ArgUnsigned, 0 },
+  { "posterize", 'P', POSTERIZE_ACT, 0, 0 },
+  { "average-and-variance", 0, AVG_VAR_ACT, 0, 0 },
+  { "avg-var", 0, AVG_VAR_ACT, 0, 0 },
+  { "avg-var-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   
 };
 
 static const char *program_name;
 
-void
+static void
 die_usage(const char *specific = 0)
 {
     ErrorHandler *errh = ErrorHandler::default_handler();
@@ -61,7 +71,7 @@ Try `%s --help' for more information.",
     exit(1);
 }
 
-void
+static void
 usage()
 {
   printf("\
@@ -69,17 +79,19 @@ usage()
 that summary or calculates one of its statistics, and writes the result to\n\
 standard output.\n\
 \n\
-Usage: %s ACTION [FILES] > OUTPUT\n\
+Usage: %s ACTION [ACTIONS...] [FILES] > OUTPUT\n\
 \n\
-Actions:\n\
-  -n, --num-nonzero          Output number of nonzero 32-aggregates.\n\
-      --nnz-in-prefixes      Output number of nonzero p-aggregates for all p.\n\
-      --nnz-in-left-prefixes Output number of nonzero left-hand p-aggregates\n\
-                             for all p.\n\
+Actions: (Results of final action sent to output.)\n\
+  -n, --num-nonzero          Number of nonzero 32-aggregates.\n\
+      --nnz-in-prefixes      Number of nonzero p-aggregates for all p.\n\
+      --nnz-in-left-prefixes Number nonzero left-hand p-aggregates for all p.\n\
       --nnz-discriminated-by-prefix\n\
-                             Output number of nonzero 32-aggregates with\n\
+                             Number of nonzero 32-aggregates with\n\
                              discriminating prefix p for all p.\n\
-  -p, --prefix P             Output summary aggregated to prefix level P.\n\
+  -p, --prefix P             Aggregate to prefix level P.\n\
+  -P, --posterize            Replace all nonzero counts with 1.\n\
+      --average-and-variance, --avg-var\n\
+                             Average and variance of nonzero aggregates.\n\
 \n\
 Other options:\n\
   -r, --read FILE            Read summary from FILE (default stdin).\n\
@@ -98,6 +110,18 @@ write_vector(const Vector<uint32_t> &v, FILE *f)
     fprintf(f, "\n");
 }
 
+static Vector<int> actions;
+static Vector<uint32_t> extras;
+
+static void
+add_action(int action, uint32_t extra = 0)
+{
+    if (actions.size() && actions.back() >= FIRST_END_ACT)
+	die_usage("can't add another action after that");
+    actions.push_back(action);
+    extras.push_back(extra);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -111,8 +135,6 @@ main(int argc, char *argv[])
     ErrorHandler::static_initialize(errh);
     //ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
 
-    int action = 0;
-    uint32_t action_extra = 0;
     Vector<String> files;
     String output;
     
@@ -148,18 +170,16 @@ particular purpose.\n");
 	  case NNZ_PREFIX_ACT:
 	  case NNZ_LEFT_PREFIX_ACT:
 	  case NNZ_DISCRIM_ACT:
-	    if (action)
-		die_usage("action already specified");
-	    action = opt;
+	  case POSTERIZE_ACT:
+	  case AVG_VAR_ACT:
+	  case AVG_VAR_PREFIX_ACT:
+	    add_action(opt);
 	    break;
 
 	  case PREFIX_ACT:
-	    if (action)
-		die_usage("action already specified");
 	    if (clp->val.u > 32)
 		die_usage("`--prefix' must be between 0 and 32");
-	    action = opt;
-	    action_extra = clp->val.u;
+	    add_action(opt, clp->val.u);
 	    break;
 
 	  case Clp_NotOption:
@@ -187,6 +207,9 @@ particular purpose.\n");
     if (!output)
 	output = "-";
 
+    if (!actions.size())
+	die_usage("no action specified");
+    
     FILE *out;
     if (output == "-")
 	out = stdout;
@@ -211,6 +234,25 @@ particular purpose.\n");
 	if (f != stdin)
 	    fclose(f);
 
+	// go through earlier actions
+	for (int j = 0; j < actions.size(); j++) {
+	    int action = actions[j];
+	    uint32_t action_extra = extras[j];
+	    switch (action) {
+		
+	      case PREFIX_ACT:
+		tree.mask_data_to_prefix(action_extra);
+		break;
+
+	      case POSTERIZE_ACT:
+		tree.posterize();
+		break;
+		
+	    }
+	}
+
+	// output result of final action
+	int action = actions.back();
 	switch (action) {
 	    
 	  case NNZ_ACT:
@@ -238,11 +280,33 @@ particular purpose.\n");
 	      break;
 	  }
 
-	  case PREFIX_ACT: {
-	      tree.mask_data_to_prefix(action_extra);
-	      tree.write_file(out, true, errh);
+	  case AVG_VAR_ACT: {
+	      double sum, sum_sq;
+	      tree.sum_and_sum_sq(&sum, &sum_sq);
+	      uint32_t nnz = tree.nnz();
+	      fprintf(out, "%.20g %.20g\n", sum / nnz, (sum_sq - sum*sum/nnz) / nnz);
 	      break;
 	  }
+
+	  case AVG_VAR_PREFIX_ACT: {
+	      double avg[33], var[33];
+	      for (int i = 32; i >= 0; i--) {
+		  double sum, sum_sq;
+		  tree.mask_data_to_prefix(i);
+		  tree.sum_and_sum_sq(&sum, &sum_sq);
+		  uint32_t nnz = tree.nnz();
+		  avg[i] = sum / nnz;
+		  var[i] = sum_sq / nnz - avg[i] * avg[i];
+	      }
+	      for (int i = 0; i <= 32; i++)
+		  fprintf(out, "%.20g %.20g\n", avg[i], var[i]);
+	      break;
+	  }
+
+	  case PREFIX_ACT:
+	  case POSTERIZE_ACT:
+	    tree.write_file(out, true, errh);
+	    break;
 	  
 	}
     }
