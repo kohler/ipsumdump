@@ -8,6 +8,8 @@
 #include <click/router.hh>
 #include <click/lexer.hh>
 #include <click/straccum.hh>
+#include <click/handlercall.hh>
+#include "aggcounter.hh"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +46,8 @@
 
 #define AGG_BYTES_OPT	600
 #define AGG_PACKETS_OPT	601
-#define AGG_LIMIT_OPT	602
+#define LIMIT_AGG_OPT	602
+#define SPLIT_AGG_OPT	603
 
 #define CLP_TIMEVAL_TYPE	(Clp_MaxDefaultType + 1)
 
@@ -82,7 +85,8 @@ static Clp_Option options[] = {
     { "length", 'l', AGG_LENGTH_OPT, 0, 0 },
     { "bytes", 'b', AGG_BYTES_OPT, 0, 0 },
     { "packets", 'p', AGG_PACKETS_OPT, 0, 0 },
-    { "limit-aggregates", 0, AGG_LIMIT_OPT, Clp_ArgUnsigned, 0 },
+    { "limit-aggregates", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
+    { "split-aggregates", 0, SPLIT_AGG_OPT, Clp_ArgUnsigned, 0 },
 
 };
 
@@ -123,6 +127,7 @@ Other aggregate options:\n\
   -T, --time-offset TIME     Ignore first TIME in input.\n\
   -t, --interval TIME        Output TIME worth of packets. Example: `1hr'.\n\
       --limit-aggregates K   Stop once K aggregates are encountered.\n\
+      --split-aggregates K   Output new file every K aggregates.\n\
 \n\
 Data source options (give exactly one):\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
@@ -186,21 +191,72 @@ source_output_port(bool collate, int i)
 
 static StringAccum banner_sa;
 
+static uint32_t aggctr_limit_nnz = 0;
+static String::Initializer string_init;
+static String output;
+static int multi_output = -1;
+static bool binary = false;
+
 static int
-complete_banner_handler(const String &, Element *, void *, ErrorHandler *errh)
+output_handler(const String &, Element *, void *, ErrorHandler *errh)
 {
-    Element* tr = router->find("tr", errh);
-    int tr_range_hi = router->find_handler(tr, "range");
-    int tr_interval_hi = router->find_handler(tr, "interval");
-    String tr_range = router->handler(tr_range_hi).call_read(tr);
-    String tr_interval = router->handler(tr_interval_hi).call_read(tr);
-    banner_sa << "!times " << cp_uncomment(tr_range) << " " << cp_uncomment(tr_interval) << "\n";
+    if (multi_output >= 0)
+	multi_output++;		// files start from 1
+    
+    String tr_range = HandlerCall::call_read(router, "tr", "range");
+    String tr_interval = HandlerCall::call_read(router, "tr", "interval");
+    StringAccum bsa;
+    bsa << banner_sa << "!times " << cp_uncomment(tr_range) << " " << cp_uncomment(tr_interval) << "\n";
+    if (multi_output >= 0)
+	bsa << "!section " << multi_output << "\n";
+    (void) HandlerCall::call_write(router, "ac", "banner", bsa.take_string());
 
-    Element* ac = router->find("ac", errh);
-    int ac_banner_hi = router->find_handler(ac, "banner");
-    (void) router->handler(ac_banner_hi).call_write(banner_sa.take_string(), ac, errh);
+    String cur_output = output;
+    if (multi_output >= 0) {
+	StringAccum sa;
+	if (char *x = sa.reserve(output.length() + 30)) {
+	    int len = sprintf(x, output.cc(), multi_output);
+	    sa.forward(len);
+	} else
+	    return errh->error("out of memory!");
+	cur_output = sa.take_string();
+    }
+    AggregateCounter *ac = (AggregateCounter *)(router->find("ac"));
+    int result = 0;
+    if (multi_output <= 1 || !ac->empty())
+	result = HandlerCall::call_write(router, "ac", (binary ? "write_file" : "write_ascii_file"), cp_quote(cur_output), errh);
 
-    return 0;
+    (void) HandlerCall::call_write(router, "ac", "clear");
+    (void) HandlerCall::call_write(router, "tr", "reset");
+
+    if (multi_output >= 0) {
+	if (aggctr_limit_nnz)
+	    (void) HandlerCall::call_write(router, "ac", "call_after_agg", String(aggctr_limit_nnz) + " output", errh);
+    }
+    
+    return result;
+}
+
+static bool
+check_multi_output(const String &s)
+{
+    bool percent_d = false;
+    int pos = 0;
+    while ((pos = s.find_left('%', pos)) >= 0) {
+	for (pos++; pos < s.length() && isdigit(s[pos]); pos++)
+	    /* nada */;
+	if (pos >= s.length())
+	    return false;
+	else if (s[pos] == 'd' || s[pos] == 'i' || s[pos] == 'x' || s[pos] == 'X') {
+	    if (percent_d)
+		return false;
+	    percent_d = true;
+	} else if (s[pos] == '%')
+	    pos++;
+	else
+	    return false;
+    }
+    return percent_d;
 }
 
 int
@@ -218,12 +274,12 @@ main(int argc, char *argv[])
     ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
 
     String write_dump;
-    String output;
+    //String output;
     String filter;
     String agg_ip;
     bool agg_len = false;
     String aggctr_pb;
-    uint32_t aggctr_limit_nnz = 0;
+    //uint32_t aggctr_limit_nnz;
     bool config = false;
     bool verbose = false;
     bool anonymize = false;
@@ -233,7 +289,7 @@ main(int argc, char *argv[])
     bool collate = false;
     int action = 0;
     bool do_seed = true;
-    bool binary = false;
+    //bool binary;
     struct timeval time_offset;
     struct timeval interval;
     Vector<String> files;
@@ -339,8 +395,13 @@ main(int argc, char *argv[])
 	    aggctr_pb = "BYTES " + cp_unparse_bool(opt == AGG_BYTES_OPT);
 	    break;
 
-	  case AGG_LIMIT_OPT:
+	  case LIMIT_AGG_OPT:
 	    aggctr_limit_nnz = clp->val.u;
+	    break;
+
+	  case SPLIT_AGG_OPT:
+	    aggctr_limit_nnz = clp->val.u;
+	    multi_output = 0;
 	    break;
 	    
 	  case CONFIG_OPT:
@@ -387,6 +448,8 @@ particular purpose.\n");
     // check file usage
     if (!output)
 	output = "-";
+    if (multi_output >= 0 && !check_multi_output(output))
+	p_errh->fatal("When generating multiple files, you must supply `--output',\nwhich should contain exactly one `%%d' or equivalent.");
     if (output == "-" && write_dump == "-")
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
@@ -492,7 +555,9 @@ particular purpose.\n");
     // elements to count aggregates
     sa << "  -> ac :: AggregateCounter(";
     sa << (aggctr_pb ? aggctr_pb : String("BYTES false")) << ", IP_BYTES true";
-    if (aggctr_limit_nnz)
+    if (aggctr_limit_nnz && multi_output >= 0)
+	sa << ", CALL_AFTER_AGG " << aggctr_limit_nnz << " output";
+    else if (aggctr_limit_nnz)
 	sa << ", STOP_AFTER_AGG " << aggctr_limit_nnz;
     sa << ")\n";
 
@@ -511,8 +576,8 @@ particular purpose.\n");
 	stop_driver_count = files.size() + (collate ? 1 : 0);
     }
     // print `!counts' message if appropriate
-    sa << ", wait_stop, write complete_banner, write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output);
-    sa << ");\n";
+    sa << ", wait_stop, write output);\n";
+    sa << "// Outside of aciri-aggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "'.\n";
 
     // output config if required
     if (config) {
@@ -548,7 +613,7 @@ particular purpose.\n");
 	/* do nothing */;
     router = lexer->create_router();
     lexer->end_parse(cookie);
-    router->add_global_write_handler("complete_banner", complete_banner_handler, 0);
+    router->add_global_write_handler("output", output_handler, 0);
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
     
