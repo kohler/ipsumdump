@@ -57,6 +57,7 @@
 #define INTERVAL_OPT		317
 #define LIMIT_PACKETS_OPT	318
 #define BINARY_OPT		319
+#define MMAP_OPT		320
 
 // data sources
 #define INTERFACE_OPT		400
@@ -109,6 +110,7 @@ static Clp_Option options[] = {
     { "binary", 'b', BINARY_OPT, 0, Clp_Negate },
     { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
     { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
+    { "mmap", 0, MMAP_OPT, 0, Clp_Negate },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
@@ -221,6 +223,7 @@ Other options:\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
       --record-counts TIME   Record packet counts every TIME seconds in output.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
+      --no-mmap              Don't memory-map input files.\n\
   -q, --quiet                Do not print progress bar.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
@@ -384,6 +387,7 @@ main(int argc, char *argv[])
     Vector<String> files;
     const char *record_drops = 0;
     unsigned limit_packets = 0;
+    int mmap = -1;
     struct timeval interval;
     timerclear(&interval);
     
@@ -504,6 +508,10 @@ main(int argc, char *argv[])
 	  case INTERVAL_OPT:
 	    interval = *reinterpret_cast<struct timeval *>(&clp->val);
 	    break;
+
+	  case MMAP_OPT:
+	    mmap = !clp->negated;
+	    break;
 	    
 	  case CONFIG_OPT:
 	    config = true;
@@ -598,6 +606,8 @@ particular purpose.\n");
 	String config = ", FORCE_IP true, STOP true";
 	if (do_sample)
 	    config += ", SAMPLE " + String(sample);
+	if (mmap >= 0)
+	    config += ", MMAP " + String(mmap);
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";

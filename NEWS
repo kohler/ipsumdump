@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.33   3.Dec.2003
+
+* Document segmentation-fault behavior when mmaping corrupt files, and add
+  '--no-mmap' option (requested by Vern Paxson).
+
+
 Version 1.32   10.Nov.2003
 
 * Support large files (bug reported by David Loose).

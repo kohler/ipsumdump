@@ -356,6 +356,11 @@ F</dev/random>, if it exists, combined with other data. The random seed
 indirectly determines which packets are sampled, and the values of
 anonymized IP addresses.
 
+=item B<--no-mmap>
+
+Do not use memory mapping when reading files. This may prevent crashes if
+you feed B<ipsumdump> a corrupted file. See BUGS, below.
+
 =item B<--quiet>, B<-q>
 
 Do not print a progress bar to standard error. This is the default when
@@ -500,6 +505,12 @@ contain spaces, like the following:
   !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'
 
 B<ipsumdump> still understands files with the old format.
+
+=head1 BUGS
+
+B<Ipsumdump> can use the mmap(2) system call to access files, which often
+has better performance.  Unfortunately, if B<ipsumdump> memory-maps a
+corrupt file, it may crash with a segmentation violation. 
 
 =head1 SEE ALSO
 
