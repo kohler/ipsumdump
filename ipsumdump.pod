@@ -247,6 +247,12 @@ for packets with no options (except possibly EOL and NOP).
 Include SACK-related TCP options in the dump, using the format given under
 C<--tcp-opt>, above.
 
+=item B<--udp-length>
+
+Include UDP length in the dump. This is the length reported in UDP packet
+headers; a dash is printed for non-UDP packets, and second and subsequent
+UDP fragments. Example: C<1000>.
+
 =item B<--payload-length>, B<-L>
 
 Include length of packet payload in the dump. This is the length of the TCP

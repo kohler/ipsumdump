@@ -80,7 +80,7 @@ static const char* const field_names[] = {
     "ip_proto", "tcp_seq", "tcp_ack", "tcp_flags",	// 8-11
     "tcp_opt", "tcp_sack", "payload_len", "count",	// 12-15
     "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
-    "link"						// 20
+    "link", "udp_len"					// 20-21
 };
 
 // options for logging
@@ -106,6 +106,7 @@ static const char* const field_names[] = {
 #define PAYLOAD_OPT	1018
 #define IPCAPLEN_OPT	1019
 #define LINK_OPT	1020
+#define UDP_LEN_OPT	1021
 
 #define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
 
@@ -166,7 +167,8 @@ static Clp_Option options[] = {
     { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
     { "payload", 0, PAYLOAD_OPT, 0, 0 },
     { "capture-length", 0, IPCAPLEN_OPT, 0, 0 },
-    { "link", 0, LINK_OPT, 0, 0 }
+    { "link", 0, LINK_OPT, 0, 0 },
+    { "udp-length", 0, UDP_LEN_OPT, 0, 0 }
 
 };
 
@@ -213,6 +215,7 @@ Options that determine summary dump contents (can give multiple options):\n\
   -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
   -O, --tcp-opt              Include TCP options.\n\
       --tcp-sack             Include TCP selective acknowledgement options.\n\
+      --udp-length           Include UDP lengths.\n\
   -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
       --payload              Include packet payloads as quoted strings.\n\
       --capture-length       Include lengths of captured IP data.\n\
