@@ -75,6 +75,8 @@ ToEjySummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
 	    _contents.push_back(W_LENGTH);
 	else if (word == "id" || word == "ip id")
 	    _contents.push_back(W_IPID);
+	else if (word == "proto" || word == "ip proto")
+	    _contents.push_back(W_PROTO);
 	else
 	    errh->error("unknown save data `%s'", word.cc());
     }
@@ -140,7 +142,7 @@ ToEjySummaryDump::uninitialize()
 
 static const char *content_names[] = {
     "??", "timestamp", "ts sec", "ts usec",
-    "ip src", "ip dst", "len", "ip id",
+    "ip src", "ip dst", "ip len", "ip proto", "ip id",
     "sport", "dport",
 };
 
@@ -207,6 +209,12 @@ ToEjySummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 	      const click_ip *iph = p->ip_header();
 	      if (!iph) return false;
 	      sa << ntohs(iph->ip_id);
+	      break;
+	  }
+	  case W_PROTO: {
+	      const click_ip *iph = p->ip_header();
+	      if (!iph) return false;
+	      sa << (int)(iph->ip_p);
 	      break;
 	  }
 

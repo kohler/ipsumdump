@@ -37,7 +37,7 @@ class ToEjySummaryDump : public Element { public:
 
     enum Content {
 	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
-	W_SRC, W_DST, W_LENGTH, W_IPID, W_SPORT, W_DPORT
+	W_SRC, W_DST, W_LENGTH, W_PROTO, W_IPID, W_SPORT, W_DPORT
     };
     static const char *content_name(int);
     

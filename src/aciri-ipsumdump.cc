@@ -34,6 +34,7 @@
 #define DPORT_OPT	(1000 + ToEjySummaryDump::W_DPORT)
 #define LENGTH_OPT	(1000 + ToEjySummaryDump::W_LENGTH)
 #define IPID_OPT	(1000 + ToEjySummaryDump::W_IPID)
+#define PROTO_OPT	(1000 + ToEjySummaryDump::W_PROTO)
 
 static Clp_Option options[] = {
 
@@ -49,13 +50,14 @@ static Clp_Option options[] = {
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "config", 0, CONFIG_OPT, 0, 0 },
 
-  { "timestamps", 't', TIMESTAMP_OPT, 0, Clp_Negate },
-  { "src", 's', SRC_OPT, 0, Clp_Negate },
-  { "dst", 'd', DST_OPT, 0, Clp_Negate },
-  { "sport", 'S', SPORT_OPT, 0, Clp_Negate },
-  { "dport", 'D', DPORT_OPT, 0, Clp_Negate },
-  { "length", 'l', LENGTH_OPT, 0, Clp_Negate },
-  { "id", 0, IPID_OPT, 0, Clp_Negate },
+  { "log-timestamps", 't', TIMESTAMP_OPT, 0, Clp_Negate },
+  { "log-src", 's', SRC_OPT, 0, Clp_Negate },
+  { "log-dst", 'd', DST_OPT, 0, Clp_Negate },
+  { "log-sport", 'S', SPORT_OPT, 0, Clp_Negate },
+  { "log-dport", 'D', DPORT_OPT, 0, Clp_Negate },
+  { "log-length", 'l', LENGTH_OPT, 0, Clp_Negate },
+  { "log-id", 0, IPID_OPT, 0, Clp_Negate },
+  { "log-protocol", 'p', PROTO_OPT, 0, Clp_Negate },
   
 };
 
@@ -86,13 +88,14 @@ summarizes their contents in an ASCII log. It generally runs until interrupted.\
 Usage: %s [-i INTERFACE | -r FILE] [CONTENT OPTIONS] > LOGFILE\n\
 \n\
 Options that determine log contents (can give multiple options):\n\
-  -t, --timestamps              Log packet timestamps.\n\
-  -s, --src                     Log IP source addresses.\n\
-  -d, --dst                     Log IP destination addresses.\n\
-  -S, --sport                   Log TCP/UDP source ports.\n\
-  -D, --dport                   Log TCP/UDP destination ports.\n\
-  -l, --length                  Log IP length field.\n\
-      --id                      Log IP ID.\n\
+  -t, --log-timestamps          Log packet timestamps.\n\
+  -s, --log-src                 Log IP source addresses.\n\
+  -d, --log-dst                 Log IP destination addresses.\n\
+  -S, --log-sport               Log TCP/UDP source ports.\n\
+  -D, --log-dport               Log TCP/UDP destination ports.\n\
+  -l, --log-length              Log IP length field.\n\
+  -p, --log-protocol            Log IP protocol.\n\
+      --log-id                  Log IP ID.\n\
 Default contents option is `-sd' (log source and destination addresses).\n\
 \n\
 Other options:\n\
