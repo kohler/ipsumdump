@@ -216,7 +216,7 @@ Actions: (Results of final action sent to output.)\n\
                              greater than or equal to N active addresses.\n\
       --fake-by-discriminating-prefixes[=TYP]   Create fake posterized data\n\
                              sharing this data's --all-discriminating-prefix.\n\
-                             TYP is either `random' (default) or `nonrandom'.\n\
+                             TYP is a randomness factor between 0 and 1.\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of active addresses.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\

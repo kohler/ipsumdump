@@ -633,14 +633,22 @@ AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33],
     //
     for (int p = q + 1; p <= 32; p++) {
 	assert((uint32_t) s.size() == dp[p-1][q]);
-	
+
+#if 1
 	uint32_t first_random = dp[p-1][q] - (uint32_t)(randomness * (dp[p-1][q] - dp[p][q]));
 	if (randomness >= 1)
 	    first_random = dp[p][q];
+#else
+	uint32_t random_delta = (uint32_t) (dp[p][q] * (1 - randomness));
+#endif
 	
 	for (uint32_t i = dp[p][q]; i < dp[p-1][q]; i++) {
 	    // pick random element of s
+#if 1
 	    int which = (i >= first_random ? ((uint32_t)random()) % s.size() : s.size() - 1);
+#else
+	    int which = (random_delta >= dp[p][q] ? s.size() - 1 : (((uint32_t)random()) % (s.size() - random_delta)) + random_delta);
+#endif
 	    WNode *n = s[which];
 	    assert(n->depth == p - 1 && n->count == 1 && n->full_count == 1);
 	    add(n->aggregate | (1 << (32 - p)), 1);

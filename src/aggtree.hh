@@ -55,6 +55,7 @@ class AggregateTree { public:
     void drop_common_hosts(const AggregateTree &);
     void drop_common_unequal_hosts(const AggregateTree &);
     void add_new_hosts(const AggregateTree &);
+    void take_nonzero_sizes(const AggregateTree &, uint32_t mask =0xFFFFFFFFU);
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
@@ -99,6 +100,7 @@ class AggregateTree { public:
     void node_keep_common_hosts(Node *, const Node *[], int &, bool);
     void node_drop_common_hosts(Node *, const Node *[], int &);
     void node_drop_common_unequal_hosts(Node *, const Node *[], int &);
+    void node_take_nonzero_sizes(Node *, const Node *[], int &, uint32_t);
 
     static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);

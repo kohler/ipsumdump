@@ -1049,6 +1049,36 @@ AggregateTree::drop_common_unequal_hosts(const AggregateTree &other)
 }
 
 
+void
+AggregateTree::node_take_nonzero_sizes(Node *n, const Node *other_stack[], int &other_pos, uint32_t mask)
+{
+    if (n->count) {
+	const Node *other = (other_pos ? other_stack[other_pos - 1] : 0);
+	while (other && (other->aggregate & mask) < (n->aggregate & mask))
+	    other = preorder_step(other_stack, other_pos);
+	if (other && (other->aggregate & mask) == (n->aggregate & mask))
+	    n->count = other->count;
+	else
+	    n->count = 0;
+	if (n->count == 0)
+	    _num_nonzero--;
+    }
+    if (n->child[0]) {
+	node_take_nonzero_sizes(n->child[0], other_stack, other_pos, mask);
+	node_take_nonzero_sizes(n->child[1], other_stack, other_pos, mask);
+    }
+}
+
+void
+AggregateTree::take_nonzero_sizes(const AggregateTree &other, uint32_t mask)
+{
+    const Node *other_stack[32];
+    other_stack[0] = other._root;
+    int other_pos = 1;
+    node_take_nonzero_sizes(_root, other_stack, other_pos, mask);
+}
+
+
 //
 // READING AND WRITING
 //
