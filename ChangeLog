@@ -1,3 +1,18 @@
+2001-10-02 Tuesday 17:43  Eddie Kohler <kohler@aciri.org>
+
+	* Makefile.in (1.16), src/ipsumdump.cc (1.19): catch a couple more
+	signals, and improve Makefile
+
+2001-10-02 Tuesday 17:43  Eddie Kohler <kohler@aciri.org>
+
+	* ipsumdump.pod (1.7): doc updates
+
+2001-10-02 Tuesday 17:35  Eddie Kohler <kohler@aciri.org>
+
+	* configure.in (1.18), src/ipsumdump.cc (1.18), src/toipsumdump.cc
+	(1.9), src/toipsumdump.hh (1.12): use FromDevice's kernel_drops
+	handler to generate a comment if there were dropped packets
+
 2001-10-01 Monday 10:39  Eddie Kohler <kohler@aciri.org>
 
 	* ipsumdump.pod (1.6), src/fromipsumdump.cc (1.3),
