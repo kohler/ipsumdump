@@ -2,7 +2,7 @@
 #define AGGTREE_HH
 #include <click/vector.hh>
 #include <click/error.hh>
-#include <stdio.h>
+#include <cstdio>
 class AggregateWTree;
 
 class AggregateTree { public:

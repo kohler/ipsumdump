@@ -6,12 +6,12 @@
 #include <click/error.hh>
 #include <click/confparse.hh>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <string.h>
-#include <errno.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <csignal>
+#include <cstring>
+#include <cerrno>
+#include <cmath>
 
 #include "aggtree.hh"
 #include "aggwtree.hh"

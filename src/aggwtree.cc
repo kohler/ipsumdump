@@ -4,8 +4,8 @@
 #include <click/confparse.hh>
 #include <click/error.hh>
 #include <click/integers.hh>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #ifdef HAVE_BYTEORDER_H
 #include <byteorder.h>

@@ -11,9 +11,9 @@
 #include <click/handlercall.hh>
 #include "aggcounter.hh"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
+#include <cstdio>
+#include <cstdlib>
+#include <csignal>
 
 #include <click/standard/drivermanager.hh>
 
