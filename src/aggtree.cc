@@ -799,6 +799,92 @@ AggregateTree::haar_wavelet_energy_coeff(Vector<double> &out) const
 
 
 //
+// CONDITIONAL SPLIT PROBABILITIES
+//
+
+static void
+node_branching_counts(AggregateTree::Node *n, uint32_t mask, uint32_t &value, int shift, int &count, uint32_t *results)
+{
+    if (n->count > 0 && ((n->aggregate & mask) != value || !count)) {
+	if ((n->aggregate & (mask << shift)) != (value & (mask << shift))
+	    && count) {
+	    results[count]++;
+	    count = 0;
+	}
+	value = (n->aggregate & mask);
+	count++;
+    }
+    if (n->child[0]) {
+	node_branching_counts(n->child[0], mask, value, shift, count, results);
+	node_branching_counts(n->child[1], mask, value, shift, count, results);
+    }
+}
+
+void
+AggregateTree::branching_counts(int p, int layers_down, Vector<uint32_t> &v) const
+{
+    assert(p >= 0 && layers_down > 0 && p + layers_down <= 32);
+    v.assign((1 << layers_down) + 1, 0);
+    int count = 0;
+    uint32_t value = 0;
+    uint32_t mask = prefix_to_mask(p + layers_down);
+    node_branching_counts(_root, mask, value, layers_down, count, &v[0]);
+    if (count)
+	v[count]++;
+}
+
+
+static void
+cond_split_handle_collection(AggregateTree::Node *collection[4], int &pos, uint32_t results[4], uint32_t mask)
+{
+    switch (pos) {
+      case 0: break;
+      case 1: results[0]++; break;
+      case 3: results[2]++; results[3]++; break;
+      case 4: results[3] += 2; break;
+      case 2: {
+	  if ((collection[0]->aggregate & (mask << 1))
+	      == (collection[1]->aggregate & (mask << 1)))
+	      results[1]++;
+	  else
+	      results[2] += 2;
+	  break;
+      }
+      default: assert(0);
+    }
+    pos = 0;
+}
+
+static void
+node_conditional_split_counts(AggregateTree::Node *n, uint32_t mask, uint32_t &value, AggregateTree::Node *collection[4], int &pos, uint32_t results[4])
+{
+    if (n->count > 0 && ((n->aggregate & mask) != value || !pos)) {
+	if ((n->aggregate & (mask << 2)) != (value & (mask << 2)))
+	    cond_split_handle_collection(collection, pos, results, mask);
+	value = (n->aggregate & mask);
+	collection[pos++] = n;
+    }
+    if (n->child[0]) {
+	node_conditional_split_counts(n->child[0], mask, value, collection, pos, results);
+	node_conditional_split_counts(n->child[1], mask, value, collection, pos, results);
+    }
+}
+
+void
+AggregateTree::conditional_split_counts(int p, Vector<uint32_t> &v) const
+{
+    assert(p >= 1 && p <= 31);
+    v.assign(4, 0);
+    Node *collection[4];
+    int pos = 0;
+    uint32_t value = 0;
+    uint32_t mask = prefix_to_mask(p + 1);
+    node_conditional_split_counts(_root, mask, value, collection, pos, &v[0]);
+    cond_split_handle_collection(collection, pos, &v[0], mask);
+}
+
+
+//
 // COMBINING TREES
 //
 

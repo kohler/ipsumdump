@@ -38,7 +38,7 @@ class AggregateWTree { public:
 
     void collect_active(Vector<WNode *> &) const;
     void collect_active_depth(int d, Vector<WNode *> &) const;
-    
+
     void fake_by_discriminating_prefix(int, const uint32_t[33][33]);
     
     int read_file(FILE *, ErrorHandler *);
@@ -84,7 +84,7 @@ class AggregateWTree { public:
     WNode *pick_random_active_node(WNode *stack[], int *) const;
 
     uint32_t node_local_count(WNode *) const;
-    uint32_t node_full_count(WNode *) const;
+    static inline uint32_t node_full_count(WNode *);
 
     void node_prefixize(WNode *, int, WNode *stack[], int);
     
@@ -131,7 +131,7 @@ AggregateWTree::node_local_count(WNode *n) const
 }
 
 inline uint32_t
-AggregateWTree::node_full_count(WNode *n) const
+AggregateWTree::node_full_count(WNode *n)
 {
     return (n ? n->full_count : 0);
 }

@@ -57,6 +57,8 @@
 #define BALANCE_ACT		509
 #define BALANCE_HISTOGRAM_ACT	510
 #define ALL_NNZ_DISCRIM_ACT	511
+#define COND_SPLIT_ACT		512
+#define BRANCHING_ACT		513
 
 #define CLP_TWO_UINTS_TYPE	(Clp_MaxDefaultType + 1)
 
@@ -90,6 +92,7 @@ static Clp_Option options[] = {
   { "all-discriminating-prefix-counts", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
   { "all-discpfx-counts", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
   { "all-num-discriminated-by-prefix", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
+  { "conditional-split-counts", 0, COND_SPLIT_ACT, Clp_ArgUnsigned, 0 },
   { "prefix", 'p', PREFIX_ACT, Clp_ArgUnsigned, 0 },
   { "posterize", 'P', POSTERIZE_ACT, 0, 0 },
   { "average-and-variance", 0, AVG_VAR_ACT, 0, 0 },
@@ -117,7 +120,8 @@ static Clp_Option options[] = {
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
-  { "fake-by-discriminating-prefix", 0, FAKE_BY_DISCRIM_ACT, 0, 0 },
+  { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, 0, 0 },
   
 };
 
@@ -191,6 +195,8 @@ Actions: (Results of final action sent to output.)\n\
                              less than N active addresses.\n\
       --cut-larger-address-aggregates P,N    Zero counts for P-aggregates with\n\
                              greater than or equal to N active addresses.\n\
+      --fake-by-discriminating-prefixes      Create fake posterized data\n\
+                             sharing this data's --all-discriminating-prefix.\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of active addresses.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
@@ -199,6 +205,8 @@ Actions: (Results of final action sent to output.)\n\
       --haar-wavelet-energy  Haar wavelet energy coefficients.\n\
       --balance N\n\
       --balance-histogram N,NBUCKETS\n\
+      --branching-counts P,STEP\n\
+      --conditional-split-counts P\n\
 \n\
 Other options:\n\
   -r, --read FILE            Read summary from FILE (default stdin).\n\
@@ -588,6 +596,20 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	tree.balance(action_extra, out);
 	break;
 
+      case COND_SPLIT_ACT: {
+	  Vector<uint32_t> cond_split;
+	  tree.conditional_split_counts(action_extra, cond_split);
+	  write_vector(cond_split, out);
+	  break;
+      }
+
+      case BRANCHING_ACT: {
+	  Vector<uint32_t> v;
+	  tree.branching_counts(action_extra, action_extra2, v);
+	  write_vector(v, out);
+	  break;
+      }
+      
       case BALANCE_HISTOGRAM_ACT: {
 	  Vector<uint32_t> sizes;
 	  tree.balance_histogram(action_extra, action_extra2, sizes);
@@ -717,6 +739,12 @@ particular purpose.\n");
 	    add_action(opt, clp->val.u);
 	    break;
 
+	  case COND_SPLIT_ACT:
+	    if (clp->val.u < 1 || clp->val.u > 31)
+		die_usage("`--conditional-split-counts' arg must be between 1 and 31");
+	    add_action(opt, clp->val.u);
+	    break;
+
 	  case CUT_SMALLER_AGG_ACT:
 	  case CUT_LARGER_AGG_ACT:
 	  case CUT_SMALLER_ADDR_AGG_ACT:
@@ -724,6 +752,12 @@ particular purpose.\n");
 	  case BALANCE_HISTOGRAM_ACT:
 	    if (clp->val.us[0] > 31)
 		die_usage("`" + String(Clp_CurOptionName(clp)) + "' prefix must be between 0 and 31");
+	    add_action(opt, clp->val.us[0], clp->val.us[1]);
+	    break;
+
+	  case BRANCHING_ACT:
+	    if (clp->val.us[1] < 1 || clp->val.us[0] + clp->val.us[1] > 32)
+		die_usage("bad `" + String(Clp_CurOptionName(clp)) + "' args");
 	    add_action(opt, clp->val.us[0], clp->val.us[1]);
 	    break;
 
