@@ -59,7 +59,8 @@ class AggregateTree { public:
     void take_nonzero_sizes(const AggregateTree &, uint32_t mask =0xFFFFFFFFU);
     
     int read_file(FILE *, ErrorHandler *);
-    int write_file(FILE *, bool binary, ErrorHandler *) const;
+    enum WriteFormat { WR_ASCII = 0, WR_BINARY = 1, WR_ASCII_IP = 2 };
+    int write_file(FILE *, WriteFormat, ErrorHandler *) const;
 
     AggregateTree &operator=(const AggregateTree &);
     AggregateTree &operator+=(const AggregateTree &);
@@ -104,8 +105,8 @@ class AggregateTree { public:
     void node_take_nonzero_sizes(Node *, const Node *[], int &, uint32_t);
     void node_randomly_assign_counts(Node *, Vector<uint32_t> &);
 
-    static void write_batch(FILE *f, bool, uint32_t *, int, ErrorHandler *);
-    static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);
+    static void write_batch(FILE *, WriteFormat, uint32_t *, int, ErrorHandler *);
+    static void write_nodes(Node *, FILE *, WriteFormat, uint32_t *, int &, int, ErrorHandler *);
     static void write_hex_nodes(Node *, FILE *, ErrorHandler *);
 
     friend class AggregateWTree;

@@ -24,13 +24,14 @@
 #define OUTPUT_OPT		303
 #define BINARY_OPT		304
 #define ASCII_OPT		305
-#define AND_OPT			306
-#define OR_OPT			307
-#define EACH_OPT		308
-#define AND_LIST_OPT		309
-#define MINUS_OPT		310
-#define XOR_OPT			311
-#define ASSIGN_COUNTS_OPT	312
+#define ASCII_IP_OPT		306
+#define AND_OPT			307
+#define OR_OPT			308
+#define EACH_OPT		309
+#define AND_LIST_OPT		310
+#define MINUS_OPT		311
+#define XOR_OPT			312
+#define ASSIGN_COUNTS_OPT	313
 
 #define FIRST_ACT		400
 #define NO_ACT			400
@@ -80,8 +81,9 @@ static Clp_Option options[] = {
 
   { "read-file", 'r', READ_FILE_OPT, Clp_ArgString, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
-  { "binary", 'B', BINARY_OPT, 0, Clp_Negate },
-  { "ascii", 0, ASCII_OPT, 0, Clp_Negate },
+  { "binary", 'B', BINARY_OPT, 0, 0 },
+  { "ascii", 'A', ASCII_OPT, 0, 0 },
+  { "ip", 0, ASCII_IP_OPT, 0, 0 },
   { "and", '&', AND_OPT, 0, 0 },
   { "or", '|', OR_OPT, 0, 0 },
   { "minus", 0, MINUS_OPT, 0, 0 },
@@ -264,7 +266,7 @@ static Vector<int> actions;
 static Vector<uint32_t> extras;
 static Vector<uint32_t> extras2;
 static FILE *out;
-static bool output_binary = true;
+static AggregateTree::WriteFormat output_format = AggregateTree::WR_BINARY;
 static Vector<String> files;
 static int files_pos = 0;
 
@@ -791,7 +793,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case FAKE_BY_BRANCHING_ACT:
       case FAKE_BY_DIRICHLET_ACT:
       case NO_ACT:
-	tree.write_file(out, output_binary, errh);
+	tree.write_file(out, output_format, errh);
 	break;
 	
     }
@@ -826,11 +828,15 @@ main(int argc, char *argv[])
 	    break;
 
 	  case BINARY_OPT:
-	    output_binary = !clp->negated;
+	    output_format = AggregateTree::WR_BINARY;
 	    break;
 	    
 	  case ASCII_OPT:
-	    output_binary = clp->negated;
+	    output_format = AggregateTree::WR_ASCII;
+	    break;
+	    
+	  case ASCII_IP_OPT:
+	    output_format = AggregateTree::WR_ASCII_IP;
 	    break;
 	    
 	  case AND_OPT:
@@ -1079,7 +1085,7 @@ particular purpose.\n");
 	  Vector<uint32_t> sizes;
 	  tree1.active_counts(sizes);
 	  tree2.randomly_assign_counts(sizes);
-	  tree2.write_file(out, output_binary, errh);
+	  tree2.write_file(out, output_format, errh);
 	  break;
       }
 

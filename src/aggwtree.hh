@@ -44,7 +44,7 @@ class AggregateWTree { public:
     void fake_by_dirichlet(uint32_t nnz);
     
     int read_file(FILE *, ErrorHandler *);
-    int write_file(FILE *, bool binary, ErrorHandler *) const;
+    int write_file(FILE *, AggregateTree::WriteFormat, ErrorHandler *) const;
     int write_hex_file(FILE *, ErrorHandler *) const;
 
     AggregateWTree &operator=(const AggregateWTree &);
