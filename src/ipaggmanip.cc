@@ -72,6 +72,7 @@ static Clp_Option options[] = {
   { "avg-var-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   { "sample", 0, SAMPLE_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
+  { "cut-larger", 0, CUT_LARGER_ACT, Clp_ArgUnsigned, 0 },
   { "cull-hosts", 0, CULL_HOSTS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-hosts-by-packets", 0, CULL_HOSTS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
