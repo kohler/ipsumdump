@@ -15,7 +15,6 @@
 
 #include "toipsumdump.hh"
 #include "fromdevice.hh"
-#include "bailerror.hh"
 #include <click/standard/drivermanager.hh>
 
 #define HELP_OPT	300
