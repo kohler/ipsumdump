@@ -5,3 +5,7 @@ elements/userlevel/todump.hh
 elements/userlevel/fakepcap.h
 elements/userlevel/fromdevice.cc
 elements/userlevel/fromdevice.hh
+elements/local/mergebyts.cc
+elements/local/mergebyts.hh
+elements/standard/randomsample.cc
+elements/standard/randomsample.hh

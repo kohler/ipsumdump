@@ -203,6 +203,23 @@ the output summary to have one line per packet, instead of the default one
 line per record. See also B<--packet-count>, above. If you supply both
 B<--multipacket> and B<--packet-count>, then B<--multipacket> is ignored.
 
+=item B<--sample>=I<p>
+
+Sample packets with probability I<p>. That is, I<p> is the chance that a
+packet will cause output to be generated. The actual probability may differ
+from the specified probability, due to fixed point arithmetic; check the
+output for a `C<!sampling_prob>' comment to see the real probability.
+Strictly speaking, this option samples records, not packets; so for NetFlow
+summaries without B<--multipacket>, it will sample flows.
+
+=item B<--collate>
+
+Collate packets from data sources by increasing timestamp. Use this option
+when reading from multiple tcpdump(1) files to ensure that the output has
+sorted timestamps. When combined with the B<--write-tcpdump> option, this
+lets you collate overlapping tcpdump(1) files into a single, sorted
+tcpdump(1) file.
+
 =item B<--write-tcpdump>=I<file>, B<-w> I<file>
 
 Write processed packets to a tcpdump(1) I<file> -- or to the standard

@@ -16,6 +16,7 @@
 #include "toipsumdump.hh"
 #include "fromdevice.hh"
 #include "bailerror.hh"
+#include <click/standard/drivermanager.hh>
 
 #define HELP_OPT	300
 #define VERSION_OPT	301
@@ -27,6 +28,8 @@
 #define ANONYMIZE_OPT	307
 #define MAP_PREFIX_OPT	308
 #define MULTIPACKET_OPT	309
+#define SAMPLE_OPT	310
+#define COLLATE_OPT	311
 
 // data sources
 #define INTERFACE_OPT	400
@@ -69,6 +72,8 @@ static Clp_Option options[] = {
     { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
     { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
+    { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
+    { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -147,6 +152,8 @@ Other options:\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
       --multipacket          Produce multiple entries for a flow identifier\n\
                              representing multiple packets (NetFlow only).\n\
+      --sample PROB          Sample packets with PROB probability.\n\
+      --collate              Collate packets from data sources by timestamp.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
@@ -155,13 +162,30 @@ Other options:\n\
 Report bugs to <kohler@aciri.org>.\n", program_name);
 }
 
+// Stop the driver this many aggregate times to end the program.
+static int stop_driver_count = 1;
+
 static void
 catch_signal(int sig)
 {
     signal(sig, SIG_DFL);
     if (!started)
 	kill(getpid(), sig);
-    router->please_stop_driver();
+    DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
+    router->set_driver_reservations(dm->stopped_count() - stop_driver_count);
+}
+
+static void
+write_sampling_prob_message(Router *r, const String &sample_elt)
+{
+    Element *sample = r->find(sample_elt);
+    int hi = r->find_handler(sample, "sampling_prob");
+    if (sample && hi >= 0) {
+	String s = r->handler(hi).call_read(sample);
+	ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(r->find("to_dump"));
+	assert(td);
+	td->write_string("!sampling_prob " + s);
+    }
 }
 
 static void
@@ -196,6 +220,15 @@ write_drops_message(Router *r)
 
 extern void export_elements(Lexer *);
 
+static String
+source_output_port(bool collate, int i)
+{
+    if (collate)
+	return "[" + String(i) + "]collate";
+    else
+	return "shunt";
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -217,6 +250,9 @@ main(int argc, char *argv[])
     bool verbose = false;
     bool anonymize = false;
     bool multipacket = false;
+    double sample = 0;
+    bool do_sample = false;
+    bool collate = false;
     Vector<int> log_contents;
     int action = 0;
     Vector<String> files;
@@ -280,7 +316,22 @@ main(int argc, char *argv[])
 	      }
 	      break;
 	  }
-	  
+
+	  case SAMPLE_OPT:
+	    if (clp->negated)
+		do_sample = false;
+	    else {
+		do_sample = true;
+		if (clp->val.d < 0 || clp->val.d > 1)
+		    die_usage("`--sample' probability must be between 0 and 1");
+		sample = clp->val.d;
+	    }
+	    break;
+
+	  case COLLATE_OPT:
+	    collate = !clp->negated;
+	    break;
+	    
 	  case CONFIG_OPT:
 	    config = true;
 	    break;
@@ -323,9 +374,6 @@ particular purpose.\n");
     }
   
   done:
-    StringAccum sa;
-    String toipsumdump_extra;
-
     // check file usage
     if (!output)
 	output = "-";
@@ -333,7 +381,10 @@ particular purpose.\n");
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
     // define shunt
-    sa << "shunt :: { input -> output };\n";
+    String shunt_internals = "";
+    StringAccum psa;
+    String toipsumdump_extra;
+    String sample_elt;
     
     // elements to read packets
     if (action == 0)
@@ -341,6 +392,8 @@ particular purpose.\n");
     if (action == INTERFACE_OPT) {
 	if (files.size() == 0)
 	    p_errh->fatal("`-i' option takes at least one DEVNAME");
+	if (collate)
+	    p_errh->fatal("`--collate' may not be used with `--interface' yet");
 	String filter_extra;
 #if FROMDEVICE_PCAP
 	if (filter)
@@ -348,29 +401,58 @@ particular purpose.\n");
 	filter = String();
 #endif
 	for (int i = 0; i < files.size(); i++)
-	    sa << "FromDevice(" << files[i] << ", SNAPLEN 60, FORCE_IP true" << filter_extra << ") -> shunt;\n";
+	    psa << "src" << i << " :: FromDevice(" << files[i] << ", SNAPLEN 60, FORCE_IP true" << filter_extra << ") -> " << source_output_port(collate, i) << ";\n";
+	if (do_sample) {
+	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
+	    sample_elt = "shunt/samp";
+	}
+	
     } else if (action == READ_DUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
+	String config = ", FORCE_IP true, STOP true";
+	if (do_sample)
+	    config += ", SAMPLE " + String(sample);
 	for (int i = 0; i < files.size(); i++)
-	    sa << "FromDump(" << files[i] << ", FORCE_IP true, STOP true) -> shunt;\n";
+	    psa << "src" << i << " :: FromDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
+	sample_elt = "src0";
+	
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
 	for (int i = 0; i < files.size(); i++)
-	    sa << "FromNetFlowSummaryDump(" << files[i] << ", STOP true) -> shunt;\n";
+	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << files[i] << ", STOP true) -> " << source_output_port(collate, i) << ";\n";
 	if (multipacket)
 	    toipsumdump_extra += ", MULTIPACKET true";
+	if (do_sample) {
+	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
+	    sample_elt = "shunt/samp";
+	    if (!multipacket)
+		p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
+	}
+	
     } else if (action == READ_IPSUMDUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
+	String config = ", STOP true, ZERO true";
+	if (do_sample)
+	    config += ", SAMPLE " + String(sample);
 	for (int i = 0; i < files.size(); i++)
-	    sa << "FromIPSummaryDump(" << files[i] << ", STOP true, ZERO true) -> shunt;\n";
+	    psa << "src" << i << " :: FromIPSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	if (multipacket)
 	    toipsumdump_extra += ", MULTIPACKET true";
+	sample_elt = "src0";
+	
     } else
 	die_usage("must supply a data source option");
 
+    // print collation/shunt
+    StringAccum sa;
+    sa << "shunt :: { input" << shunt_internals << " -> output };\n";
+    if (collate)
+	sa << "collate :: MergeByTimestamp(STOP true, NULL_IS_DEAD true) -> shunt;\n";
+    sa << psa;
+    
     // possible elements to filter and/or anonymize
     sa << "shunt\n";
     if (filter)
@@ -400,8 +482,12 @@ particular purpose.\n");
     banner.pop_back();
     sa << cp_quote(banner.take_string()) << toipsumdump_extra << ");\n";
 
-    if (files.size() > 1)
-	sa << "DriverManager(wait_stop " << files.size() - 1 << ");\n";
+    sa << "DriverManager(";
+    if ((files.size() > 1 && action != INTERFACE_OPT) || collate) {
+	sa << "wait_stop " << (files.size() - 1) + (collate ? 1 : 0);
+	stop_driver_count = files.size() + (collate ? 1 : 0);
+    }
+    sa << ");\n";
 
     // output config if required
     if (config) {
@@ -430,6 +516,10 @@ particular purpose.\n");
     if (errh->nerrors() > 0 || router->initialize(click_errh, verbose) < 0)
 	exit(1);
 
+    // output sample probability if appropriate
+    if (do_sample)
+	write_sampling_prob_message(router, sample_elt);
+    
     // run driver
     started = true;
     router->thread(0)->driver();
