@@ -190,6 +190,12 @@ Example: C<1>. See also B<--multipacket>, below.
 
 Write the summary dump to I<file> instead of to the standard output.
 
+=item B<--write-tcpdump>=I<file>, B<-w> I<file>
+
+Write processed packets to a tcpdump(1) I<file> -- or to the standard
+output, if I<file> is a single dash C<-> -- in addition to the usual
+summary output.
+
 =item B<--filter>=I<filter>, B<-f> I<filter>
 
 Only include packets and flows matching a tcpdump(1) filter. For example,
@@ -206,16 +212,14 @@ and second, that anonymized addresses will be in the same class (A, B, C,
 or D) as their non-anonymized counterparts. The anonymization algorithm
 comes from tcpdpriv(1); it works like `tcpdpriv B<-A50 -C4>'.
 
+If B<--anonymize> and B<--write-tcpdump> are both on, the B<tcpdump> output
+file will have anonymized IP addresses. However, the file will contain
+actual packet data, unlike B<tcpdpriv> output.
+
 =item B<--no-promiscuous>
 
 Do not place interfaces into promiscuous mode. Promiscuous mode is the
 default.
-
-=item B<--map-address>=I<addrs>
-
-I<addrs> is a space- or comma-separated list of IP addresses and/or
-prefixes. When the summary dump completes, B<ipsumdump> will write those
-addresses to the standard error, paired with their anonymized counterparts.
 
 =item B<--sample>=I<p>
 
@@ -241,11 +245,23 @@ sorted timestamps. When combined with the B<--write-tcpdump> option, this
 lets you collate overlapping tcpdump(1) files into a single, sorted
 tcpdump(1) file.
 
-=item B<--write-tcpdump>=I<file>, B<-w> I<file>
+=item B<--map-address>=I<addrs>
 
-Write processed packets to a tcpdump(1) I<file> -- or to the standard
-output, if I<file> is a single dash C<-> -- in addition to the usual
-summary output.
+I<addrs> is a space- or comma-separated list of IP addresses and/or
+prefixes. When the summary dump completes, B<ipsumdump> will write those
+addresses to the standard error, paired with their anonymized counterparts.
+
+=item B<--record-counts>=I<time>
+
+Output a comment recording the cumulative number of packets output, and the
+number of packets dropped by the kernel before B<ipsumdump> could process
+them, every I<time> seconds. (But you can say, for example, `2m' for 2
+minutes.) A sample comment:
+
+  !counts out 0 kdrop 0
+
+This says that B<ipsumdump> has output 0 records, and the kernel reported 0
+packet drops since B<ipsumdump> began.
 
 =item B<--random-seed>=I<seed>
 

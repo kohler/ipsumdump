@@ -157,8 +157,8 @@ Data source options (give exactly one):\n\
       --ipsumdump            Read from existing ipsumdump FILES.\n\
 \n\
 Other options:\n\
-  -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
+  -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
       --no-promiscuous       Do not put interfaces into promiscuous mode.\n\
