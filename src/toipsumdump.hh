@@ -95,7 +95,7 @@ class ToIPSummaryDump : public Element { public:
     void push(int, Packet *);
     void run_scheduled();
 
-    enum Content {
+    enum Content {		// must agree with FromIPSummaryDump
 	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
 	W_SRC, W_DST, W_LENGTH, W_PROTO, W_IPID,
 	W_SPORT, W_DPORT, W_TCP_SEQ, W_TCP_ACK, W_TCP_FLAGS,
