@@ -59,6 +59,8 @@
 #define TCP_SEQ_OPT	(1000 + ToIPSummaryDump::W_TCP_SEQ)
 #define TCP_ACK_OPT	(1000 + ToIPSummaryDump::W_TCP_ACK)
 #define TCP_FLAGS_OPT	(1000 + ToIPSummaryDump::W_TCP_FLAGS)
+#define TCP_OPT_OPT	(1000 + ToIPSummaryDump::W_TCP_OPT)
+#define TCP_SACK_OPT	(1000 + ToIPSummaryDump::W_TCP_SACK)
 #define PAYLOAD_LEN_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD_LENGTH)
 #define COUNT_OPT	(1000 + ToIPSummaryDump::W_COUNT)
 #define FRAG_OPT	(1000 + ToIPSummaryDump::W_FRAG)
@@ -111,12 +113,14 @@ static Clp_Option options[] = {
     { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, 0 },
     { "tcp-ack", 'K', TCP_ACK_OPT, 0, 0 },
     { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, 0 },
+    { "tcp-opt", 'O', TCP_OPT_OPT, 0, 0 },
+    { "tcp-sack", 0, TCP_SACK_OPT, 0, 0 },
     { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
     { "packet-count", 'c', COUNT_OPT, 0, 0 },
     { "fragment", 'g', FRAG_OPT, 0, 0 },
     { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
     { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
-    { "payload", 0, PAYLOAD_OPT, 0, 0 },
+    { "payload", 0, PAYLOAD_OPT, 0, 0 }
 
 };
 
@@ -157,9 +161,11 @@ Options that determine summary dump contents (can give multiple options):\n\
       --id                   Include IP IDs.\n\
   -g, --fragment             Include IP fragment flags (`F' or `.').\n\
   -G, --fragment-offset      Include IP fragment offsets.\n\
+  -F, --tcp-flags            Include TCP flags word.\n\
   -Q, --tcp-seq              Include TCP sequence numbers.\n\
   -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
-  -F, --tcp-flags            Include TCP flags words.\n\
+  -O, --tcp-opt              Include TCP options.\n\
+      --tcp-sack             Include TCP selective acknowledgement options.\n\
   -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
       --payload              Include packet payloads as quoted strings.\n\
   -c, --packet-count         Include packet counts (usually 1).\n\
