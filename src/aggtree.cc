@@ -30,7 +30,7 @@ AggregateTree::initialize_root()
 }
 
 void
-AggregateTree::copy_nodes(Node *n, uint32_t mask)
+AggregateTree::copy_nodes(const Node *n, uint32_t mask)
 {
     if (n->count)
 	add(n->aggregate & mask, n->count);
@@ -525,7 +525,7 @@ AggregateTree::mask_data_to_prefix(int prefix_len)
 }
 
 void
-AggregateTree::make_prefix(int prefix_len, AggregateTree &t)
+AggregateTree::make_prefix(int prefix_len, AggregateTree &t) const
 {
     assert(prefix_len >= 0 && prefix_len <= 32);
     t.copy_nodes(_root, prefix_to_mask(prefix_len));

@@ -23,7 +23,10 @@ class AggregateWTree { public:
     void cull_hosts_by_packets(uint32_t nnz);
     void cull_packets(uint32_t np);
 
-    void left_right_balance(FILE *, int p) const;
+    void cut_smaller_prefix(int p, uint32_t size);
+
+    void mask_data_to_prefix(int p);
+    void make_prefix(int p, AggregateWTree &) const;
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
@@ -48,17 +51,23 @@ class AggregateWTree { public:
     WNode *new_node_block();
     void free_node(WNode *);
     void initialize_root();
-    void copy_nodes(Node *, uint32_t = 0xFFFFFFFFU);
+    void copy_nodes(const Node *, uint32_t = 0xFFFFFFFFU);
     void kill_all_nodes();
 
     WNode *make_peer(uint32_t, WNode *);
     void finish_add(WNode *, int32_t, WNode *stack[], int);
+    void free_subtree_x(WNode *, uint32_t &, uint32_t &);
+    void collapse_subtree(WNode *, WNode *stack[], int);
+    void delete_subtree(WNode *, WNode *stack[], int);
+    void adjust_num_nonzero(int32_t, WNode *stack[], int);
 
     uint32_t node_ok(WNode *, int, ErrorHandler *) const;
     WNode *pick_random_nonzero_node(WNode *stack[], int *) const;
 
     uint32_t node_count(WNode *) const;
 
+    void node_to_prefix(WNode *, int, WNode *stack[], int);
+    
     friend class AggregateTree;
     
 };

@@ -29,7 +29,7 @@ AggregateWTree::initialize_root()
 }
 
 void
-AggregateWTree::copy_nodes(Node *n, uint32_t mask)
+AggregateWTree::copy_nodes(const Node *n, uint32_t mask)
 {
     if (n->count)
 	add(n->aggregate & mask, n->count);
@@ -218,6 +218,7 @@ AggregateWTree::make_peer(uint32_t a, WNode *n)
 void
 AggregateWTree::finish_add(WNode *n, int32_t delta, WNode *stack[], int pos)
 {
+    assert(pos > 0 && stack[pos - 1] == n);
     uint32_t old_count = n->count;
     n->count += delta;
     int32_t nnz_delta = (n->count != 0) - (old_count != 0);
@@ -245,13 +246,13 @@ AggregateWTree::add(uint32_t a, int32_t delta)
     WNode *n = _root;
     while (n) {
 	
+	stack[pos++] = n;
+	
 	if (n->aggregate == a) {
 	    finish_add(n, delta, stack, pos);
 	    return;
 	}
 
-	stack[pos++] = n;
-	
 	if (!n->child[0])
 	    n = make_peer(a, n);
 	else {
@@ -269,6 +270,54 @@ AggregateWTree::add(uint32_t a, int32_t delta)
     fprintf(stderr, "AggregateWTree: out of memory!\n");
 }
 
+void
+AggregateWTree::adjust_num_nonzero(int32_t delta, WNode *stack[], int pos)
+{
+    _num_nonzero += delta;
+    if (_count_type == COUNT_HOSTS && delta)
+	for (int i = pos - 2; i >= 0; i--) {
+	    int bitvalue = (stack[i]->child[1] == stack[i+1]);
+	    assert(stack[i]->child[bitvalue] == stack[i+1]);
+	    stack[i]->child_count[bitvalue] += delta;
+	}
+}
+
+void
+AggregateWTree::free_subtree_x(WNode *n, uint32_t &nnz, uint32_t &count)
+{
+    if (n->count)
+	nnz++;
+    count += n->count;
+    if (n->child[0]) {
+	free_subtree_x((WNode *) n->child[0], nnz, count);
+	free_subtree_x((WNode *) n->child[1], nnz, count);
+    }
+    free_node(n);
+}
+
+void
+AggregateWTree::collapse_subtree(WNode *n, WNode *stack[], int pos)
+{
+    assert(pos > 0 && stack[pos - 1] == n);
+    if (n->child[0]) {
+	uint32_t nnz = 0, count = 0;
+	free_subtree_x((WNode *) n->child[0], nnz, count);
+	free_subtree_x((WNode *) n->child[1], nnz, count);
+	n->child[0] = n->child[1] = 0;
+	n->child_count[0] = n->child_count[1] = 0;
+
+	nnz += (n->count != 0);
+	n->count += count;
+	adjust_num_nonzero((n->count != 0) - nnz, stack, pos);
+    }
+}
+
+void
+AggregateWTree::delete_subtree(WNode *n, WNode *stack[], int pos)
+{
+    collapse_subtree(n, stack, pos);
+    finish_add(n, -n->count, stack, pos);
+}
 
 
 //
@@ -338,6 +387,71 @@ AggregateWTree::cull_packets(uint32_t max_np)
 	WNode *n = pick_random_nonzero_node(stack, &pos);
 	finish_add(n, -1, stack, pos);
     }
+}
+
+
+//
+// PREFIXES
+//
+
+void
+AggregateWTree::node_to_prefix(WNode *n, int prefix, WNode *stack[], int pos)
+{
+    uint32_t mask = prefix_to_mask(prefix);
+    stack[pos++] = n;
+
+    if ((n->aggregate & mask) != n->aggregate) {
+	collapse_subtree(n, stack, pos);
+	n->aggregate &= mask;
+    
+    } else if (n->child[0]) {
+	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	//ErrorHandler::default_handler()->message("%d", swivel);
+	
+	if (swivel <= prefix) {
+	    node_to_prefix((WNode *) n->child[0], prefix, stack, pos);
+	    node_to_prefix((WNode *) n->child[1], prefix, stack, pos);
+	} else {
+	    // assert((n->child[0]->aggregate & mask) == (n->child[1]->aggregate & mask)); -- true
+	    stack[pos] = (WNode *) n->child[0];
+	    collapse_subtree((WNode *) n->child[0], stack, pos + 1);
+	    stack[pos] = (WNode *) n->child[1];
+	    collapse_subtree((WNode *) n->child[1], stack, pos + 1);
+	    if (n->child[0]->count && n->child[1]->count)
+		adjust_num_nonzero(-1, stack, pos + 1);
+	    n->child[0]->aggregate &= mask;
+	    n->child[0]->count += n->child[1]->count;
+	    n->child[1]->aggregate = n->child[0]->aggregate | 1;
+	    n->child[1]->count = 0;
+	    if (_count_type == COUNT_PACKETS) {
+		n->child_count[0] = n->child[0]->count;
+		n->child_count[1] = 0;
+	    }
+	}
+
+	if (n->child[0]->aggregate == n->aggregate && n->child[0]->count) {
+	    uint32_t count = n->child[0]->count;
+	    stack[pos] = (WNode *) n->child[0];
+	    finish_add(stack[pos], -count, stack, pos + 1);
+	    finish_add(n, count, stack, pos);
+	}
+    }
+}
+
+void
+AggregateWTree::mask_data_to_prefix(int prefix_len)
+{
+    assert(prefix_len >= 0 && prefix_len <= 32);
+    WNode *stack[32];
+    if (prefix_len < 32)
+	node_to_prefix(_root, prefix_len, stack, 0);
+}
+
+void
+AggregateWTree::make_prefix(int prefix_len, AggregateWTree &t) const
+{
+    assert(prefix_len >= 0 && prefix_len <= 32);
+    t.copy_nodes(_root, prefix_to_mask(prefix_len));
 }
 
 

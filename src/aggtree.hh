@@ -14,8 +14,6 @@ class AggregateTree { public:
 
     bool ok(ErrorHandler * = 0) const;
 
-    static inline uint32_t prefix_to_mask(int);
-    
     uint32_t num_nonzero() const		{ return _num_nonzero; }
     uint32_t nnz() const			{ return _num_nonzero; }
     uint32_t nnz_match(uint32_t mask, uint32_t value) const;
@@ -25,7 +23,7 @@ class AggregateTree { public:
     void posterize();
     
     void mask_data_to_prefix(int prefix_len);
-    void make_prefix(int prefix_len, AggregateTree &);
+    void make_prefix(int prefix_len, AggregateTree &) const;
 
     void sample(double);
     void cut_smaller(uint32_t);
@@ -68,7 +66,7 @@ class AggregateTree { public:
     Node *new_node_block();
     void free_node(Node *);
     void initialize_root();
-    void copy_nodes(Node *, uint32_t = 0xFFFFFFFFU);
+    void copy_nodes(const Node *, uint32_t = 0xFFFFFFFFU);
     void kill_all_nodes();
 
     Node *make_peer(uint32_t, Node *);
@@ -115,8 +113,8 @@ AggregateTree::add(uint32_t aggregate, uint32_t count)
 	    _num_nonzero++;
 }
 
-inline uint32_t
-AggregateTree::prefix_to_mask(int p)
+static inline uint32_t
+prefix_to_mask(int p)
 {
     assert(p >= 0 && p <= 32);
     return (p == 0 ? 0 : (0xFFFFFFFFU << (32 - p)));
