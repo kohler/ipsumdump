@@ -451,48 +451,24 @@ AggregateWTree::cull_packets(uint32_t max_np)
 void
 AggregateWTree::node_prefixize(WNode *n, int prefix, WNode *stack[], int pos)
 {
-    uint32_t mask = prefix_to_mask(prefix);
+    assert(!n->child(0) || n->child(0)->depth == n->child(1)->depth);
+    n->aggregate &= prefix_to_mask(prefix);
     stack[pos++] = n;
 
-    if ((n->aggregate & mask) != n->aggregate) {
+    if (!n->child(0))
+	/* do nothing */;
+    else if (n->child(0)->depth > prefix)
 	collapse_subtree(n, stack, pos);
-	n->aggregate &= mask;
-    
-    } else if (n->child(0)) {
-	int swivel = bi_ffs(n->child(0)->aggregate ^ n->child(1)->aggregate);
-	//ErrorHandler::default_handler()->message("%d", swivel);
-	
-	if (swivel <= prefix) {
-	    node_prefixize(n->child(0), prefix, stack, pos);
-	    node_prefixize(n->child(1), prefix, stack, pos);
-	} else {
-	    // assert((n->child(0)->aggregate & mask) == (n->child(1)->aggregate & mask)); -- true
+    else {
+	node_prefixize(n->child(0), prefix, stack, pos);
+	node_prefixize(n->child(1), prefix, stack, pos);
+	if (n->child(0)->depth == prefix && _topheavy) {
 	    WNode *left = n->child(0);
-	    WNode *right = n->child(1);
-	    
-	    stack[pos] = left;
-	    collapse_subtree(left, stack, pos + 1);
-	    stack[pos] = right;
-	    collapse_subtree(right, stack, pos + 1);
-
-	    if (_count_type == COUNT_PACKETS)
-		assert(left->count == left->full_count && right->count == right->full_count);
-	    
-	    if (left->count && right->count)
-		adjust_num_nonzero(-1, stack, pos + 1);
-	    left->aggregate &= mask;
-	    left->count += right->count;
-	    if (_count_type == COUNT_PACKETS)
-		left->full_count += right->count;
-	    right->aggregate = left->aggregate | 1;
-	    right->count = right->full_count = 0;
-	}
-
-	if (n->child(0)->aggregate == n->aggregate && n->child(0)->count && _topheavy) {
-	    uint32_t count = n->child(0)->count;
-	    stack[pos] = n->child(0);
-	    finish_add(stack[pos], -count, stack, pos + 1);
-	    finish_add(n, count, stack, pos);
+	    assert(left->aggregate == n->aggregate && !left->child(0));
+	    int nnz_change = (left->count && n->count ? -1 : 0);
+	    n->count += left->count;
+	    left->count = left->full_count = 0;
+	    adjust_num_nonzero(nnz_change, stack, pos);
 	}
     }
 }
@@ -536,6 +512,7 @@ node_discriminated_by(WNode *n, uint32_t *ndp)
     if (n->child(0)) {
 	assert(!n->count);
 	WNode *left = n->child(0), *right = n->child(1);
+	assert(left && right);
 	uint32_t nnondiscrim = node_discriminated_by(left, ndp)
 	    + node_discriminated_by(right, ndp);
 	if (nnondiscrim && left->full_count && right->full_count) {
@@ -552,7 +529,7 @@ node_discriminated_by(WNode *n, uint32_t *ndp)
 void
 AggregateWTree::num_discriminated_by_prefix(uint32_t ndp[33]) const
 {
-    assert(!_topheavy);
+    assert(!_topheavy && _root);
     for (int i = 0; i <= 32; i++)
 	ndp[i] = 0;
     uint32_t any = node_discriminated_by(_root, ndp);

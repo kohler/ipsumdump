@@ -460,6 +460,7 @@ static void
 process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 {
     (void) errh;
+    assert(&tree);
     
     // go through earlier actions
     for (int j = 0; j < actions.size(); j++) {
@@ -626,6 +627,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 
       case ALL_NNZ_DISCRIM_ACT: {
 	  uint32_t dp[33][33];
+	  assert(&tree);
 	  AggregateWTree wtree(tree, AggregateWTree::COUNT_ADDRS_LEAF);
 	  for (int i = 32; i > 0; i--) {
 	      wtree.num_discriminated_by_prefix(dp[i]);
