@@ -10,9 +10,9 @@
 #include <click/llrpc.h>
 #include <click/handlercall.hh>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
+#include <cstdio>
+#include <cstdlib>
+#include <csignal>
 
 #include "fromipsumdump.hh"
 #include "toipsumdump.hh"
@@ -125,11 +125,11 @@ static Router *router = 0;
 static bool started = false;
 
 void
-die_usage(const char *specific = 0)
+die_usage(String specific = String())
 {
     ErrorHandler *errh = ErrorHandler::default_handler();
     if (specific)
-	errh->error("%s: %s", program_name, specific);
+	errh->error("%s: %s", program_name, specific.c_str());
     errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
 Try `%s --help' for more information.",
 		program_name, program_name);
