@@ -121,7 +121,7 @@ class FromIPSummaryDump : public Element { public:
     const char *processing() const	{ return AGNOSTIC; }
     FromIPSummaryDump *clone() const	{ return new FromIPSummaryDump; }
 
-    int configure(const Vector<String> &, ErrorHandler *);
+    int configure(Vector<String> &, ErrorHandler *);
     int initialize(ErrorHandler *);
     void uninitialize();
     void add_handlers();
@@ -169,7 +169,6 @@ class FromIPSummaryDump : public Element { public:
     Task _task;
     Vector<String> _words;	// for speed
 
-    struct timeval _time_offset;
     String _filename;
     FILE *_pipe;
     off_t _file_offset;
