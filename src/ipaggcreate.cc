@@ -41,6 +41,7 @@
 #define READ_IPSUMDUMP_OPT	403
 #define READ_TUDUMP_OPT		404
 #define READ_IPADDR_OPT		405
+#define READ_BROCONN_OPT	406
 #define IPSUMDUMP_FORMAT_OPT	450
 
 // aggregates
@@ -75,6 +76,8 @@ static Clp_Option options[] = {
     { "ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
     { "read-ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
     { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
+    { "bro-conn-summary", 0, READ_BROCONN_OPT, 0, 0 },
+    { "read-bro-conn-summary", 0, READ_BROCONN_OPT, 0, 0 },
     
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -156,6 +159,7 @@ Data source options (give exactly one):\n\
       --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
       --tu-summary           Read TU summary dump FILES.\n\
       --ip-addresses         Read a list of IP addresses, one per line.\n\
+      --bro-conn-summary     Read Bro connection summary FILES.\n\
 \n\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
@@ -356,6 +360,7 @@ main(int argc, char *argv[])
 	  case READ_IPSUMDUMP_OPT:
 	  case READ_TUDUMP_OPT:
 	  case READ_IPADDR_OPT:
+	  case READ_BROCONN_OPT:
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
@@ -548,11 +553,12 @@ particular purpose.\n");
     String time_config = (time_config_sa ? time_config_sa.take_string().substring(2) : String());
     
     // other setup
-    String shunt_internals = "";
+    StringAccum shunt_sa;
     StringAccum psa;
     StringAccum output_call_sa;
     String sample_elt;
     int snaplen = (write_dump ? 2000 : 68);
+    bool allow_ipsumdump_sample = true;
     if (collate && files.size() < 2)
 	collate = false;
     
@@ -573,14 +579,21 @@ particular purpose.\n");
 	else
 	    die_usage("can't aggregate `" + agg + "' with `--ip-addresses'");
 	action = READ_IPSUMDUMP_OPT;
+    } else if (action == READ_BROCONN_OPT) {
+	ipsumdump_format = "timestamp 'ip src' 'ip dst' direction";
+	shunt_sa << " -> { input -> t :: Tee -> output; t[1] -> IPMirror -> output }\n";
+	action = READ_IPSUMDUMP_OPT;
+	allow_ipsumdump_sample = false;
     }
     
     if (action == READ_DUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
 	String config = ", FORCE_IP true, STOP true";
-	if (do_sample)
+	if (do_sample) {
 	    config += ", SAMPLE " + String(sample);
+	    sample_elt = "src0";
+	}
 	if (time_config && files.size() == 1) {
 	    config += ", " + time_config;
 	    time_config = String();
@@ -591,7 +604,6 @@ particular purpose.\n");
 	}
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
-	sample_elt = "src0";
 	
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
 	if (files.size() == 0)
@@ -601,33 +613,34 @@ particular purpose.\n");
 	    config += ", MULTIPACKET true";
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
-	if (do_sample) {
-	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
-	    sample_elt = "shunt/samp";
-	    if (!multipacket)
-		p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
-	}
+	if (do_sample && !multipacket)
+	    p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
 	
     } else if (action == READ_IPSUMDUMP_OPT) {
 	if (files.size() == 0)
 	    files.push_back("-");
 	String config = ", STOP true, ZERO true";
-	if (do_sample)
+	if (do_sample && allow_ipsumdump_sample) {
 	    config += ", SAMPLE " + String(sample);
+	    sample_elt = "src0";
+	}
 	if (multipacket)
 	    config += ", MULTIPACKET true";
 	if (ipsumdump_format)
 	    config += ", DEFAULT_CONTENTS " + ipsumdump_format;
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromIPSummaryDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
-	sample_elt = "src0";
 	
     } else
 	die_usage("must supply a data source option");
 
     // print collation/shunt
     StringAccum sa;
-    sa << "shunt :: { input" << shunt_internals << " -> output };\n";
+    if (do_sample && !sample_elt) {
+	shunt_sa << " -> samp :: RandomSample(" << sample << ")";
+	sample_elt = "shunt/samp";
+    }
+    sa << "shunt :: { input" << shunt_sa << " -> output };\n";
     if (collate)
 	sa << "collate :: MergeByTimestamp(STOP true, NULL_IS_DEAD true) -> shunt;\n";
     sa << psa;
@@ -712,7 +725,7 @@ particular purpose.\n");
     if (progress_bar_ok)
 	sa << ", write_skip progress.mark_done";
     sa << ", write_skip output);\n";
-    sa << "// Outside of ipaggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "' instead of `write output'.\n";
+    sa << "// Outside of ipaggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "' instead of `write_skip output'.\n";
 
     // output config if required
     if (config) {
