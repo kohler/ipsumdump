@@ -24,6 +24,7 @@
 #define WRITE_DUMP_OPT	306
 #define FILTER_OPT	307
 #define VERBOSE_OPT	308
+#define ANONYMIZE_OPT	309
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -46,6 +47,7 @@ static Clp_Option options[] = {
   { "read-tcpdump", 'r', READ_DUMP_OPT, Clp_ArgString, 0 },
   { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
   { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
+  { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
   
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "config", 0, CONFIG_OPT, 0, 0 },
@@ -88,25 +90,26 @@ summarizes their contents in an ASCII log. It generally runs until interrupted.\
 Usage: %s [-i INTERFACE | -r FILE] [CONTENT OPTIONS] > LOGFILE\n\
 \n\
 Options that determine log contents (can give multiple options):\n\
-  -t, --log-timestamps          Log packet timestamps.\n\
-  -s, --log-src                 Log IP source addresses.\n\
-  -d, --log-dst                 Log IP destination addresses.\n\
-  -S, --log-sport               Log TCP/UDP source ports.\n\
-  -D, --log-dport               Log TCP/UDP destination ports.\n\
-  -l, --log-length              Log IP length field.\n\
-  -p, --log-protocol            Log IP protocol.\n\
-      --log-id                  Log IP ID.\n\
+  -t, --log-timestamps       Log packet timestamps.\n\
+  -s, --log-src              Log IP source addresses.\n\
+  -d, --log-dst              Log IP destination addresses.\n\
+  -S, --log-sport            Log TCP/UDP source ports.\n\
+  -D, --log-dport            Log TCP/UDP destination ports.\n\
+  -l, --log-length           Log IP length field.\n\
+  -p, --log-protocol         Log IP protocol.\n\
+      --log-id               Log IP ID.\n\
 Default contents option is `-sd' (log source and destination addresses).\n\
 \n\
 Other options:\n\
-  -i, --interface INTERFACE     Read packets from network device INTERFACE.\n\
-  -r, --read-tcpdump FILE       Read packets from tcpdump(1) file FILE.\n\
-  -w, --write-tcpdump FILE      Also dump packets to FILE in tcpdump(1) format.\n\
-  -o, --output FILE             Write summary dump to FILE (default stdout).\n\
-      --config                  Output Click configuration and exit.\n\
-  -V, --verbose                 Report errors verbosely.\n\
-  -h, --help                    Print this message and exit.\n\
-  -v, --version                 Print version number and exit.\n\
+  -i, --interface DEVNAME    Read packets from network device DEVNAME.\n\
+  -r, --read-tcpdump FILE    Read packets from tcpdump(1) file FILE.\n\
+  -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
+  -o, --output FILE          Write summary dump to FILE (default stdout).\n\
+  -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
+      --config               Output Click configuration and exit.\n\
+  -V, --verbose              Report errors verbosely.\n\
+  -h, --help                 Print this message and exit.\n\
+  -v, --version              Print version number and exit.\n\
 \n\
 Report bugs to <kohler@aciri.org>.\n", program_name);
 }
@@ -142,6 +145,7 @@ main(int argc, char *argv[])
     String filter;
     bool config = false;
     bool verbose = false;
+    bool anonymize = false;
     int log_contents = -1;
     
     while (1) {
@@ -176,6 +180,10 @@ main(int argc, char *argv[])
 	    if (filter)
 		die_usage("`--filter' already specified");
 	    filter = clp->arg;
+	    break;
+
+	  case ANONYMIZE_OPT:
+	    anonymize = !clp->negated;
 	    break;
 	    
 	  case CONFIG_OPT:
@@ -242,6 +250,10 @@ particular purpose.\n");
     } else
 	die_usage("must supply either `--interface' or `--read-tcpdump'");
 
+    // possible elements to anonymize packets
+    if (anonymize)
+	sa << "  -> AnonymizeIPAddr(CLASS 4)\n";
+    
     // possible elements to write tcpdump file
     if (write_dump)
 	sa << "  -> { input -> t :: Tee -> output; t[1] -> ToDump(" << write_dump << ") }\n";
@@ -273,9 +285,8 @@ particular purpose.\n");
 
     // catch control-C
     signal(SIGINT, catch_sigint);
-    // ignore SIGPIPE
-    signal(SIGPIPE, SIG_IGN);
-  
+    // do NOT ignore SIGPIPE
+
     // lex configuration
     BailErrorHandler berrh(errh);
     ErrorHandler *click_errh = (verbose ? errh : &berrh);

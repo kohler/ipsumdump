@@ -8,6 +8,8 @@ mkinstalldirs
 src
 src/Makefile.in
 src/aciri-ipsumdump.cc
+src/anonipaddr.cc
+src/anonipaddr.hh
 src/bailerror.cc
 src/bailerror.hh
 src/toipsumdump.cc

@@ -105,10 +105,13 @@ ToIPSummaryDump::initialize(ErrorHandler *errh)
 	ScheduleInfo::join_scheduler(this, &_task, errh);
     _active = true;
 
+    // magic number
+    fprintf(_f, "!IPSummaryDump 1.0\n");
+
     if (_banner)
 	fprintf(_f, "!creator %s\n", cp_quote(_banner).cc());
     
-    // write open data
+    // host and start time
     if (_verbose) {
 	char buf[BUFSIZ];
 	buf[BUFSIZ - 1] = '\0';	// ensure NUL-termination
@@ -121,12 +124,13 @@ ToIPSummaryDump::initialize(ErrorHandler *errh)
 	if (gettimeofday(&tv, 0) >= 0)
 	    fprintf(_f, "!starttime %ld.%ld (%.*s)\n", (long)tv.tv_sec,
 		    (long)tv.tv_usec, (int)(strlen(cwhen) - 1), cwhen);
-	
-	fprintf(_f, "!data ");
-	for (int i = 0; i < _contents.size(); i++)
-	    fprintf(_f, (i ? " '%s'" : "'%s'"), content_name(_contents[i]));
-	fprintf(_f, "\n");
     }
+
+    // data description
+    fprintf(_f, "!data ");
+    for (int i = 0; i < _contents.size(); i++)
+	fprintf(_f, (i ? " '%s'" : "'%s'"), content_name(_contents[i]));
+    fprintf(_f, "\n");
     
     return 0;
 }
