@@ -6,7 +6,7 @@ AC_INIT(config.h.in)
 AC_CONFIG_HEADER(config.h)
 AC_SUBST(ac_configure_args)
 
-IPSUMDUMP_VERSION=1.43
+IPSUMDUMP_VERSION=1.44
 AC_DEFINE_UNQUOTED(IPSUMDUMP_VERSION, "$IPSUMDUMP_VERSION")
 AC_SUBST(IPSUMDUMP_VERSION)
 
@@ -16,6 +16,9 @@ AC_SUBST(LIBCLICK_VERSION)
 AC_CONFIG_AUX_DIR([libclick-]AC_LIBCLICK_VERSION)
 
 CLICK_INIT('$(top_srcdir)/libclick-'AC_LIBCLICK_VERSION)
+
+AC_ARG_ENABLE(ip6, [  --disable-ip6           disable IPv6 support], , [enable_ip6=yes; ac_configure_args="$ac_configure_args '--enable-ip6'"])
+AC_ARG_ENABLE(nanotimestamp, [  --disable-nanotimestamp disable nanosecond timestamps], , [enable_nanotimestamp=yes; ac_configure_args="$ac_configure_args '--enable-nanotimestamp'"])
 
 
 dnl
@@ -37,7 +40,6 @@ if test "$clickprefix" = NONE; then
     CLICKINCLUDES='-I$(top_builddir)/'"$LIBCLICK_TARGET"'/include -I$(top_srcdir)/'"$LIBCLICK_TARGET"'/include'
     CLICKLIB='$(top_builddir)/'"$LIBCLICK_TARGET"'/libsrc/libclick.a'
     CLICKLIBFILE=$CLICKLIB
-    export enable_nanotimestamp=yes
     AC_CONFIG_SUBDIRS(libclick-AC_LIBCLICK_VERSION)
 else
     LIBCLICK_TARGET=

@@ -1,5 +1,14 @@
 Ipsumdump NEWS
 
+Version 1.44   3.Jan.2005
+
+* Timestamps now use nanosecond precision when available (such as for DAG
+  inputs).  Requested by Alefiya Hussain.  Supply the
+  '--disable-nanotimestamp' option to turn this feature off.
+
+* Add support for NULL encapsulated dumps.  Requested by Vern Paxson.
+
+
 Version 1.43   16.Sep.2004
 
 * Add the '--link' content option, relevant to NLANR TSH logs and NetFlow
