@@ -11,35 +11,7 @@ ToEjySummaryDump(FILENAME [, I<KEYWORDS>])
 
 =s sinks
 
-writes packets to a tcpdump(1) file
-
-=d
-
-Writes incoming packets to FILENAME in `tcpdump -w' format. This file can be
-read `tcpdump -r', or by FromDump on a later run. FILENAME can be `-', in
-which case ToDump writes to the standard output.
-
-Writes at most SNAPLEN bytes of each packet to the file. The default SNAPLEN
-is 2000. ENCAP specifies the first header each packet is expected to have.
-This information is stored in the file header, and must be correct or tcpdump
-won't be able to read the file correctly. It can be `C<IP>' or `C<ETHER>';
-default is `C<ETHER>'.
-
-Keyword arguments are:
-
-=over 8
-
-=item SNAPLEN
-
-Integer. Same as the SNAPLEN argument.
-
-=item ENCAP
-
-Either `C<IP>' or `C<ETHER>'. Same as the ENCAP argument.
-
-=back
-
-This element is only available at user level.
+writes packet summary information
 
 =a
 
@@ -63,22 +35,23 @@ class ToEjySummaryDump : public Element { public:
     void push(int, Packet *);
     void run_scheduled();
 
+    enum Content {
+	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
+	W_SRC, W_DST, W_LENGTH, W_IPID, W_SPORT, W_DPORT
+    };
+    static const char *content_name(int);
+    
   private:
 
-    enum {
-	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
-	W_IP_SRC, W_IP_DST, W_TU_SPORT, W_TU_DPORT
-    };
-    
     String _filename;
     FILE *_f;
     StringAccum _sa;
-    Vector<unsigned> _descs;
+    Vector<unsigned> _contents;
     bool _active;
     Task _task;
     bool _verbose : 1;
+    String _banner;
 
-    static const char *desc_name(int);
     bool ascii_summary(Packet *, StringAccum &) const;
     void write_packet(Packet *);
     

@@ -47,8 +47,9 @@ ToEjySummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
     if (cp_va_parse(conf, this, errh,
 		    cpFilename, "dump filename", &_filename,
 		    cpKeywords,
-		    "DATA", cpArgument, "save data", &save,
+		    "CONTENTS", cpArgument, "log contents", &save,
 		    "VERBOSE", cpBool, "be verbose?", &verbose,
+		    "BANNER", cpString, "banner", &_banner,
 		    0) < 0)
 	return -1;
 
@@ -57,23 +58,27 @@ ToEjySummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
     for (int i = 0; i < v.size(); i++) {
 	String word = cp_unquote(v[i]);
 	if (word == "timestamp" || word == "ts")
-	    _descs.push_back(W_TIMESTAMP);
+	    _contents.push_back(W_TIMESTAMP);
 	else if (word == "sec" || word == "ts sec")
-	    _descs.push_back(W_TIMESTAMP_SEC);
+	    _contents.push_back(W_TIMESTAMP_SEC);
 	else if (word == "usec" || word == "ts usec")
-	    _descs.push_back(W_TIMESTAMP_USEC);
+	    _contents.push_back(W_TIMESTAMP_USEC);
 	else if (word == "src" || word == "ip src")
-	    _descs.push_back(W_IP_SRC);
+	    _contents.push_back(W_SRC);
 	else if (word == "dst" || word == "ip dst")
-	    _descs.push_back(W_IP_DST);
+	    _contents.push_back(W_DST);
 	else if (word == "sport")
-	    _descs.push_back(W_TU_SPORT);
+	    _contents.push_back(W_SPORT);
 	else if (word == "dport")
-	    _descs.push_back(W_TU_DPORT);
+	    _contents.push_back(W_DPORT);
+	else if (word == "len" || word == "length")
+	    _contents.push_back(W_LENGTH);
+	else if (word == "id" || word == "ip id")
+	    _contents.push_back(W_IPID);
 	else
 	    errh->error("unknown save data `%s'", word.cc());
     }
-    if (_descs.size() == 0)
+    if (_contents.size() == 0)
 	errh->error("no save data specified");
 
     _verbose = verbose;
@@ -98,23 +103,26 @@ ToEjySummaryDump::initialize(ErrorHandler *errh)
 	ScheduleInfo::join_scheduler(this, &_task, errh);
     _active = true;
 
+    if (_banner)
+	fprintf(_f, "!creator %s\n", cp_quote(_banner).cc());
+    
     // write open data
     if (_verbose) {
 	char buf[BUFSIZ];
 	buf[BUFSIZ - 1] = '\0';	// ensure NUL-termination
 	if (gethostname(buf, BUFSIZ - 1) >= 0)
-	    fprintf(_f, "$host %s\n", buf);
+	    fprintf(_f, "!host %s\n", buf);
 
 	time_t when = time(0);
 	const char *cwhen = ctime(&when);
 	struct timeval tv;
 	if (gettimeofday(&tv, 0) >= 0)
-	    fprintf(_f, "$starttime %ld.%ld (%.*s)\n", (long)tv.tv_sec,
+	    fprintf(_f, "!starttime %ld.%ld (%.*s)\n", (long)tv.tv_sec,
 		    (long)tv.tv_usec, (int)(strlen(cwhen) - 1), cwhen);
 	
-	fprintf(_f, "$data ");
-	for (int i = 0; i < _descs.size(); i++)
-	    fprintf(_f, (i ? " '%s'" : "'%s'"), desc_name(_descs[i]));
+	fprintf(_f, "!data ");
+	for (int i = 0; i < _contents.size(); i++)
+	    fprintf(_f, (i ? " '%s'" : "'%s'"), content_name(_contents[i]));
 	fprintf(_f, "\n");
     }
     
@@ -130,28 +138,29 @@ ToEjySummaryDump::uninitialize()
     _task.unschedule();
 }
 
-static const char *desc_names[] = {
+static const char *content_names[] = {
     "??", "timestamp", "ts sec", "ts usec",
-    "ip src", "ip dst", "sport", "dport"
+    "ip src", "ip dst", "len", "ip id",
+    "sport", "dport",
 };
 
 const char *
-ToEjySummaryDump::desc_name(int what)
+ToEjySummaryDump::content_name(int what)
 {
-    if (what < 0 || what >= (int)(sizeof(desc_names) / sizeof(desc_names[0])))
+    if (what < 0 || what >= (int)(sizeof(content_names) / sizeof(content_names[0])))
 	return "??";
     else
-	return desc_names[what];
+	return content_names[what];
 }
 
 bool
 ToEjySummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 {
-    for (int i = 0; i < _descs.size(); i++) {
+    for (int i = 0; i < _contents.size(); i++) {
 	if (i)
 	    sa << ' ';
 	
-	switch (_descs[i]) {
+	switch (_contents[i]) {
 
 	  case W_TIMESTAMP:
 	    sa << p->timestamp_anno();
@@ -162,30 +171,42 @@ ToEjySummaryDump::ascii_summary(Packet *p, StringAccum &sa) const
 	  case W_TIMESTAMP_USEC:
 	    sa << p->timestamp_anno().tv_usec;
 	    break;
-	  case W_IP_SRC: {
+	  case W_SRC: {
 	      const click_ip *iph = p->ip_header();
 	      if (!iph) return false;
 	      sa << IPAddress(iph->ip_src);
 	      break;
 	  }
-	  case W_IP_DST: {
+	  case W_DST: {
 	      const click_ip *iph = p->ip_header();
 	      if (!iph) return false;
 	      sa << IPAddress(iph->ip_dst);
 	      break;
 	  }
-	  case W_TU_SPORT: {
+	  case W_SPORT: {
 	      const click_ip *iph = p->ip_header();
 	      const click_udp *udph = (const click_udp *)p->transport_header();
 	      if (!iph || !udph) return false;
 	      sa << ntohs(udph->uh_sport);
 	      break;
 	  }
-	  case W_TU_DPORT: {
+	  case W_DPORT: {
 	      const click_ip *iph = p->ip_header();
 	      const click_udp *udph = (const click_udp *)p->transport_header();
 	      if (!iph || !udph) return false;
 	      sa << ntohs(udph->uh_dport);
+	      break;
+	  }
+	  case W_LENGTH: {
+	      const click_ip *iph = p->ip_header();
+	      if (!iph) return false;
+	      sa << ntohs(iph->ip_len);
+	      break;
+	  }
+	  case W_IPID: {
+	      const click_ip *iph = p->ip_header();
+	      if (!iph) return false;
+	      sa << ntohs(iph->ip_id);
 	      break;
 	  }
 

@@ -31,6 +31,7 @@ if test "$clickprefix" = NONE; then
     CLICK_COMPILE='$(top_builddir)/'"$LIBCLICK_TARGET"'/click-compile'
     CLICKINCLUDES='-I$(top_builddir)/'"$LIBCLICK_TARGET"'/include -I$(top_srcdir)/'"$LIBCLICK_TARGET"'/include'
     CLICKLIB='$(top_builddir)/'"$LIBCLICK_TARGET"'/libsrc/libclick.a'
+    CLICKLIBFILE=$CLICKLIB
     AC_CONFIG_SUBDIRS(libclick-$LIBCLICK_VERSION)
 else
     LIBCLICK_TARGET=
@@ -38,6 +39,7 @@ else
     CLICK_COMPILE="${clickprefix}/bin/click-compile"
     CLICKINCLUDES=
     CLICKLIB="-L${clickprefix}/lib -lclick"
+    CLICKLIBFILE=
 fi
 
 AC_SUBST(LIBCLICK_TARGET)
@@ -45,6 +47,7 @@ AC_SUBST(CLICK_BUILDTOOL)
 AC_SUBST(CLICK_COMPILE)
 AC_SUBST(CLICKINCLUDES)
 AC_SUBST(CLICKLIB)
+AC_SUBST(CLICKLIBFILE)
 
 #if test ! -r $CLICKINCLUDES/click/pathvars.h ; then
 #  AC_MSG_ERROR([

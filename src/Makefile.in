@@ -66,12 +66,8 @@ COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 all: aciri-ipsumdump
 all-local: aciri-ipsumdump
 
-aciri-ipsumdump: $(OBJS)
+aciri-ipsumdump: $(OBJS) @CLICKLIBFILE@
 	$(CXXLINK) -rdynamic $(OBJS) $(LIBS)
-
-libelements.a: Makefile $(OBJS)
-	$(AR) cru libelements.a $(OBJS)
-	$(RANLIB) libelements.a
 
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	cd $(top_builddir) && \

@@ -75,9 +75,7 @@ fetch-click:
 	cd $(top_srcdir); tar xzf $(clickbuilddir)/etc/libclick/$(libclick).tar.gz
 	@for fgroup in `cat $(top_srcdir)/CLICKFILES`; do \
 	  for f in `cd $(clicksrcdir) && eval echo $$fgroup`; do \
-	    echo $$f 1>&2; \
 	    g=`echo $$f | sed 's/.*\/\([^/]*\)$$/\1/'`; \
-	    echo $$g 1>&2; \
 	    rm -f $(top_srcdir)/src/$$g; \
 	    ln $(clicksrcdir)/$$f $(top_srcdir)/src/$$g 2>/dev/null \
 	    || cp -p $(clicksrcdir)/$$f $(top_srcdir)/src/$$g \
