@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.19   31.Dec.2001
+
+* Add some sanity checks on ip_len to the TCP and UDP header checks, and
+  improve payload length calculation. Reported by Vern.
+
+
 Version 1.18   30.Dec.2001
 
 * Fix bug with --payload: ipsumdump could output a payload string
