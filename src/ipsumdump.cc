@@ -570,8 +570,8 @@ particular purpose.\n");
     
     sa << "DriverManager(";
     if (action != INTERFACE_OPT || collate) {
-	stop_driver_count = files.size() + (collate ? 1 : 0);
-	sa << "wait_stop " << stop_driver_count;
+	stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
+	sa << "wait_stop " << stop_driver_count - 1;
     }
     // complete progress bar
     if (!quiet)

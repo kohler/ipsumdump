@@ -8,6 +8,8 @@ elements/userlevel/fromdevice.cc
 elements/userlevel/fromdevice.hh
 elements/userlevel/progressbar.cc
 elements/userlevel/progressbar.hh
+elements/analysis/anonipaddr.cc
+elements/analysis/anonipaddr.hh
 elements/analysis/fromipsumdump.cc
 elements/analysis/fromipsumdump.hh
 elements/analysis/mergebyts.cc
