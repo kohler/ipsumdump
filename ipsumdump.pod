@@ -236,6 +236,10 @@ Multiple options are separated by semicolons. Any invalid option causes the
 entire field to be replaced by a single question mark 'C<?>'. A period
 'C<.>' is used for packets with no options (except possibly EOL and NOP).
 
+=item B<--ip-sum>
+
+Include IP checksum in the dump.  Example: C<34987>.
+
 =item B<--tcp-seq>, B<-Q>
 
 Include TCP sequence number in the dump. Example: C<4009339012>. For

@@ -80,7 +80,7 @@ static const char* const field_names[] = {
     "ip_proto", "tcp_seq", "tcp_ack", "tcp_flags",	// 8-11
     "tcp_opt", "tcp_sack", "payload_len", "count",	// 12-15
     "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
-    "link", "udp_len", "ip_opt"				// 20-22
+    "link", "udp_len", "ip_opt", "ip_sum"		// 20-23
 };
 
 // options for logging
@@ -108,6 +108,7 @@ static const char* const field_names[] = {
 #define LINK_OPT	1020
 #define UDP_LEN_OPT	1021
 #define IP_OPT_OPT	1022
+#define IP_SUM_OPT	1023
 
 #define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
 
@@ -157,6 +158,7 @@ static Clp_Option options[] = {
     { "id", 0, IPID_OPT, 0, 0 },
     { "protocol", 'p', PROTO_OPT, 0, 0 },
     { "ip-opt", 0, IP_OPT_OPT, 0, 0 },
+    { "ip-sum", 0, IP_SUM_OPT, 0, 0 },
     { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, 0 },
     { "tcp-ack", 'K', TCP_ACK_OPT, 0, 0 },
     { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, 0 },
@@ -211,10 +213,11 @@ Options that determine summary dump contents (can give multiple options):\n\
   printf("\
   -l, --length               Include IP lengths.\n\
   -p, --protocol             Include IP protocols.\n\
-      --ip-opt               Include IP options.\n\
       --id                   Include IP IDs.\n\
   -g, --fragment             Include IP fragment flags ('F' or '.').\n\
   -G, --fragment-offset      Include IP fragment offsets.\n\
+      --ip-sum               Include IP checksums.\n\
+      --ip-opt               Include IP options.\n\
   -F, --tcp-flags            Include TCP flags word.\n\
   -Q, --tcp-seq              Include TCP sequence numbers.\n\
   -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
