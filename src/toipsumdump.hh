@@ -13,6 +13,58 @@ ToIPSummaryDump(FILENAME [, I<KEYWORDS>])
 
 writes packet summary information
 
+=d
+
+Writes summary information about incoming packets to FILENAME in a simple
+ASCII format---each line corresponds to a packet. The CONTENTS keyword
+argument determines what information is written. Writes to standard output if
+FILENAME is a single dash `C<->'.
+
+Keyword arguments are:
+
+=over 8
+
+=item CONTENTS
+
+Space-separated list of field names. Each line of the summary dump will
+contain those fields. Valid field names, with examples, are:
+
+   timestamp   Packet timestamp: `996033261.451094'
+   ts sec      Seconds portion of timestamp: `996033261'
+   ts usec     Microseconds portion of timestamp: `451094'
+   src         IP source address: `192.150.187.37'
+   dst         IP destination address: `192.168.1.100'
+   len         IP length field: `132'
+   proto       IP protocol: `6'
+   ip id       IP ID: `48759'
+   sport       TCP/UDP source port: `22'
+   dport       TCP/UDP destination port: `2943'
+
+(You must quote field names that contain a space.) Default CONTENTS is `src dst'.
+
+=item VERBOSE
+
+Boolean. If true, then print out a couple comments at the beginning of the
+dump describing the hostname, starting time, and data contents.
+
+=item BANNER
+
+String. If supplied, prints a `C<!creator "BANNER">' comment at the beginning
+of the dump.
+
+=back
+
+=e
+
+Here are a couple lines from the start of a sample verbose dump.
+
+  !creator "aciri-ipsumdump -i wvlan0"
+  !host no.lcdf.org
+  !starttime 996022410.322317 (Tue Jul 24 17:53:30 2001)
+  !data 'ip src' 'ip dst'
+  63.250.213.167 192.150.187.106
+  63.250.213.167 192.150.187.106
+
 =a
 
 FromDump, ToDump */

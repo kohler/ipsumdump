@@ -71,7 +71,7 @@ ToIPSummaryDump::configure(const Vector<String> &conf, ErrorHandler *errh)
 	    _contents.push_back(W_SPORT);
 	else if (word == "dport")
 	    _contents.push_back(W_DPORT);
-	else if (word == "len" || word == "length")
+	else if (word == "len" || word == "length" || word == "ip len")
 	    _contents.push_back(W_LENGTH);
 	else if (word == "id" || word == "ip id")
 	    _contents.push_back(W_IPID);

@@ -236,7 +236,7 @@ particular purpose.\n");
     else if (interface)
 	sa << "FromDevice(" << interface << ", SNAPLEN 60, FORCE_IP true, BPF_FILTER " << cp_quote(filter) << ")\n";
     else if (read_dump) {
-	sa << "FromDump(" << read_dump << ", FORCE_IP true)\n";
+	sa << "FromDump(" << read_dump << ", FORCE_IP true, STOP true)\n";
 	if (filter)
 	    sa << "  -> IPClassifier(" << filter << ")\n";
     } else

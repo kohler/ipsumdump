@@ -1,4 +1,5 @@
 Makefile.in
+README
 configure
 configure.in
 config.h.in
