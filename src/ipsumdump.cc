@@ -64,7 +64,8 @@
 #define READ_DUMP_OPT		401
 #define READ_NETFLOW_SUMMARY_OPT 402
 #define READ_IPSUMDUMP_OPT	403
-#define IPSUMDUMP_FORMAT_OPT	404
+#define READ_ASCII_TCPDUMP_OPT	404
+#define IPSUMDUMP_FORMAT_OPT	405
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -98,11 +99,9 @@ static Clp_Option options[] = {
 
     { "interface", 'i', INTERFACE_OPT, 0, 0 },
     { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
-    { "read-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
-    { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
-    { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
+    { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
     { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -201,6 +200,7 @@ Data source options (give exactly one):\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
       --ipsumdump            Read from existing ipsumdump FILES.\n\
       --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
+      --tcpdump-text         Read packets from tcpdump(1) text output FILES.\n\
   -i, --interface            Read packets from network devices DEVNAMES until\n\
                              interrupted.\n\
 \n\
@@ -405,6 +405,7 @@ main(int argc, char *argv[])
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
+	  case READ_ASCII_TCPDUMP_OPT:
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
@@ -610,6 +611,16 @@ particular purpose.\n");
 	    config += ", MMAP " + String(mmap);
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
+	sample_elt = "src0";
+	
+    } else if (action == READ_ASCII_TCPDUMP_OPT) {
+	if (files.size() == 0)
+	    files.push_back("-");
+	String config = ", STOP true";
+	if (do_sample)
+	    config += ", SAMPLE " + String(sample);
+	for (int i = 0; i < files.size(); i++)
+	    psa << "src" << i << " :: FromTcpdump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";
 	
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
