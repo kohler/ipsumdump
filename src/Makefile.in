@@ -49,7 +49,7 @@ OBJS = fromdevice.o fromdump.o fromipsumdump.o fromnetflowsumdump.o \
 	ipsumdumpinfo.o toipsumdump.o todump.o \
 	anonipaddr.o classifier.o counter.o discard.o fakepcap.o ipfilter.o \
 	timesortedsched.o pokehandlers.o progressbar.o randomsample.o \
-	switch.o tee.o timefilter.o \
+	switch.o tee.o timefilter.o unqueue.o \
 	ipsumdump.o elements.o
 
 CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL
