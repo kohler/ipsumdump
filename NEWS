@@ -1,5 +1,14 @@
 Ipsumdump NEWS
 
+Version 1.41   18.Aug.2004
+
+* Add support for IEEE 802.11/Prism2 encapsulated dumps.  Requested by
+  David Wetherall.
+
+* Use 'C' for CWR in tcp_flags dumps, since that's what tcpdump does.  Bump
+  IPSummaryDump file format version number to 1.2 as a result.
+
+
 Version 1.40   16.Aug.2004
 
 * Fix ERF/DAG timestamps.  Again, reported by Holger Dreger.

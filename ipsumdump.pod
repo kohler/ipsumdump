@@ -16,7 +16,7 @@ B<--binary> option, which generates a smaller binary file.)
 Here are a couple lines of B<ipsumdump> output, from 'ipsumdump -sd
 /home/kohler/largedump.gz':
 
-  !IPSummaryDump 1.1
+  !IPSummaryDump 1.2
   !creator "ipsumdump -sd /home/kohler/largedump.gz"
   !host max.lcdf.org
   !runtime 1000943858.353723 (Wed Sep 19 16:57:38 2001)
@@ -210,9 +210,8 @@ packets, and for fragments after the first, this field is a single dash
 C<->.
 
 Flag characters are C<F> for FIN, C<S> for SYN, C<R> for RST, C<P> for PSH,
-C<A> for ACK, C<U> for URG, C<E> for ECE (flag bit 6), and C<W> for CWR
-(flag bit 7). Older versions printed a number between 0 and 255, or used
-characters C<X> and C<Y> for flag bits 6 and 7.
+C<A> for ACK, C<U> for URG, C<E> for ECE (flag bit 6), C<C> for CWR (flag
+bit 7), and C<N> for Nonce Sum (flag bit 8).
 
 =item B<--tcp-opt>, B<-O>
 
@@ -223,7 +222,7 @@ following representations:
     MSS             'mss1400'
     Window scale    'wscale10'
     SACK permitted  'sackok'
-    SACK            'sack95:98'; each SACK block
+    SACK            'sack95-98'; each SACK block
                     is listed separately
     Timestamp       'ts669063908:38382731'
     Other options   '98' (option 98, no data),
@@ -425,7 +424,7 @@ about each packet: timestamp, source address, source port, destination
 address, destination port, and protocol. Invoking 'ipsumdump B<-i> eth1
 B<-tsSdDp>' might produce output like this:
 
-  !IPSummaryDump 1.1
+  !IPSummaryDump 1.2
   !creator "ipsumdump -i eth1 -tsSdDp"
   !host max.lcdf.org
   !runtime 1000967293.569808 (Wed Sep 19 23:28:13 2001)
@@ -439,7 +438,7 @@ B<-tsSdDp>' might produce output like this:
 
 Here is the same data, anonymized with B<-A>:
 
-  !IPSummaryDump 1.1
+  !IPSummaryDump 1.2
   !creator "ipsumdump --ipsumdump -A -tsSdDp"
   !host max.lcdf.org
   !runtime 1000968019.67508 (Wed Sep 19 23:40:19 2001)
@@ -522,8 +521,13 @@ This is, I think, a pleasant way to write a packet processor!
 =head1 COMPATIBILITY
 
 Version 1.0 of the IPSummaryDump ASCII file format expressed 'ip_fragoff'
-fields in units of 8 bytes. In version 1.1 and later, these fields are
+fields in units of 8 bytes.  In version 1.1 and later, these fields are
 expressed in bytes.
+
+Version 1.1 used C<W> for CWR in tcp_flags fields.  Early releases in
+Version 1.0 versions printed a number between 0 and 255 for tcp_flags, or
+used C<X> and C<Y> for ECE and CWR.  Version 1.2 and later uses C<C> for
+CWR.
 
 The names of 'C<!data>' fields were formerly printed in quotes, and could
 contain spaces, like the following:
