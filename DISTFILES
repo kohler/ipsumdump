@@ -7,7 +7,7 @@ config.h.in
 
 src
 src/Makefile.in
-src/aciri-ipsumdump.cc
+src/ipsumdump.cc
 src/anonipaddr.cc
 src/anonipaddr.hh
 src/bailerror.cc
