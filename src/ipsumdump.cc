@@ -156,11 +156,11 @@ Report bugs to <kohler@aciri.org>.\n", program_name);
 }
 
 static void
-catch_sigint(int)
+catch_signal(int sig)
 {
-    signal(SIGINT, SIG_DFL);
+    signal(sig, SIG_DFL);
     if (!started)
-	kill(getpid(), SIGINT);
+	kill(getpid(), sig);
     router->please_stop_driver();
 }
 
@@ -419,7 +419,11 @@ particular purpose.\n");
     }
 
     // catch control-C
-    signal(SIGINT, catch_sigint);
+    signal(SIGINT, catch_signal);
+    signal(SIGHUP, catch_signal);
+#ifdef SIGTSTP
+    signal(SIGTSTP, catch_signal);
+#endif
     // do NOT ignore SIGPIPE
 
     // lex configuration

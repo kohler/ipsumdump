@@ -52,7 +52,7 @@ elemlist elemlists: always
 	@cd src && $(MAKE) elemlist
 
 $(srcdir)/ipsumdump.1: $(srcdir)/ipsumdump.pod
-	pod2man -c '' -s 1 -r 'Version $(VERSION)' $(srcdir)/ipsumdump.pod > $(srcdir)/ipsumdump.1
+	pod2man --center ' ' --section 1 --release 'Version $(VERSION)' $(srcdir)/ipsumdump.pod > $(srcdir)/ipsumdump.1
 	perl -ni -e 'print unless /^\.if n \.na$$/;' $(srcdir)/ipsumdump.1
 always:
 	@:
