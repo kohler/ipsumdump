@@ -495,8 +495,8 @@ main(int argc, char *argv[])
 	    break;
 
 	  case VERSION_OPT:
-	    printf("ipsumdump %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
-	    printf("Copyright 2001-2002 International Computer Science Institute\n\
+	    printf("Ipsumdump %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
+	    printf("Copyright 2001-2003 International Computer Science Institute\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

@@ -1,5 +1,18 @@
 Ipsumdump NEWS
 
+Version 1.28   3.Sep.2003
+
+* Fix '--netflow-summary' problems reported by Andrew White:
+  FromNetFlowSummaryDump didn't set IP length correctly, causing packets to
+  be treated as corrupt.
+
+* '--netflow-summary' pays attention to flow end timestamp as well as flow
+  timestamp, and to TCP flags.
+
+* '--multipacket' spreads out packets between flow-begin and flow-end
+  timestamps.
+
+
 Version 1.27   25.Apr.2003
 
 * Change build process to put dependency flags in their own variable (avoid
