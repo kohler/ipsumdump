@@ -76,6 +76,7 @@ class AggregateTree { public:
     
     Node *_root;
     Node *_free;
+    enum { BLOCK_SIZE = 1024 };
     Vector<Node *> _blocks;
 
     uint32_t _num_nonzero;
@@ -91,6 +92,7 @@ class AggregateTree { public:
     Node *find_node(uint32_t);
     Node *find_existing_node(uint32_t) const;
 
+    uint32_t node_ok(Node *, int, ErrorHandler *) const;
     void collapse_subtree(Node *);
     void node_zero_aggregate(Node *, uint32_t, uint32_t);
     void node_prefixize(Node *, int);

@@ -82,14 +82,13 @@ AggregateTree::Node *
 AggregateTree::new_node_block()
 {
     assert(!_free);
-    int block_size = 1024;
-    Node *block = new Node[block_size];
+    Node *block = new Node[BLOCK_SIZE];
     if (!block)
 	return 0;
     _blocks.push_back(block);
-    for (int i = 1; i < block_size - 1; i++)
+    for (int i = 1; i < BLOCK_SIZE - 1; i++)
 	block[i].child[0] = &block[i+1];
-    block[block_size - 1].child[0] = 0;
+    block[BLOCK_SIZE - 1].child[0] = 0;
     _free = &block[1];
     return &block[0];
 }
@@ -117,9 +116,17 @@ mask_to_prefix(uint32_t mask)
 // check to see tree is OK
 //
 
-static uint32_t
-node_ok(AggregateTree::Node *n, int last_swivel, ErrorHandler *errh)
+uint32_t
+AggregateTree::node_ok(Node *n, int last_swivel, ErrorHandler *errh) const
 {
+#if 0
+    for (int i = 0; i < _blocks.size(); i++)
+	if (n >= _blocks[i] && n < _blocks[i] + BLOCK_SIZE)
+	    goto found_block;
+    return errh->error("%x: memory corruption at %p", n->aggregate, n);
+  found_block:
+#endif
+    
     if (n->child[0] && n->child[1]) {
 	int swivel = first_bit_set(n->child[0]->aggregate ^ n->child[1]->aggregate);
 	if (swivel <= last_swivel)
