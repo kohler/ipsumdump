@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.37   9.Jul.2004
+
+* Support HDLC link layers.  Requested by Vern Paxson.
+
+
 Version 1.36   7.Jul.2004
 
 * Support 64-bit-long systems (patch directly from Click).  Reported by
