@@ -131,11 +131,11 @@ static bool started = false;
 static bool agg_is_ip = false;
 
 void
-die_usage(const char *specific = 0)
+die_usage(String specific = String())
 {
     ErrorHandler *errh = ErrorHandler::default_handler();
     if (specific)
-	errh->error("%s: %s", program_name, specific);
+	errh->error("%s: %s", program_name, specific.c_str());
     errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
 Try `%s --help' for more information.",
 		program_name, program_name);

@@ -150,11 +150,11 @@ static Clp_Option options[] = {
 static const char *program_name;
 
 static void
-die_usage(const char *specific = 0)
+die_usage(String specific = String())
 {
     ErrorHandler *errh = ErrorHandler::default_handler();
     if (specific)
-	errh->error("%s: %s", program_name, specific);
+	errh->error("%s: %s", program_name, specific.c_str());
     errh->fatal("Usage: %s ACTION [FILE]\n\
 Try `%s --help' for more information.",
 		program_name, program_name);
@@ -321,7 +321,7 @@ read_aggregates(AggregateTree &tree, String &name, ErrorHandler *errh)
 	f = stdin;
 	name = "<stdin>";
     } else
-	f = fopen(name, "rb");
+	f = fopen(name.cc(), "rb");
     if (!f)
 	errh->fatal("%s: %s", name.cc(), strerror(errno));
     tree.read_file(f, errh);
@@ -981,9 +981,9 @@ particular purpose.\n");
     if (output == "-")
 	out = stdout;
     else
-	out = fopen(output, "w");
+	out = fopen(output.c_str(), "w");
     if (!out)
-	errh->fatal("%s: %s", output.cc(), strerror(errno));
+	errh->fatal("%s: %s", output.c_str(), strerror(errno));
 
     // read files
     switch (combiner) {
