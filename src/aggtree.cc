@@ -581,6 +581,49 @@ AggregateTree::nnz_discriminated_by_prefix(Vector<uint32_t> &out) const
 
 
 //
+// LEFT/RIGHT BALANCE
+//
+
+static void
+node_left_right_balance(AggregateTree::Node *n, AggregateTree::Node **last,
+			uint32_t prefix_mask, FILE *f)
+{
+    if (n->count) {
+	assert((n->aggregate & (~prefix_mask >> 1)) == 0);
+	if (*last && ((*last)->aggregate & prefix_mask) == (n->aggregate & prefix_mask)) {
+	    assert(n->aggregate & ~prefix_mask);
+	    fprintf(f, "%u %u %u\n", (n->aggregate & prefix_mask), (*last)->count, n->count);
+	    *last = 0;
+	} else {
+	    if (*last)
+		fprintf(f, "%u %u 0\n", ((*last)->aggregate & prefix_mask), (*last)->count);
+	    if (n->aggregate & ~prefix_mask) {
+		fprintf(f, "%u 0 %u\n", (n->aggregate & prefix_mask), n->count);
+		*last = 0;
+	    } else
+		*last = n;
+	}
+    }
+
+    if (n->child[0]) {
+	node_left_right_balance(n->child[0], last, prefix_mask, f);
+	node_left_right_balance(n->child[1], last, prefix_mask, f);	
+    }
+}
+
+void
+AggregateTree::left_right_balance(int p, FILE *f) const
+{
+    assert(p >= 0 && p <= 31);
+    Node *last = 0;
+    uint32_t prefix_mask = prefix_to_mask(p);
+    node_left_right_balance(_root, &last, prefix_mask, f);
+    if (last)
+	fprintf(f, "%u %u 0\n", (last->aggregate & prefix_mask), last->count);
+}
+
+
+//
 // WAVELET STUFF
 //
 

@@ -15,10 +15,11 @@
 #include "aggtree.hh"
 #include "aggwtree.hh"
 
-#define HELP_OPT	300
-#define VERSION_OPT	301
-#define READ_FILE_OPT	302
-#define OUTPUT_OPT	303
+#define HELP_OPT		300
+#define VERSION_OPT		301
+#define READ_FILE_OPT		302
+#define OUTPUT_OPT		303
+#define BINARY_OPT		304
 
 #define FIRST_ACT		400
 #define PREFIX_ACT		400
@@ -39,6 +40,7 @@
 #define HAAR_WAVELET_ENERGY_ACT	506
 #define SIZES_ACT		507
 #define SORTED_SIZES_ACT	508
+#define BALANCE_ACT		509
 
 static Clp_Option options[] = {
 
@@ -47,6 +49,7 @@ static Clp_Option options[] = {
 
   { "read-file", 'r', READ_FILE_OPT, Clp_ArgString, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+  { "binary", 0, BINARY_OPT, 0, Clp_Negate },
 
   { "num", 'n', NNZ_ACT, 0, 0 },
   { "num-nonzero", 'n', NNZ_ACT, 0, 0 },
@@ -71,6 +74,7 @@ static Clp_Option options[] = {
   { "haar-wavelet-energy", 0, HAAR_WAVELET_ENERGY_ACT, 0, 0 },
   { "sizes", 0, SIZES_ACT, 0, 0 },
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
+  { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   
 };
 
@@ -109,6 +113,7 @@ Actions: (Results of final action sent to output.)\n\
       --sizes                All nonzero aggregate sizes in arbitrary order.\n\
       --sorted-sizes         All nonzero aggregate sizes in decreasing order\n\
                              by size.\n\
+      --balance P            Print left-right balance at prefix level P.\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
       --sample N             Reduce counts by randomly sampling 1 in N.\n\
@@ -179,6 +184,7 @@ main(int argc, char *argv[])
 
     Vector<String> files;
     String output;
+    bool output_binary = true;
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -188,6 +194,10 @@ main(int argc, char *argv[])
 	    if (output)
 		die_usage("`--output' already specified");
 	    output = clp->arg;
+	    break;
+
+	  case BINARY_OPT:
+	    output_binary = !clp->negated;
 	    break;
 	    
 	  case READ_FILE_OPT:
@@ -224,6 +234,12 @@ particular purpose.\n");
 	  case PREFIX_ACT:
 	    if (clp->val.u > 32)
 		die_usage("`--prefix' must be between 0 and 32");
+	    add_action(opt, clp->val.u);
+	    break;
+
+	  case BALANCE_ACT:
+	    if (clp->val.u > 31)
+		die_usage("`--balance' must be between 0 and 31");
 	    add_action(opt, clp->val.u);
 	    break;
 
@@ -335,6 +351,7 @@ particular purpose.\n");
 
 	// output result of final action
 	int action = actions.back();
+	uint32_t action_extra = extras.back();
 	switch (action) {
 	    
 	  case NNZ_ACT:
@@ -403,6 +420,10 @@ particular purpose.\n");
 	      write_vector(sizes, out);
 	      break;
 	  }
+
+	  case BALANCE_ACT:
+	    tree.left_right_balance(action_extra, out);
+	    break;
 	  
 	  case PREFIX_ACT:
 	  case POSTERIZE_ACT:
@@ -411,7 +432,7 @@ particular purpose.\n");
 	  case CULL_HOSTS_ACT:
 	  case CULL_HOSTS_BY_PACKETS_ACT:
 	  case CULL_PACKETS_ACT:
-	    tree.write_file(out, true, errh);
+	    tree.write_file(out, output_binary, errh);
 	    break;
 	  
 	}

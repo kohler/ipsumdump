@@ -22,6 +22,8 @@ class AggregateWTree { public:
     void cull_hosts(uint32_t nnz);
     void cull_hosts_by_packets(uint32_t nnz);
     void cull_packets(uint32_t np);
+
+    void left_right_balance(FILE *, int p) const;
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
@@ -54,9 +56,6 @@ class AggregateWTree { public:
 
     uint32_t node_ok(WNode *, int, ErrorHandler *) const;
     WNode *pick_random_nonzero_node(WNode *stack[], int *) const;
-    void node_sample(Node *, uint32_t);
-
-    static void write_nodes(Node *, FILE *, bool, uint32_t *, int &, int, ErrorHandler *);
 
     uint32_t node_count(WNode *) const;
 

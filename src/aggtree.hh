@@ -40,6 +40,8 @@ class AggregateTree { public:
     
     void sum_and_sum_sq(double *, double *) const;
 
+    void left_right_balance(int prefix_len, FILE *) const;
+    
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, bool binary, ErrorHandler *) const;
 

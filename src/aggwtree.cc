@@ -342,11 +342,6 @@ AggregateWTree::cull_packets(uint32_t max_np)
 
 
 //
-// PREFIXES
-//
-
-
-//
 // READING AND WRITING
 //
 
