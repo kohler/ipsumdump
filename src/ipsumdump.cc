@@ -597,7 +597,7 @@ particular purpose.\n");
 	    p_errh->fatal("'-i' option takes at least one DEVNAME");
 	if (collate)
 	    p_errh->fatal("'--collate' may not be used with '--interface' yet");
-	String config = ", SNAPLEN " + String(snaplen) + ", FORCE_IP true";
+	String config = ", SNIFFER true, SNAPLEN " + String(snaplen) + ", FORCE_IP true";
 	if (promisc)
 	    config += ", PROMISC true";
 #if FROMDEVICE_PCAP
