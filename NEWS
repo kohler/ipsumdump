@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.26   22.Apr.2003
+
+* Update to newer version of Click (reduces ./configure problems).
+
+
 Version 1.25   21.Sep.2002
 
 * Add `--binary' option and support for binary IPSummaryDump files.
