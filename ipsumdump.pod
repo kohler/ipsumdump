@@ -12,8 +12,8 @@ The B<ipsumdump> program reads IP packets from one or more data sources,
 then summarizes those packets into a line-based ASCII file. The resulting
 summary dump is easy to process with text-based tools.
 
-Here are the first couple of lines from sample B<ipsumdump> output, from
-`ipsumdump -sd /home/kohler/largedump.gz':
+Here are a couple lines of B<ipsumdump> output, from `ipsumdump -sd
+/home/kohler/largedump.gz':
 
   !IPSummaryDump 1.0
   !creator "ipsumdump -sd /home/kohler/largedump.gz"
@@ -23,34 +23,29 @@ Here are the first couple of lines from sample B<ipsumdump> output, from
   64.55.139.202 209.247.204.242
   18.26.4.9 64.55.139.202
 
-The `B<-sd>' option tells B<ipsumdump> to log I<s>ource and I<d>estination
-IP addresses; `F</home/kohler/largedump.gz>' is a compressed tcpdump(1)
-file. Each data line represents a packet; a space separates the two
-addresses. The `C<!data>' line describes the contents of each data line.
+The `B<-sd>' option, which is equivalent to `B<--src --dst>', tells
+B<ipsumdump> to log I<s>ource and I<d>estination IP addresses.
+`F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file. Each data
+line represents a packet; a space separates the two addresses. The
+`C<!data>' comment describes the contents of each data line.
 
 =head1 OPTIONS
 
-B<Ipsumdump> options fall into three categories. A data source option --
-there can be at most one -- says where B<ipsumdump> should read its data.
-Dump content options determine which packet characteristics go into the
-dump. Finally, other options let you anonymize IP addresses, dump the Click
-configuration B<ipsumdump> would run, write packets in parallel to a
-tcpdump(1) file, and so on.
-
 =head2 Data Sources
 
-Data source options tell B<ipsumdump> what kind of data to read.
-B<Ipsumdump> can read data from tcpdump(1) files (B<--tcpdump>), from live
-network interfaces (B<--interface>), from NetFlow summary files
-(B<--netflow-summary>), or from B<ipsumdump> output files (B<--ipsumdump>).
+Data source options tell B<ipsumdump> what kind of data source to use:
+tcpdump(1) files (B<--tcpdump>), live network interfaces (B<--interface>),
+NetFlow summary files (B<--netflow-summary>), or B<ipsumdump> output files
+(B<--ipsumdump>).
 
 Non-option arguments specify the files, or interfaces, to read. For
 example, `ipsumdump B<-r> eth0 eth1' will read two tcpdump(1) files, named
 "eth0" and "eth1"; `ipsumdump B<-i> eth0 eth1' will read from two live
-network interfaces, "eth0" and "eth1". Options that read files --
-B<--tcpdump>, B<--netflow-summary>, and B<--ipsumdump> -- read from the
-standard input when you supply a single dash C<-> as a filename, and when
-you give no filenames at all.
+network interfaces, "eth0" and "eth1".
+
+Options that read files -- B<--tcpdump>, B<--netflow-summary>, and
+B<--ipsumdump> -- read from the standard input when you supply a single
+dash C<-> as a filename, or when you give no filenames at all.
 
 =over 4
 
@@ -88,16 +83,16 @@ B<Ipsumdump> pays attention to some of these fields:
 =item B<--ipsumdump>
 
 Read from one or more B<ipsumdump> output files. Any packet characteristics
-not specified by the input files are printed as 0.
+not specified by the input files are set to 0.
 
 =back
 
 =head2 Dump Contents
 
-These options determine what actually goes in the dump. You can supply an
-arbitrary number of them; in the output, fields are separated by spaces. If
-you say `B<-sd>', for example -- or the equivalent `B<--src --dst>' -- the
-dump's data lines will contain an IP source address, a space, and an IP
+These options determine what actually goes in the dump; supply an arbitrary
+number of them. In the output, fields are separated by spaces. If you say
+`B<-sd>', for example -- or the equivalent `B<--src --dst>' -- the dump's
+data lines will contain an IP source address, a space, and an IP
 destination address:
 
     192.168.1.101 18.26.4.44
@@ -178,10 +173,10 @@ Write the summary dump to I<file> instead of to the standard output.
 
 =item B<--filter>=I<filter>, B<-f> I<filter>
 
-Only include packets and flows matching a tcpdump(1) I<filter>. For
-example, `ipsumdump B<-f> "tcp && src net 18/8"' will summarize data only
-for TCP packets from net 18. (The syntax for I<filter> is currently a
-subset of tcpdump's syntax.)
+Only include packets and flows matching a tcpdump(1) filter. For example,
+`ipsumdump B<-f> "tcp && src net 18/8"' will summarize data only for TCP
+packets from net 18. (The syntax for I<filter> is currently a subset of
+tcpdump's syntax.)
 
 =item B<--anonymize>, B<-A>
 
@@ -190,7 +185,7 @@ and class. This means, first, that two anonymized addresses will share the
 same prefix when their non-anonymized counterparts share the same prefix;
 and second, that anonymized addresses will be in the same class (A, B, C,
 or D) as their non-anonymized counterparts. The anonymization algorithm
-comes from tcpdpriv(1).
+comes from tcpdpriv(1); it works like `tcpdpriv B<-A50 -C4>'.
 
 =item B<--map-address>=I<addrs>
 
@@ -208,9 +203,9 @@ B<--multipacket> and B<--packet-count>, then B<--multipacket> is ignored.
 
 =item B<--write-tcpdump>=I<file>, B<-w> I<file>
 
-Write processed packets to a tcpdump(1) I<file>, or to the standard output,
-if I<file> is a single dash C<->. This is in addition to the usual summary
-output.
+Write processed packets to a tcpdump(1) I<file> -- or to the standard
+output, if I<file> is a single dash C<-> -- in addition to the usual
+summary output.
 
 =item B<--config>
 
@@ -234,10 +229,10 @@ exit.
 
 =head1 EXAMPLES
 
-The `B<-tsSdDp>' option stores the most commonly useful information about
-each packet: timestamp, source address, source port, destination address,
-destination port, and protocol. Invoking `ipsumdump B<-i> eth1 B<-tsSdDp>'
-might produce output like this:
+The `B<-tsSdDp>' option set covers the most commonly useful information
+about each packet: timestamp, source address, source port, destination
+address, destination port, and protocol. Invoking `ipsumdump B<-i> eth1
+B<-tsSdDp>' might produce output like this:
 
   !IPSummaryDump 1.0
   !creator "ipsumdump -i eth1 -tsSdDp"
@@ -251,7 +246,7 @@ might produce output like this:
   1000967304.390016 192.150.187.11 53 192.168.1.101 1299 U
   1000967304.425992 207.171.182.16 80 192.168.1.101 4451 T
 
-Here is the same data, anonymized with the B<-A> option:
+Here is the same data, anonymized with B<-A>:
 
   !IPSummaryDump 1.0
   !creator "ipsumdump --ipsumdump -A -tsSdDp"

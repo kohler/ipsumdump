@@ -33,10 +33,17 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+static uint8_t flag_mapping[256];
+
 FromIPSummaryDump::FromIPSummaryDump()
     : Element(0, 1), _fd(-1), _pos(0), _len(0), _task(this), _pipe(0)
 {
     MOD_INC_USE_COUNT;
+    if (!flag_mapping[(uint8_t)'A']) {
+	const char *x = ToIPSummaryDump::tcp_flags_word;
+	for (int i = 0; *x; x++, i++)
+	    flag_mapping[(uint8_t)(*x)] = i + 1;
+    }
 }
 
 FromIPSummaryDump::~FromIPSummaryDump()
@@ -370,6 +377,21 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	      case W_TCP_FLAGS:
 		if (cp_unsigned(words[i], &j) && j <= 0xFF)
 		    q->tcp_header()->th_flags = j, ok++;
+		else {
+		    const uint8_t *data = (const uint8_t *)words[i].data();
+		    int len = words[i].length();
+		    j = 0;
+		    for (int i = 0; i < len; i++)
+			if (flag_mapping[data[i]])
+			    j |= 1 << (flag_mapping[data[i]] - 1);
+			else if (data[i] == (uint8_t)'.' && len == 1)
+			    ;
+			else
+			    goto bad_flags;
+		    q->tcp_header()->th_flags = j, ok++;
+		  bad_flags:
+		    /* nothing to do */;
+		}
 		break;
 
 	      case W_COUNT:

@@ -71,6 +71,24 @@ that packet in the dump. False by default.
 
 =back
 
+=n
+
+The characters corresponding to TCP flags are as follows:
+
+   Flag name  Character  Value
+   ---------  ---------  -----
+   FIN        F          0x01
+   SYN        S          0x02
+   RST        R          0x04
+   PSH        P          0x08
+   ACK        A          0x10
+   URG        U          0x20
+   -          X          0x40
+   -          Y          0x80
+
+Some old IP summary dumps might contain an unsigned integer, representing the
+flags byte, instead.
+
 =e
 
 Here are a couple lines from the start of a sample verbose dump.
@@ -119,7 +137,7 @@ class ToIPSummaryDump : public Element { public:
     static int parse_content(const String &);
     static const char *unparse_content(int);
 
-    static const char * const tcp_flags_word = "FSRPAU67";
+    static const char * const tcp_flags_word = "FSRPAUXY";
     
   private:
 

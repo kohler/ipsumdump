@@ -6,7 +6,7 @@
 /*
 =c
 
-FromIPSummaryDump(FILE [, I<KEYWORDS>])
+FromIPSummaryDump(FILENAME [, I<KEYWORDS>])
 
 =s sources
 
@@ -18,8 +18,12 @@ Reads IP packet descriptors from a file produced by ToIPSummaryDump, then
 creates packets containing info from the descriptors and pushes them out the
 output. Optionally stops the driver when there are no more packets.
 
-FILE may be compressed with gzip(1) or bzip2(1); FromIPSummaryDump will run
-zcat(1) or bzcat(1) to uncompress it.
+The file may be compressed with gzip(1) or bzip2(1); FromIPSummaryDump will
+run zcat(1) or bzcat(1) to uncompress it.
+
+FromIPSummaryDump reads from the file named FILENAME unless FILENAME is a
+single dash `C<->', in which case it reads from the standard input. It will
+not uncompress the standard input, however.
 
 Keyword arguments are:
 
@@ -45,7 +49,7 @@ Boolean. If false, then FromIPSummaryDump will not emit packets (until the
 
 =item ZERO
 
-Boolean. Determines what is in any packet data not set by the dump. If true,
+Boolean. Determines the contents of packet data not set by the dump. If true,
 this data is zero. If false (the default), this data is random garbage.
 
 =item PROTO
