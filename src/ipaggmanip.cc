@@ -54,7 +54,7 @@ die_usage(const char *specific = 0)
     ErrorHandler *errh = ErrorHandler::default_handler();
     if (specific)
 	errh->error("%s: %s", program_name, specific);
-    errh->fatal("Usage: %s...\n\
+    errh->fatal("Usage: %s ACTION [FILE]\n\
 Try `%s --help' for more information.",
 		program_name, program_name);
     // should not get here, but just in case...
@@ -65,7 +65,28 @@ void
 usage()
 {
   printf("\
-%s kCRPA\n\
+`Aciri-aggmanip' reads a summary of aggregated IP data from a file, transforms\n\
+that summary or calculates one of its statistics, and writes the result to\n\
+standard output.\n\
+\n\
+Usage: %s ACTION [FILES] > OUTPUT\n\
+\n\
+Actions:\n\
+  -n, --num-nonzero          Output number of nonzero 32-aggregates.\n\
+      --nnz-in-prefixes      Output number of nonzero p-aggregates for all p.\n\
+      --nnz-in-left-prefixes Output number of nonzero left-hand p-aggregates\n\
+                             for all p.\n\
+      --nnz-discriminated-by-prefix\n\
+                             Output number of nonzero 32-aggregates with\n\
+                             discriminating prefix p for all p.\n\
+  -p, --prefix P             Output summary aggregated to prefix level P.\n\
+\n\
+Other options:\n\
+  -r, --read FILE            Read summary from FILE (default stdin).\n\
+  -o, --output FILE          Write output to FILE (default stdout).\n\
+  -h, --help                 Print this message and exit.\n\
+  -v, --version              Print version number and exit.\n\
+\n\
 Report bugs to <kohler@aciri.org>.\n", program_name);
 }
 
