@@ -34,6 +34,7 @@
 #define PROMISCUOUS_OPT	313
 #define WRITE_DROPS_OPT	314
 #define QUIET_OPT	315
+#define BAD_PACKETS_OPT	316
 
 // data sources
 #define INTERFACE_OPT	400
@@ -58,6 +59,7 @@
 #define COUNT_OPT	(1000 + ToIPSummaryDump::W_COUNT)
 #define FRAG_OPT	(1000 + ToIPSummaryDump::W_FRAG)
 #define FRAGOFF_OPT	(1000 + ToIPSummaryDump::W_FRAGOFF)
+#define PAYLOAD_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD)
 
 static Clp_Option options[] = {
 
@@ -84,6 +86,7 @@ static Clp_Option options[] = {
     { "promiscuous", 0, PROMISCUOUS_OPT, 0, Clp_Negate },
     { "record-counts", 0, WRITE_DROPS_OPT, Clp_ArgString, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
+    { "bad-packets", 0, BAD_PACKETS_OPT, 0, Clp_Negate },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -104,6 +107,7 @@ static Clp_Option options[] = {
     { "fragment", 'g', FRAG_OPT, 0, 0 },
     { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
     { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
+    { "payload", 0, PAYLOAD_OPT, 0, 0 },
 
 };
 
@@ -163,6 +167,7 @@ Other options:\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
       --no-promiscuous       Do not put interfaces into promiscuous mode.\n\
+      --bad-packets          Print `!bad' messages for bad headers.\n\
       --sample PROB          Sample packets with PROB probability.\n\
       --multipacket          Produce multiple entries for a flow identifier\n\
                              representing multiple packets (NetFlow only).\n\
@@ -293,6 +298,7 @@ main(int argc, char *argv[])
     bool do_seed = true;
     bool promisc = true;
     bool quiet = false;
+    bool bad_packets = false;
     Vector<String> files;
     const char *record_drops = 0;
     
@@ -385,6 +391,10 @@ main(int argc, char *argv[])
 
 	  case QUIET_OPT:
 	    quiet = !clp->negated;
+	    break;
+
+	  case BAD_PACKETS_OPT:
+	    bad_packets = !clp->negated;
 	    break;
 	    
 	  case CONFIG_OPT:
@@ -544,7 +554,7 @@ particular purpose.\n");
 	sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
 	for (int i = 0; i < log_contents.size(); i++)
 	    sa << ' ' << cp_quote(FromIPSummaryDump::unparse_content(log_contents[i]));
-	sa << ", VERBOSE true, BANNER ";
+	sa << ", VERBOSE true, BAD_PACKETS " << bad_packets << ", BANNER ";
 	// create banner
 	StringAccum banner;
 	for (int i = 0; i < argc; i++)

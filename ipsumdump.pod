@@ -177,6 +177,13 @@ Include length of packet payload in the dump. This is the length of the TCP
 or UDP payload, for TCP or UDP packets, or the length of the IP payload,
 for other IP packets. Example: C<1000>.
 
+=item B<--payload>
+
+Include the actual packet payload in the dump. This is the TCP or UDP
+payload, for TCP or UDP packets, or the IP payload, for other IP packets.
+Output as a double-quoted C string; non-ASCII characters, and double-quotes
+and backslashes, appear as C backslash escapes. Example: C<",25\r\n\000">.
+
 =item B<--packet-count>, B<-c>
 
 Include packet count in the dump. Some kinds of logs -- such as NetFlow
@@ -219,6 +226,14 @@ comes from tcpdpriv(1); it works like `tcpdpriv B<-A50 -C4>'.
 If B<--anonymize> and B<--write-tcpdump> are both on, the B<tcpdump> output
 file will have anonymized IP addresses. However, the file will contain
 actual packet data, unlike B<tcpdpriv> output.
+
+=item B<--bad-packets>
+
+Print lines like `C<!bad IP header length 4>' for packets with no IP
+headers, bad IP headers, or bad TCP/UDP headers. (A bad header has an
+incorrect length or unexpected version, or is spread across multiple
+fragments.) Default is to print a normal line, but with a dash `C<->' for
+any piece of information that came from a bad header.
 
 =item B<--no-promiscuous>
 

@@ -1,5 +1,19 @@
 Ipsumdump NEWS
 
+Version 1.14   28.Nov.2001
+
+* Don't generate mistaken output for bad IP, TCP, or UDP headers (print
+  dashes instead). Bad headers include IP versions other than 4, bad IP
+  header lengths, bad TCP header lengths, and TCP/UDP headers not included
+  in a single fragment.
+
+* Add --bad-packets option. When supplied, the IP summary dump contains
+  messages like `!bad IP header length 2' on packets with bad IP, TCP, or
+  UDP headers, instead of normal output (with dashes).
+
+* Add --payload option.
+
+
 Version 1.13   4.Nov.2001
 
 * Speed improvements in --tu-summary/--ipsumdump.
