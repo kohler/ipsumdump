@@ -57,6 +57,16 @@ FromIPSummaryDump::~FromIPSummaryDump()
     MOD_DEC_USE_COUNT;
 }
 
+void *
+FromIPSummaryDump::cast(const char *n)
+{
+    if (strcmp(n, "Notifier") == 0 && !output_is_push(0)) {
+	_notifier.initialize(router());
+	return &_notifier;
+    } else
+	return Element::cast(n);
+}
+
 int
 FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
 {
@@ -102,7 +112,7 @@ FromIPSummaryDump::error_helper(ErrorHandler *errh, const char *x)
 {
     if (!errh)
 	errh = ErrorHandler::default_handler();
-    return errh->error("%s: %s", _filename.cc(), x);
+    return errh->error("%s:%s%d: %s", _filename.cc(), (_binary ? "record " : ""), _recordno, x);
 }
 
 int
@@ -166,6 +176,7 @@ FromIPSummaryDump::read_line(String &result, ErrorHandler *errh)
 	    result = String::stable_string(_buffer + _pos, record_length);
 	}
 	_pos += record_length;
+	_recordno++;
 	return 1;
     }
     
@@ -202,6 +213,7 @@ FromIPSummaryDump::read_line(String &result, ErrorHandler *errh)
 
 	    result = String::stable_string(_buffer + _pos, epos - _pos);
 	    _pos = epos;
+	    _recordno++;
 	    return 1;
 	}
     }
@@ -210,6 +222,10 @@ FromIPSummaryDump::read_line(String &result, ErrorHandler *errh)
 int
 FromIPSummaryDump::initialize(ErrorHandler *errh)
 {
+    // make sure notifier is initialized
+    if (!output_is_push(0))
+	_notifier.initialize(router());
+    
     _pipe = 0;
     if (_filename == "-") {
 	_fd = STDIN_FILENO;
@@ -221,7 +237,7 @@ FromIPSummaryDump::initialize(ErrorHandler *errh)
     if (_fd < 0)
 	return errh->error("%s: %s", _filename.cc(), strerror(errno));
 
-    _pos = _len = _file_offset = _save_char = 0;
+    _pos = _len = _file_offset = _save_char = _recordno = 0;
     int result = read_buffer(errh);
     if (result < 0)
 	return -1;
@@ -252,12 +268,15 @@ FromIPSummaryDump::initialize(ErrorHandler *errh)
 		_minor_version = MINOR_VERSION;
 	    }
 	}
-    } else if (line.substring(0, 8) != "!creator") {
-	if (!_contents.size() /* don't warn on DEFAULT_CONTENTS */)
-	    errh->warning("%s: missing banner line; is this an IP summary dump?", _filename.cc());
+    } else {
+	// parse line again, warn if this doesn't look like a dump
+	if (line.substring(0, 8) != "!creator" && line.substring(0, 5) != "!data") {
+	    if (!_contents.size() /* don't warn on DEFAULT_CONTENTS */)
+		errh->warning("%s: missing banner line; is this an IP summary dump?", _filename.cc());
+	}
 	if (_save_char)
 	    _buffer[_pos] = _save_char;
-	_pos = _save_char = 0;
+	_pos = _save_char = _recordno = 0;
     }
     
     _format_complaint = false;
@@ -414,6 +433,221 @@ append_net_uint32_t(StringAccum &sa, uint32_t u)
 }
 
 int
+FromIPSummaryDump::parse_ip_opt_ascii(const char *data, int pos, String *result, int contents)
+{
+    StringAccum sa;
+    int original_pos = pos;
+    
+    while (1) {
+	char *next;
+	uint32_t u1;
+
+	if (strncmp(data + pos, "rr{", 3) == 0
+	    && (contents & DO_IPOPT_ROUTE)) {
+	    // record route
+	    sa << (char)IPOPT_RR;
+	    pos += 3;
+	  parse_route:
+	    int sa_pos = sa.length() - 1;
+	    int pointer = -1;
+	    sa << '\0' << '\0';
+	    next = const_cast<char *>(data + pos);
+	    // loop over entries
+	    while (1) {
+		if (*next == '^' && pointer < 0)
+		    pointer = sa.length() - sa_pos + 1, next++;
+		if (!isdigit(*next))
+		    break;
+		for (int i = 0; i < 4; i++) {
+		    if (!isdigit(*next)
+			|| (u1 = strtoul(next, &next, 0)) > 255
+			|| (i < 3 && *next++ != '.'))
+			goto bad_opt;
+		    sa << (char)u1;
+		}
+		if (*next == ',')
+		    next++;
+	    }
+	    if (*next != '}')	// must end with a brace
+		goto bad_opt;
+	    sa[sa_pos + 2] = (pointer >= 0 ? pointer : sa.length() - sa_pos + 1);
+	    if (next[1] == '+' && isdigit(next[2])
+		&& (u1 = strtoul(next + 2, &next, 0)) < 64)
+		sa.append_fill('\0', u1 * 4);
+	    else
+		next++;
+	    if (sa.length() - sa_pos > 255)
+		goto bad_opt;
+	    sa[sa_pos + 1] = sa.length() - sa_pos;
+	    pos = next - data;
+	    
+	} else if (strncmp(data + pos, "ssrr{", 5) == 0
+		   && (contents & DO_IPOPT_ROUTE)) {
+	    // strict source route option
+	    sa << (char)IPOPT_SSRR;
+	    pos += 5;
+	    goto parse_route;
+	    
+	} else if (strncmp(data + pos, "lsrr{", 5) == 0
+		   && (contents & DO_IPOPT_ROUTE)) {
+	    // loose source route option
+	    sa << (char)IPOPT_LSRR;
+	    pos += 5;
+	    goto parse_route;
+	    
+	} else if ((strncmp(data + pos, "ts{", 3) == 0
+		    || strncmp(data + pos, "ts.", 3) == 0)
+		   && (contents & DO_IPOPT_TS)) {
+	    // timestamp option
+	    int sa_pos = sa.length();
+	    sa << (char)IPOPT_TS << (char)0 << (char)0 << (char)0;
+	    uint32_t top_bit;
+	    int flag = -1;
+	    if (data[pos + 2] == '.') {
+		if (strncmp(data + pos + 2, ".ip{", 4) == 0)
+		    flag = 1, pos += 6;
+		else if (strncmp(data + pos + 2, ".preip{", 7) == 0)
+		    flag = 3, pos += 9;
+		else if (isdigit(data[pos + 3])
+			 && (flag = strtoul(data + pos + 3, &next, 0)) <= 15
+			 && *next == '{')
+		    pos = (next + 1) - data;
+		else
+		    goto bad_opt;
+	    } else
+		pos += 3;
+	    next = const_cast<char *>(data + pos);
+	    int pointer = -1;
+	    
+	    // loop over timestamp entries
+	    while (1) {
+		if (*next == '^' && pointer < 0)
+		    pointer = sa.length() - sa_pos + 1, next++;
+		if (!isdigit(*next) && *next != '!')
+		    break;
+		char *entry = next;
+	      retry_entry:
+		if (flag == 1 || flag == 3 || flag == -2) {
+		    // parse IP address
+		    for (int i = 0; i < 4; i++) {
+			if (!isdigit(*next)
+			    || (u1 = strtoul(next, &next, 0)) > 255
+			    || (i < 3 && *next++ != '.'))
+			    goto bad_opt;
+			sa << (char)u1;
+		    }
+		    // prespecified IPs if we get here
+		    if (pointer >= 0 && flag == -2)
+			flag = 3;
+		    // check for valid value
+		    if (next[0] == '=' && (isdigit(next[1]) || next[1] == '!'))
+			next++;
+		    else if ((next[0] != '=' || next[1] == '?') && pointer < 0)
+			goto bad_opt;
+		    else {
+			next += (next[0] == '=' ? 2 : 0);
+			sa << (char)0 << (char)0 << (char)0 << (char)0;
+			goto done_entry;
+		    }
+		}
+		
+		// parse timestamp value
+		top_bit = 0;
+		if (next[0] == '!')
+		    top_bit = 0x80000000U, next++;
+		if (!isdigit(*next))
+		    goto bad_opt;
+		u1 = strtoul(next, &next, 0);
+		if (*next == '.' && flag == -1) {
+		    flag = -2;
+		    next = entry;
+		    goto retry_entry;
+		} else if (flag == -1)
+		    flag = 0;
+		u1 |= top_bit;
+		sa << (char)(u1 >> 24) << (char)(u1 >> 16) << (char)(u1 >> 8) << (char)u1;
+	      done_entry:
+		// check separator
+		if (*next == ',')
+		    next++;
+	    }
+	    
+	    // done with entries
+	    if (*next++ != '}')
+		goto bad_opt;
+	    if (flag == -2)
+		flag = 1;
+	    sa[sa_pos + 2] = (pointer >= 0 ? pointer : sa.length() - sa_pos + 1);
+	    if (next[0] == '+' && isdigit(next[1])
+		&& (u1 = strtoul(next + 1, &next, 0)) < 64)
+		sa.append_fill('\0', u1 * (flag == 1 || flag == 3 ? 8 : 4));
+	    int overflow = 0;
+	    if (next[0] == '+' && next[1] == '+' && isdigit(next[2])
+		&& (u1 = strtoul(next + 2, &next, 0)) < 16)
+		overflow = u1;
+	    sa[sa_pos + 3] = (overflow << 4) | flag;
+	    if (sa.length() - sa_pos > 255)
+		goto bad_opt;
+	    sa[sa_pos + 1] = sa.length() - sa_pos;
+	    pos = next - data;
+	    
+	} else if (isdigit(data[pos])
+		   && (contents & DO_IPOPT_UNKNOWN)) {
+	    // unknown option
+	    u1 = strtoul(data + pos, &next, 0);
+	    if (u1 >= 256)
+		goto bad_opt;
+	    sa << (char)u1;
+	    if (*next == '=' && isdigit(next[1])) {
+		int pos0 = sa.length();
+		sa << (char)0;
+		do {
+		    u1 = strtoul(next + 1, &next, 0);
+		    if (u1 >= 256)
+			goto bad_opt;
+		    sa << (char)u1;
+		} while (*next == ':' && isdigit(next[1]));
+		if (sa.length() > pos0 + 254)
+		    goto bad_opt;
+		sa[pos0] = (char)(sa.length() - pos0 + 1);
+	    }
+	    pos = next - data;
+	} else if (strncmp(data + pos, "nop", 3) == 0
+		   && (contents & DO_IPOPT_PADDING)) {
+	    sa << (char)IPOPT_NOP;
+	    pos += 3;
+	} else if (strncmp(data + pos, "eol", 3) == 0
+		   && (contents & DO_IPOPT_PADDING)
+		   && data[pos + 3] != ',') {
+	    sa << (char)IPOPT_EOL;
+	    pos += 3;
+	} else
+	    goto bad_opt;
+
+	if (isspace(data[pos]) || !data[pos]) {
+	    // check for improper padding
+	    while (sa.length() > 40 && sa[0] == TCPOPT_NOP) {
+		memmove(&sa[0], &sa[1], sa.length() - 1);
+		sa.pop_back();
+	    }
+	    // options too long?
+	    if (sa.length() > 40)
+		goto bad_opt;
+	    // otherwise ok
+	    *result = sa.take_string();
+	    return pos;
+	} else if (data[pos] != ',' && data[pos] != ';')
+	    goto bad_opt;
+
+	pos++;
+    }
+
+  bad_opt:
+    *result = String();
+    return original_pos;
+}
+
+int
 FromIPSummaryDump::parse_tcp_opt_ascii(const char *data, int pos, String *result, int contents)
 {
     StringAccum sa;
@@ -520,7 +754,7 @@ FromIPSummaryDump::parse_tcp_opt_ascii(const char *data, int pos, String *result
 	    // otherwise ok
 	    *result = sa.take_string();
 	    return pos;
-	} else if (data[pos] != ',')
+	} else if (data[pos] != ',' && data[pos] != ';')
 	    goto bad_opt;
 
 	pos++;
@@ -529,6 +763,21 @@ FromIPSummaryDump::parse_tcp_opt_ascii(const char *data, int pos, String *result
   bad_opt:
     *result = String();
     return original_pos;
+}
+
+static WritablePacket *
+handle_ip_opt(WritablePacket *q, const String &optstr)
+{
+    int olen = (optstr.length() + 3) & ~3;
+    if (!(q = q->put(olen)))
+	return 0;
+    memmove(q->transport_header() + olen, q->transport_header(), sizeof(click_tcp));
+    q->ip_header()->ip_hl = (sizeof(click_ip) + olen) >> 2;
+    memcpy(q->ip_header() + 1, optstr.data(), optstr.length());
+    if (optstr.length() & 3)
+	*(reinterpret_cast<uint8_t *>(q->ip_header() + 1) + optstr.length()) = IPOPT_EOL;
+    q->set_ip_header(q->ip_header(), sizeof(click_ip) + olen);
+    return q;
 }
 
 static WritablePacket *
@@ -563,6 +812,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
     
     String line;
     StringAccum payload;
+    String ip_opt;
     String tcp_opt;
     
     while (1) {
@@ -597,6 +847,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	uint32_t payload_len = 0;
 	bool have_payload_len = false;
 	bool have_payload = false;
+	bool have_ip_opt = false;
 	bool have_tcp_opt = false;
 	
 	for (int i = 0; pos < len && i < _contents.size(); i++) {
@@ -648,7 +899,15 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 			u1 = htons(100); // random number
 		    pos++;	// u1 already 0
 		    break;
+		  case W_IP_OPT:
+		    if (pos + 1 + data[pos] <= len) {
+			ip_opt = line.substring(pos + 1, data[pos]);
+			have_ip_opt = true;
+			pos += data[pos] + 1;
+		    }
+		    break;
 		  case W_TCP_OPT:
+		  case W_TCP_NTOPT:
 		  case W_TCP_SACK:
 		    if (pos + 1 + data[pos] <= len) {
 			tcp_opt = line.substring(pos + 1, data[pos]);
@@ -767,12 +1026,30 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 		    }
 		break;
 
+	      case W_IP_OPT:
+		if (data[pos] == '.')
+		    pos++;
+		else if (data[pos] != '-') {
+		    have_ip_opt = true;
+		    pos = parse_ip_opt_ascii(data, pos, &ip_opt, DO_IPOPT_ALL);
+		}
+		break;
+
 	      case W_TCP_SACK:
 		if (data[pos] == '.')
 		    pos++;
 		else if (data[pos] != '-') {
 		    have_tcp_opt = true;
 		    pos = parse_tcp_opt_ascii(data, pos, &tcp_opt, DO_TCPOPT_SACK);
+		}
+		break;
+		
+	      case W_TCP_NTOPT:
+		if (data[pos] == '.')
+		    pos++;
+		else if (data[pos] != '-') {
+		    have_tcp_opt = true;
+		    pos = parse_tcp_opt_ascii(data, pos, &tcp_opt, DO_TCPOPT_NTALL);
 		}
 		break;
 		
@@ -943,6 +1220,14 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	if (!ok && !ip_ok)
 	    break;
 
+	// append IP options if any
+	if (have_ip_opt && ip_opt) {
+	    if (!(q = handle_ip_opt(q, ip_opt)))
+		return 0;
+	    else		// iph may have changed!! (don't use tcph etc.)
+		iph = q->ip_header();
+	}
+	
 	// set TCP offset to a reasonable value; possibly reduce packet length
 	if (iph->ip_p == IP_PROTO_TCP && IP_FIRSTFRAG(iph)) {
 	    if (!have_tcp_opt || !tcp_opt)
@@ -991,8 +1276,11 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 
     // bad format if we get here
     if (!_format_complaint) {
-	error_helper(errh, "bad format");
-	_format_complaint = true;
+	// don't complain if the line was all blank
+	if ((int) strspn(line.data(), " \t\n\r") != line.length()) {
+	    error_helper(errh, "packet parse error");
+	    _format_complaint = true;
+	}
     }
     if (q)
 	q->kill();
@@ -1061,6 +1349,7 @@ FromIPSummaryDump::pull(int)
 	if (!p) {
 	    if (_stop)
 		router()->please_stop_driver();
+	    _notifier.set_listeners(false);
 	    return 0;
 	}
 	if (_multipacket)
@@ -1072,7 +1361,8 @@ FromIPSummaryDump::pull(int)
 	if (p)
 	    p->kill();
     }
-    
+
+    _notifier.set_listeners(true);
     return p;
 }
 
@@ -1116,8 +1406,10 @@ FromIPSummaryDump::write_handler(const String &s_in, Element *e, void *thunk, Er
 	  bool active;
 	  if (cp_bool(s, &active)) {
 	      fd->_active = active;
-	      if (active && fd->output_is_push(0) && !fd->_task.scheduled())
+	      if (fd->output_is_push(0) && active && !fd->_task.scheduled())
 		  fd->_task.reschedule();
+	      else if (!fd->output_is_push(0))
+		  fd->_notifier.set_listeners(active);
 	      return 0;
 	  } else
 	      return errh->error("`active' should be Boolean");

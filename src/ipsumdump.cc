@@ -295,7 +295,7 @@ stop_hook(const String &s_in, Element *, void *, ErrorHandler *errh)
     return 0;
 }
 
-extern void export_elements(Lexer *);
+extern void click_export_elements(Lexer *);
 
 static String
 source_output_port(bool collate, int i)
@@ -597,7 +597,7 @@ particular purpose.\n");
     StringAccum sa;
     sa << "shunt :: { input" << shunt_internals << " -> output };\n";
     if (collate)
-	sa << "collate :: MergeByTimestamp(STOP true, NULL_IS_DEAD true) -> shunt;\n";
+	sa << "collate :: TimeSortedSched(STOP true, NULL_IS_DEAD true) -> Unqueue -> shunt;\n";
     sa << psa;
     
     // possible elements to filter and/or anonymize and/or stop
@@ -707,9 +707,9 @@ particular purpose.\n");
     // lex configuration
     BailErrorHandler berrh(errh);
     ErrorHandler *click_errh = (verbose ? errh : &berrh);
-    Lexer *lexer = new Lexer(click_errh);
-    export_elements(lexer);
-    int cookie = lexer->begin_parse(sa.take_string(), "<internal>", 0);
+    Lexer *lexer = new Lexer;
+    click_export_elements(lexer);
+    int cookie = lexer->begin_parse(sa.take_string(), "<internal>", 0, click_errh);
     while (lexer->ystatement())
 	/* do nothing */;
     router = lexer->create_router();

@@ -191,6 +191,152 @@ ToIPSummaryDump::bad_packet(StringAccum &sa, const String &s, int what) const
 }
 
 void
+ToIPSummaryDump::store_ip_opt_ascii(const uint8_t *opt, int opt_len, int contents, StringAccum &sa)
+{
+    int initial_sa_len = sa.length();
+    const uint8_t *end_opt = opt + opt_len;
+    const char *sep = "";
+    
+    while (opt < end_opt)
+	switch (*opt) {
+	  case IPOPT_EOL:
+	    if (contents & DO_IPOPT_PADDING)
+		sa << sep << "eol";
+	    goto done;
+	  case IPOPT_NOP:
+	    if (contents & DO_IPOPT_PADDING) {
+		sa << sep << "nop";
+		sep = ";";
+	    }
+	    opt++;
+	    break;
+	  case IPOPT_RR:
+	    if (opt + opt[1] > end_opt || opt[1] < 3 || opt[2] < 4)
+		goto bad_opt;
+	    if (!(contents & DO_IPOPT_ROUTE))
+		goto unknown;
+	    sa << sep << "rr";
+	    goto print_route;
+	  case IPOPT_LSRR:
+	    if (opt + opt[1] > end_opt || opt[1] < 3 || opt[2] < 4)
+		goto bad_opt;
+	    if (!(contents & DO_IPOPT_ROUTE))
+		goto unknown;
+	    sa << sep << "lsrr";
+	    goto print_route;
+	  case IPOPT_SSRR:
+	    if (opt + opt[1] > end_opt || opt[1] < 3 || opt[2] < 4)
+		goto bad_opt;
+	    if (!(contents & DO_IPOPT_ROUTE))
+		goto unknown;
+	    sa << sep << "ssrr";
+	    goto print_route;
+	  print_route: {
+		const uint8_t *o = opt + 3, *ol = opt + opt[1], *op = opt + opt[2] - 1;
+		sep = "";
+		sa << '{';
+		for (; o + 4 <= ol; o += 4) {
+		    if (o == op) {
+			if (opt[0] == IPOPT_RR)
+			    break;
+			sep = "^";
+		    }
+		    sa << sep << (int)o[0] << '.' << (int)o[1] << '.' << (int)o[2] << '.' << (int)o[3];
+		    sep = ",";
+		}
+		if (o == ol && o == op && opt[0] != IPOPT_RR)
+		    sa << '^';
+		sa << '}';
+		if (o + 4 <= ol && o == op && opt[0] == IPOPT_RR)
+		    sa << '+' << (ol - o) / 4;
+		opt = ol;
+		sep = ";";
+		break;
+	    }
+	  case IPOPT_TS: {
+	      if (opt + opt[1] > end_opt || opt[1] < 4 || opt[2] < 5)
+		  goto bad_opt;
+	      const uint8_t *o = opt + 4, *ol = opt + opt[1], *op = opt + opt[2] - 1;
+	      int flag = opt[3] & 0xF;
+	      int size = (flag >= 1 && flag <= 3 ? 8 : 4);
+	      sa << sep << "ts";
+	      if (flag == 1)
+		  sa << ".ip";
+	      else if (flag == 3)
+		  sa << ".preip";
+	      else if (flag != 0)
+		  sa << "." << flag;
+	      sa << '{';
+	      sep = "";
+	      for (; o + size <= ol; o += 4) {
+		  if (o == op) {
+		      if (flag != 3)
+			  break;
+		      sep = "^";
+		  }
+		  if (flag != 0) {
+		      sa << sep << (int)o[0] << '.' << (int)o[1] << '.' << (int)o[2] << '.' << (int)o[3] << '=';
+		      o += 4;
+		  } else
+		      sa << sep;
+		  if (flag == 3 && o > op)
+		      sa.pop_back();
+		  else {
+		      uint32_t v = (o[0] << 24) | (o[1] << 16) | (o[2] << 8) | o[3];
+		      if (v & 0x80000000U)
+			  sa << '!';
+		      sa << (v & 0x7FFFFFFFU);
+		  }
+		  sep = ",";
+	      }
+	      if (o == ol && o == op)
+		  sa << '^';
+	      sa << '}';
+	      if (o + size <= ol && o == op)
+		  sa << '+' << (ol - o) / size;
+	      if (opt[3] & 0xF0)
+		  sa << '+' << '+' << (opt[3] >> 4);
+	      opt = ol;
+	      sep = ";";
+	      break;
+	  }
+	  default: {
+	      if (opt + opt[1] > end_opt || opt[1] < 2)
+		  goto bad_opt;
+	      if (!(contents & DO_IPOPT_UNKNOWN))
+		  goto unknown;
+	      sa << sep << (int)(opt[0]);
+	      const uint8_t *end_this_opt = opt + opt[1];
+	      char opt_sep = '=';
+	      for (opt += 2; opt < end_this_opt; opt++) {
+		  sa << opt_sep << (int)(*opt);
+		  opt_sep = ':';
+	      }
+	      sep = ";";
+	      break;
+	  }
+	  unknown:
+	    opt += (opt[1] >= 2 ? opt[1] : 128);
+	    break;
+	}
+
+  done:
+    if (sa.length() == initial_sa_len)
+	sa << '.';
+    return;
+
+  bad_opt:
+    sa.set_length(initial_sa_len);
+    sa << '?';
+}
+
+inline void
+ToIPSummaryDump::store_ip_opt_ascii(const click_ip *iph, int contents, StringAccum &sa)
+{
+    store_ip_opt_ascii(reinterpret_cast<const uint8_t *>(iph + 1), (iph->ip_hl << 2) - sizeof(click_ip), contents, sa);
+}
+
+void
 ToIPSummaryDump::store_tcp_opt_ascii(const uint8_t *opt, int opt_len, int contents, StringAccum &sa)
 {
     int initial_sa_len = sa.length();
@@ -206,68 +352,68 @@ ToIPSummaryDump::store_tcp_opt_ascii(const uint8_t *opt, int opt_len, int conten
 	  case TCPOPT_NOP:
 	    if (contents & DO_TCPOPT_PADDING) {
 		sa << sep << "nop";
-		sep = ",";
+		sep = ";";
 	    }
 	    opt++;
 	    break;
 	  case TCPOPT_MAXSEG:
-	    if (!(contents & DO_TCPOPT_MSS))
-		goto unknown;
 	    if (opt + opt[1] > end_opt || opt[1] != TCPOLEN_MAXSEG)
 		goto bad_opt;
+	    if (!(contents & DO_TCPOPT_MSS))
+		goto unknown;
 	    sa << sep << "mss" << ((opt[2] << 8) | opt[3]);
 	    opt += TCPOLEN_MAXSEG;
-	    sep = ",";
+	    sep = ";";
 	    break;
 	  case TCPOPT_WSCALE:
-	    if (!(contents & DO_TCPOPT_WSCALE))
-		goto unknown;
 	    if (opt + opt[1] > end_opt || opt[1] != TCPOLEN_WSCALE)
 		goto bad_opt;
+	    if (!(contents & DO_TCPOPT_WSCALE))
+		goto unknown;
 	    sa << sep << "wscale" << (int)(opt[2]);
 	    opt += TCPOLEN_WSCALE;
-	    sep = ",";
+	    sep = ";";
 	    break;
 	  case TCPOPT_SACK_PERMITTED:
-	    if (!(contents & DO_TCPOPT_SACK))
-		goto unknown;
 	    if (opt + opt[1] > end_opt || opt[1] != TCPOLEN_SACK_PERMITTED)
 		goto bad_opt;
+	    if (!(contents & DO_TCPOPT_SACK))
+		goto unknown;
 	    sa << sep << "sackok";
 	    opt += TCPOLEN_SACK_PERMITTED;
-	    sep = ",";
+	    sep = ";";
 	    break;
 	  case TCPOPT_SACK: {
-	      if (!(contents & DO_TCPOPT_SACK))
-		  goto unknown;
 	      if (opt + opt[1] > end_opt || (opt[1] % 8 != 2))
 		  goto bad_opt;
+	      if (!(contents & DO_TCPOPT_SACK))
+		  goto unknown;
 	      const uint8_t *end_sack = opt + opt[1];
 	      for (opt += 2; opt < end_sack; opt += 8) {
 		  uint32_t buf[2];
 		  memcpy(&buf[0], opt, 8);
 		  sa << sep << "sack" << ntohl(buf[0]) << ':' << ntohl(buf[1]);
-		  sep = ",";
+		  sep = ";";
 	      }
 	      break;
 	  }
 	  case TCPOPT_TIMESTAMP: {
-	      if (!(contents & DO_TCPOPT_TIMESTAMP))
-		  goto unknown;
 	      if (opt + opt[1] > end_opt || opt[1] != TCPOLEN_TIMESTAMP)
 		  goto bad_opt;
+	      if (!(contents & DO_TCPOPT_TIMESTAMP))
+		  goto unknown;
 	      uint32_t buf[2];
 	      memcpy(&buf[0], opt + 2, 8);
 	      sa << sep << "ts" << ntohl(buf[0]) << ':' << ntohl(buf[1]);
 	      opt += TCPOLEN_TIMESTAMP;
-	      sep = ",";
+	      sep = ";";
 	      break;
 	  }
 	  default: {
+	      if (opt + opt[1] > end_opt || opt[1] < 2)
+		  goto bad_opt;
 	      if (!(contents & DO_TCPOPT_UNKNOWN))
 		  goto unknown;
-	      if (opt + opt[1] > end_opt || opt[1] == 0)
-		  goto bad_opt;
 	      sa << sep << (int)(opt[0]);
 	      const uint8_t *end_this_opt = opt + opt[1];
 	      char opt_sep = '=';
@@ -275,11 +421,11 @@ ToIPSummaryDump::store_tcp_opt_ascii(const uint8_t *opt, int opt_len, int conten
 		  sa << opt_sep << (int)(*opt);
 		  opt_sep = ':';
 	      }
-	      sep = ",";
+	      sep = ";";
 	      break;
 	  }
 	  unknown:
-	    opt += (opt[1] ? opt[1] : 128);
+	    opt += (opt[1] >= 2 ? opt[1] : 128);
 	    break;
 	}
 
@@ -422,6 +568,14 @@ ToIPSummaryDump::summary(Packet *p, StringAccum &sa) const
 	      default:			sa << (int)(iph->ip_p); break;
 	    }
 	    break;
+	  case W_IP_OPT:
+	    if (!iph) goto no_data;
+	    // skip function if no TCP options
+	    if (iph->ip_hl <= 5)
+		sa << '.';
+	    else
+		store_ip_opt_ascii(iph, DO_IPOPT_ALL_NOPAD, sa);
+	    break;
 	  case W_TCP_SEQ:
 	    if (!tcph)
 		goto no_data;
@@ -456,6 +610,17 @@ ToIPSummaryDump::summary(Packet *p, StringAccum &sa) const
 		sa << '.';
 	    else
 		store_tcp_opt_ascii(tcph, DO_TCPOPT_ALL_NOPAD, sa);
+	    break;
+	  case W_TCP_NTOPT:
+	    if (!tcph)
+		goto no_data;
+	    // skip function if no TCP options, or just timestamp option
+	    if (tcph->th_off <= 5
+		|| (tcph->th_off == 8
+		    && *(reinterpret_cast<const uint32_t *>(tcph + 1)) == htonl(0x0101080A)))
+		sa << '.';
+	    else
+		store_tcp_opt_ascii(tcph, DO_TCPOPT_NTALL, sa);
 	    break;
 	  case W_TCP_SACK:
 	    if (!tcph)
@@ -549,6 +714,32 @@ ToIPSummaryDump::summary(Packet *p, StringAccum &sa) const
 #undef BAD_UDP
 
 #define T ToIPSummaryDump
+#define U ToIPSummaryDump::DO_IPOPT_UNKNOWN
+static int ip_opt_contents_mapping[] = {
+    T::DO_IPOPT_PADDING, T::DO_IPOPT_PADDING,	// EOL, NOP
+    U, U, U, U,	U,				// 2, 3, 4, 5, 6
+    T::DO_IPOPT_ROUTE,				// RR
+    U, U, U, U, U, U, U, U, U, U, U, U, U, 	// 8-20
+    U, U, U, U, U, U, U, U, U, U, 		// 21-30
+    U, U, U, U, U, U, U, U, U, U, 		// 31-40
+    U, U, U, U, U, U, U, U, U, U, 		// 41-50
+    U, U, U, U, U, U, U, U, U, U, 		// 51-60
+    U, U, U, U, U, U, U,	 		// 61-67
+    T::DO_IPOPT_TS, U, U,			// TS, 69-70
+    U, U, U, U, U, U, U, U, U, U, 		// 71-80
+    U, U, U, U, U, U, U, U, U, U, 		// 81-90
+    U, U, U, U, U, U, U, U, U, U, 		// 91-100
+    U, U, U, U, U, U, U, U, U, U, 		// 101-110
+    U, U, U, U, U, U, U, U, U, U, 		// 111-120
+    U, U, U, U, U, U, U, U, U,			// 121-129
+    T::DO_IPOPT_UNKNOWN, T::DO_IPOPT_ROUTE,	// SECURITY, LSRR
+    U, U, U, U,					// 132-135
+    T::DO_IPOPT_UNKNOWN, T::DO_IPOPT_ROUTE, 	// SATID, SSRR
+    U, U, U,					// 138-140
+    U, U, U, U, U, U, U,	 		// 141-147
+    T::DO_IPOPT_UNKNOWN				// RA
+};
+
 static int tcp_opt_contents_mapping[] = {
     T::DO_TCPOPT_PADDING, T::DO_TCPOPT_PADDING,	// EOL, NOP
     T::DO_TCPOPT_MSS, T::DO_TCPOPT_WSCALE,	// MAXSEG, WSCALE
@@ -557,6 +748,55 @@ static int tcp_opt_contents_mapping[] = {
     T::DO_TCPOPT_TIMESTAMP			// TIMESTAMP
 };
 #undef T
+#undef U
+
+int
+ToIPSummaryDump::store_ip_opt_binary(const uint8_t *opt, int opt_len, int contents, StringAccum &sa)
+{
+    if (contents == (int)DO_IPOPT_ALL) {
+	// store all options
+	sa.append((char)opt_len);
+	sa.append(opt, opt_len);
+	return opt_len + 1;
+    }
+
+    const uint8_t *end_opt = opt + opt_len;
+    int initial_sa_len = sa.length();
+    sa.append('\0');
+    
+    while (opt < end_opt) {
+	// one-byte options
+	if (*opt == IPOPT_EOL) {
+	    if (contents & DO_IPOPT_PADDING)
+		sa.append(opt, 1);
+	    goto done;
+	} else if (*opt == IPOPT_NOP) {
+	    if (contents & DO_IPOPT_PADDING)
+		sa.append(opt, 1);
+	    opt++;
+	    continue;
+	}
+	
+	// quit copying options if you encounter something obviously invalid
+	if (opt[1] < 2 || opt + opt[1] > end_opt)
+	    break;
+
+	int this_content = (*opt > IPOPT_RA ? (int)DO_IPOPT_UNKNOWN : ip_opt_contents_mapping[*opt]);
+	if (contents & this_content)
+	    sa.append(opt, opt[1]);
+	opt += opt[1];
+    }
+
+  done:
+    sa[initial_sa_len] = sa.length() - initial_sa_len - 1;
+    return sa.length() - initial_sa_len;
+}
+
+inline int
+ToIPSummaryDump::store_ip_opt_binary(const click_ip *iph, int contents, StringAccum &sa)
+{
+    return store_ip_opt_binary(reinterpret_cast<const uint8_t *>(iph + 1), (iph->ip_hl << 2) - sizeof(click_ip), contents, sa);
+}
 
 int
 ToIPSummaryDump::store_tcp_opt_binary(const uint8_t *opt, int opt_len, int contents, StringAccum &sa)
@@ -565,7 +805,7 @@ ToIPSummaryDump::store_tcp_opt_binary(const uint8_t *opt, int opt_len, int conte
 	// store all options
 	sa.append((char)opt_len);
 	sa.append(opt, opt_len);
-	return opt_len;
+	return opt_len + 1;
     }
 
     const uint8_t *end_opt = opt + opt_len;
@@ -586,7 +826,7 @@ ToIPSummaryDump::store_tcp_opt_binary(const uint8_t *opt, int opt_len, int conte
 	}
 	
 	// quit copying options if you encounter something obviously invalid
-	if (opt[1] == 0 || opt + opt[1] > end_opt)
+	if (opt[1] < 2 || opt + opt[1] > end_opt)
 	    break;
 
 	int this_content = (*opt > TCPOPT_TIMESTAMP ? (int)DO_TCPOPT_UNKNOWN : tcp_opt_contents_mapping[*opt]);
@@ -644,14 +884,6 @@ ToIPSummaryDump::binary_summary(Packet *p, const click_ip *iph, const click_tcp 
 	    if (iph)
 		v = iph->ip_off;
 	    goto output_2_net;
-	  case W_SPORT:
-	    if (tcph || udph)
-		v = (tcph ? tcph->th_sport : udph->uh_sport);
-	    goto output_2_net;
-	  case W_DPORT:
-	    if (tcph || udph)
-		v = (tcph ? tcph->th_dport : udph->uh_dport);
-	    goto output_2_net;
 	  case W_IPID:
 	    if (iph)
 		v = iph->ip_id;
@@ -660,6 +892,24 @@ ToIPSummaryDump::binary_summary(Packet *p, const click_ip *iph, const click_tcp 
 	    if (iph)
 		v = iph->ip_p;
 	    goto output_1;
+	  case W_IP_OPT: {
+	      if (!iph || iph->ip_hl <= (sizeof(click_ip) >> 2))
+		  goto output_1;
+	      int left = sa.length() - pos;
+	      sa.set_length(pos);
+	      pos += store_ip_opt_binary(iph, DO_IPOPT_ALL, sa);
+	      sa.extend(left);
+	      buf = sa.data();
+	      break;
+	  }
+	  case W_SPORT:
+	    if (tcph || udph)
+		v = (tcph ? tcph->th_sport : udph->uh_sport);
+	    goto output_2_net;
+	  case W_DPORT:
+	    if (tcph || udph)
+		v = (tcph ? tcph->th_dport : udph->uh_dport);
+	    goto output_2_net;
 	  case W_TCP_SEQ:
 	    if (tcph)
 		v = tcph->th_seq;
@@ -682,6 +932,18 @@ ToIPSummaryDump::binary_summary(Packet *p, const click_ip *iph, const click_tcp 
 	      int left = sa.length() - pos;
 	      sa.set_length(pos);
 	      pos += store_tcp_opt_binary(tcph, DO_TCPOPT_ALL, sa);
+	      sa.extend(left);
+	      buf = sa.data();
+	      break;
+	  }
+	  case W_TCP_NTOPT: {
+	      if (!tcph || tcph->th_off <= (sizeof(click_tcp) >> 2)
+		  || (tcph->th_off == 8
+		      && *(reinterpret_cast<const uint32_t *>(tcph + 1)) == htonl(0x0101080A)))
+		  goto output_1;
+	      int left = sa.length() - pos;
+	      sa.set_length(pos);
+	      pos += store_tcp_opt_binary(tcph, DO_TCPOPT_NTALL, sa);
 	      sa.extend(left);
 	      buf = sa.data();
 	      break;

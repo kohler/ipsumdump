@@ -16,8 +16,8 @@ elements/analysis/fromnetflowsumdump.cc
 elements/analysis/fromnetflowsumdump.hh
 elements/analysis/ipsumdumpinfo.cc
 elements/analysis/ipsumdumpinfo.hh
-elements/analysis/mergebyts.cc
-elements/analysis/mergebyts.hh
+elements/analysis/timesortedsched.cc
+elements/analysis/timesortedsched.hh
 elements/analysis/timefilter.cc
 elements/analysis/timefilter.hh
 elements/analysis/toipsumdump.cc

@@ -3,6 +3,7 @@
 #define CLICK_FROMIPSUMDUMP_HH
 #include <click/element.hh>
 #include <click/task.hh>
+#include <click/notifier.hh>
 #include <click/ipflowid.hh>
 #include "ipsumdumpinfo.hh"
 CLICK_DECLS
@@ -129,6 +130,7 @@ class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
     const char *class_name() const	{ return "FromIPSummaryDump"; }
     const char *processing() const	{ return AGNOSTIC; }
     FromIPSummaryDump *clone() const	{ return new FromIPSummaryDump; }
+    void *cast(const char *);
 
     int configure(Vector<String> &, ErrorHandler *);
     int initialize(ErrorHandler *);
@@ -138,10 +140,16 @@ class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
     bool run_task();
     Packet *pull(int);
 
+    enum { DO_IPOPT_PADDING = 1, DO_IPOPT_ROUTE = 2, DO_IPOPT_TS = 4,
+	   DO_IPOPT_UNKNOWN = 32,
+	   DO_IPOPT_ALL = 0xFFFFFFFFU, DO_IPOPT_ALL_NOPAD = 0xFFFFFFFEU };
+    static int parse_ip_opt_ascii(const char *, int, String *, int);
+
     enum { DO_TCPOPT_PADDING = 1, DO_TCPOPT_MSS = 2, DO_TCPOPT_WSCALE = 4,
 	   DO_TCPOPT_SACK = 8, DO_TCPOPT_TIMESTAMP = 16,
 	   DO_TCPOPT_UNKNOWN = 32,
-	   DO_TCPOPT_ALL = 0xFFFFFFFFU, DO_TCPOPT_ALL_NOPAD = 0xFFFFFFFEU };
+	   DO_TCPOPT_ALL = 0xFFFFFFFFU, DO_TCPOPT_ALL_NOPAD = 0xFFFFFFFEU,
+	   DO_TCPOPT_NTALL = 0xFFFFFFEEU };
     static int parse_tcp_opt_ascii(const char *, int, String *, int);
     
   private:
@@ -154,6 +162,7 @@ class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
     int _len;
     int _buffer_len;
     int _save_char;
+    int _recordno;
 
     Vector<int> _contents;
     uint16_t _default_proto;
@@ -175,7 +184,7 @@ class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
     uint32_t _multipacket_extra_length;
 
     Task _task;
-    Vector<String> _words;	// for speed
+    Notifier _notifier;
 
     String _filename;
     FILE *_pipe;
