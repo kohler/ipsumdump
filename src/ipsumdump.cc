@@ -398,6 +398,7 @@ particular purpose.\n");
     StringAccum psa;
     String toipsumdump_extra;
     String sample_elt;
+    int snaplen = (write_dump ? 2000 : 60);
     
     // elements to read packets
     if (action == 0)
@@ -407,7 +408,7 @@ particular purpose.\n");
 	    p_errh->fatal("`-i' option takes at least one DEVNAME");
 	if (collate)
 	    p_errh->fatal("`--collate' may not be used with `--interface' yet");
-	String config = ", SNAPLEN 60, FORCE_IP true";
+	String config = ", SNAPLEN " + String(snaplen) + ", FORCE_IP true";
 #if FROMDEVICE_PCAP
 	if (filter)
 	    config += ", BPF_FILTER " + cp_quote(filter);
@@ -474,8 +475,12 @@ particular purpose.\n");
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
     
     // possible elements to write tcpdump file
-    if (write_dump)
-	sa << "  -> { input -> t :: Tee -> output; t[1] -> ToDump(" << write_dump << ") }\n";
+    if (write_dump) {
+	sa << "  -> { input -> t :: Tee -> output;\n        t[1] -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
+	for (int i = 0; i < files.size(); i++)
+	    sa << " src" << i;
+	sa << ", SNAPLEN " << snaplen << ") }\n";
+    }
     
     // elements to dump summary log
     if (log_contents.size() == 0) {
@@ -511,6 +516,7 @@ particular purpose.\n");
     // catch control-C
     signal(SIGINT, catch_signal);
     signal(SIGHUP, catch_signal);
+    signal(SIGTERM, catch_signal);
 #ifdef SIGTSTP
     signal(SIGTSTP, catch_signal);
 #endif

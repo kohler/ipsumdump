@@ -2,10 +2,13 @@ elements/userlevel/fromdump.cc
 elements/userlevel/fromdump.hh
 elements/userlevel/todump.cc
 elements/userlevel/todump.hh
-elements/userlevel/fakepcap.h
+elements/userlevel/fakepcap.hh
+elements/userlevel/fakepcap.cc
 elements/userlevel/fromdevice.cc
 elements/userlevel/fromdevice.hh
 elements/local/mergebyts.cc
 elements/local/mergebyts.hh
 elements/standard/randomsample.cc
 elements/standard/randomsample.hh
+elements/standard/tee.cc
+elements/standard/tee.hh
