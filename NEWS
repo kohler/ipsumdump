@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.18   30.Dec.2001
+
+* Fix bug with --payload: ipsumdump could output a payload string
+  containing too much or too little data. Reported by Vern.
+
+
 Version 1.17   17.Dec.2001
 
 * Reading from network interfaces was broken by version 1.14: unless -w was
@@ -16,7 +22,7 @@ Version 1.16   30.Nov.2001
 Version 1.15   28.Nov.2001
 
 * --length, --payload-length, and --payload deal with IP length, ignoring
-  any link-level padding at the end.
+  any link-level padding at the end. Problem reported by Vern.
 
 
 Version 1.14   28.Nov.2001
@@ -24,7 +30,7 @@ Version 1.14   28.Nov.2001
 * Don't generate mistaken output for bad IP, TCP, or UDP headers (print
   dashes instead). Bad headers include IP versions other than 4, bad IP
   header lengths, bad TCP header lengths, and TCP/UDP headers not included
-  in a single fragment.
+  in a single fragment. Suggested by Vern.
 
 * Add --bad-packets option. When supplied, the IP summary dump contains
   messages like `!bad IP header length 2' on packets with bad IP, TCP, or
@@ -55,34 +61,35 @@ Version 1.11   29.Oct.2001
 Version 1.10   10.Oct.2001
 
 * Add --fragment and --fragoff options. Fix behavior with fragments.
+  Reported by Vern Paxson <vern@icir.org>.
 
 
-Version 1.9
+Version 1.9   10.Oct.2001
 
 * Add --record-counts option.
 
 
-Version 1.8
+Version 1.8   9.Oct.2001
 
 * Fix --filter option, and add --no-promisc.
 
 
-Version 1.7
+Version 1.7   9.Oct.2001
 
 * Bug fixes. Signal handling. Sampling works correctly with MULTIPACKET.
 
 
-Version 1.6
+Version 1.6   9.Oct.2001
 
 * The --write-tcpdump output file includes link-level headers.
 
 
-Version 1.5
+Version 1.5   8.Oct.2001
 
 * Add --random-seed option.
 
 
-Version 1.4
+Version 1.4   7.Oct.2001
 
 * Add --sample and --collate options.
 

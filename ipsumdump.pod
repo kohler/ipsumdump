@@ -381,7 +381,7 @@ See http://www.pdos.lcs.mit.edu/click/ for more on Click.
 
 =head1 AUTHOR
 
-Eddie Kohler <kohler@aciri.org>, based on the Click modular router.
+Eddie Kohler <kohler@icir.org>, based on the Click modular router.
 
-Extensive feedback and suggestions from Vern Paxson <vern@aciri.org>.
+Extensive feedback and suggestions from Vern Paxson <vern@icir.org>.
 Anonymization algorithm from tcpdpriv(1) by Greg Minshall.
