@@ -14,6 +14,7 @@
 #include <signal.h>
 
 #include "toipsumdump.hh"
+#include "fromdevice.hh"
 #include "bailerror.hh"
 
 #define HELP_OPT	300
@@ -51,41 +52,41 @@
 
 static Clp_Option options[] = {
 
-  { "help", 'h', HELP_OPT, 0, 0 },
-  { "version", 'v', VERSION_OPT, 0, 0 },
-  { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
+    { "help", 'h', HELP_OPT, 0, 0 },
+    { "version", 'v', VERSION_OPT, 0, 0 },
+    { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
 
-  { "interface", 'i', INTERFACE_OPT, 0, 0 },
-  { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
-  { "read-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
-  { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
-  { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
-  { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
-  { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
-  { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
-  { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
-  { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
-  { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
-  { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
-  { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
-  
-  { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
-  { "config", 0, CONFIG_OPT, 0, 0 },
+    { "interface", 'i', INTERFACE_OPT, 0, 0 },
+    { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
+    { "read-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
+    { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+    { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+    { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
+    { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
+    { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
+    { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
+    { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
+    { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
+    { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
+    { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
 
-  { "timestamps", 't', TIMESTAMP_OPT, 0, 0 },
-  { "src", 's', SRC_OPT, 0, 0 },
-  { "dst", 'd', DST_OPT, 0, 0 },
-  { "sport", 'S', SPORT_OPT, 0, 0 },
-  { "dport", 'D', DPORT_OPT, 0, 0 },
-  { "length", 'l', LENGTH_OPT, 0, 0 },
-  { "id", 0, IPID_OPT, 0, 0 },
-  { "protocol", 'p', PROTO_OPT, 0, 0 },
-  { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, 0 },
-  { "tcp-ack", 'K', TCP_ACK_OPT, 0, 0 },
-  { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, 0 },
-  { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
-  { "packet-count", 'c', COUNT_OPT, 0, 0 },
-  
+    { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+    { "config", 0, CONFIG_OPT, 0, 0 },
+
+    { "timestamps", 't', TIMESTAMP_OPT, 0, 0 },
+    { "src", 's', SRC_OPT, 0, 0 },
+    { "dst", 'd', DST_OPT, 0, 0 },
+    { "sport", 'S', SPORT_OPT, 0, 0 },
+    { "dport", 'D', DPORT_OPT, 0, 0 },
+    { "length", 'l', LENGTH_OPT, 0, 0 },
+    { "id", 0, IPID_OPT, 0, 0 },
+    { "protocol", 'p', PROTO_OPT, 0, 0 },
+    { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, 0 },
+    { "tcp-ack", 'K', TCP_ACK_OPT, 0, 0 },
+    { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, 0 },
+    { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
+    { "packet-count", 'c', COUNT_OPT, 0, 0 },
+
 };
 
 static const char *program_name;
@@ -157,10 +158,10 @@ Report bugs to <kohler@aciri.org>.\n", program_name);
 static void
 catch_sigint(int)
 {
-  signal(SIGINT, SIG_DFL);
-  if (!started)
-    kill(getpid(), SIGINT);
-  router->please_stop_driver();
+    signal(SIGINT, SIG_DFL);
+    if (!started)
+	kill(getpid(), SIGINT);
+    router->please_stop_driver();
 }
 
 static String
@@ -170,6 +171,36 @@ Clp_CurOptionName(Clp_Parser *clp)
     buf[0] = 0;
     Clp_CurOptionName(clp, buf, 1024);
     return buf;
+}
+
+static void
+write_drops_message(Router *r)
+{
+    int max_drops = 0;
+    bool less_than = false;
+    bool all_known = true;
+    for (int i = 0; i < r->nelements(); i++) {
+	FromDevice* fd = static_cast<FromDevice*>(r->element(i)->cast("FromDevice"));
+	if (fd) {
+	    int md;
+	    bool known;
+	    fd->kernel_drops(known, md);
+	    if (md < 0)
+		all_known = false;
+	    else if (!known)
+		less_than = true;
+	    max_drops += md;
+	}
+    }
+
+    ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(r->find("to_dump"));
+    assert(td);
+    if (!all_known)
+	td->write_string("!drops ??\n");
+    else if (less_than)
+	td->write_string("!drops <" + String(max_drops) + "\n");
+    else
+	td->write_string("!drops " + String(max_drops) + "\n");
 }
 
 extern void export_elements(Lexer *);
@@ -367,7 +398,7 @@ particular purpose.\n");
     }
     if (!output)
 	output = "-";
-    sa << "  -> ToIPSummaryDump(" << output << ", CONTENTS";
+    sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
     for (int i = 0; i < log_contents.size(); i++)
 	sa << ' ' << cp_quote(ToIPSummaryDump::unparse_content(log_contents[i]));
     sa << ", VERBOSE true, BANNER ";
@@ -408,6 +439,10 @@ particular purpose.\n");
     started = true;
     router->thread(0)->driver();
 
+    // print `!drops' message if appropriate
+    if (action == INTERFACE_OPT)
+	write_drops_message(router);
+    
     // print result of mapping addresses &/or prefixes
     if (map_prefixes.size()) {
 	// collect results

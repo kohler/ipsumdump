@@ -341,6 +341,12 @@ ToIPSummaryDump::run_scheduled()
 }
 
 void
+ToIPSummaryDump::write_string(const String &s)
+{
+    fwrite(s.data(), 1, s.length(), _f);
+}
+
+void
 ToIPSummaryDump::add_handlers()
 {
     if (input_is_pull(0))

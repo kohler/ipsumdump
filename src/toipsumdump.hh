@@ -100,6 +100,9 @@ Here are a couple lines from the start of a sample verbose dump.
   63.250.213.167 192.150.187.106
   63.250.213.167 192.150.187.106
 
+The end of the dump may contain a comment `C<!drops N>', meaning that C<N>
+packets were dropped before they could be entered into the dump.
+
 =n
 
 The `C<len>' and `C<payload len>' content types use the extra length
@@ -110,15 +113,15 @@ annotation. The `C<count>' content type uses the packet count annotation.
 FromDump, ToDump */
 
 class ToIPSummaryDump : public Element { public:
-  
+
     ToIPSummaryDump();
     ~ToIPSummaryDump();
-  
+
     const char *class_name() const	{ return "ToIPSummaryDump"; }
     const char *processing() const	{ return AGNOSTIC; }
     const char *flags() const		{ return "S2"; }
     ToIPSummaryDump *clone() const	{ return new ToIPSummaryDump; }
-  
+
     int configure(const Vector<String> &, ErrorHandler *);
     int initialize(ErrorHandler *);
     void uninitialize();
@@ -126,6 +129,8 @@ class ToIPSummaryDump : public Element { public:
 
     void push(int, Packet *);
     void run_scheduled();
+
+    void write_string(const String &);
 
     enum Content {		// must agree with FromIPSummaryDump
 	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
@@ -138,7 +143,7 @@ class ToIPSummaryDump : public Element { public:
     static const char *unparse_content(int);
 
     static const char * const tcp_flags_word = "FSRPAUXY";
-    
+
   private:
 
     String _filename;
