@@ -123,7 +123,7 @@ Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
-      --map-addr ADDRS       When done, print to stdout the anonymized IP\n\
+      --map-address ADDRS    When done, print to stderr the anonymized IP\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
@@ -140,6 +140,15 @@ catch_sigint(int)
   if (!started)
     kill(getpid(), SIGINT);
   router->please_stop_driver();
+}
+
+static String
+Clp_CurOptionName(Clp_Parser *clp)
+{
+    char buf[1024];
+    buf[0] = 0;
+    Clp_CurOptionName(clp, buf, 1024);
+    return buf;
 }
 
 extern void export_elements(Lexer *);
@@ -220,7 +229,7 @@ main(int argc, char *argv[])
 	      for (int i = 0; i < v.size(); i++) {
 		  IPAddress addr, mask;
 		  if (!cp_ip_prefix(v[i], &addr, &mask, true))
-		      die_usage("bad argument to `--map-prefix'");
+		      die_usage("can't parse `" + v[i] + "' as an IP address (" + Clp_CurOptionName(clp) + ")");
 		  map_prefixes.push_back(addr.addr());
 		  map_prefixes.push_back(mask.addr());
 	      }
@@ -346,26 +355,33 @@ particular purpose.\n");
     router->thread(0)->driver();
 
     // print result of mapping addresses &/or prefixes
-    if (anonymize) {
-	Element *anon = router->find("anon");
-	assert(anon);
+    if (map_prefixes.size()) {
+	// collect results
+	Vector<uint32_t> results;
+	if (anonymize) {
+	    Element *anon = router->find("anon");
+	    assert(anon);
+	    for (int i = 0; i < map_prefixes.size(); i += 2) {
+		IPAddress addr(map_prefixes[i]);
+		anon->local_llrpc(CLICK_LLRPC_MAP_IPADDRESS, addr.data());
+		results.push_back(addr.addr());
+	    }
+	} else
+	    for (int i = 0; i < map_prefixes.size(); i += 2)
+		results.push_back(map_prefixes[i]);
+
+	// then print results
 	for (int i = 0; i < map_prefixes.size(); i += 2) {
-	    IPAddress addr(map_prefixes[i]), mask(map_prefixes[i+1]);
-	    anon->local_llrpc(CLICK_LLRPC_MAP_IPADDRESS, addr.data());
+	    IPAddress addr(map_prefixes[i]), mask(map_prefixes[i+1]),
+		new_addr(results[i/2]);
 	    addr &= mask;
+	    new_addr &= mask;
 	    if (mask == 0xFFFFFFFFU)
-		printf("%s\n", addr.unparse().cc());
+		fprintf(stderr, "%s -> %s\n", addr.unparse().cc(), new_addr.unparse().cc());
 	    else
-		printf("%s\n", addr.unparse_with_mask(mask).cc());
+		fprintf(stderr, "%s -> %s\n", addr.unparse_with_mask(mask).cc(), new_addr.unparse_with_mask(mask).cc());
 	}
-    } else
-	for (int i = 0; i < map_prefixes.size(); i += 2) {
-	    IPAddress addr(map_prefixes[i]), mask(map_prefixes[i+1]);
-	    if (mask == 0xFFFFFFFFU)
-		printf("%s\n", addr.unparse().cc());
-	    else
-		printf("%s\n", addr.unparse_with_mask(mask).cc());
-	}
+    }
     
     // exit
     delete router;
