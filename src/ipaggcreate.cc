@@ -43,6 +43,7 @@
 #define READ_TUDUMP_OPT		404
 #define READ_IPADDR_OPT		405
 #define READ_BROCONN_OPT	406
+#define READ_DAGDUMP_OPT	407
 #define IPSUMDUMP_FORMAT_OPT	450
 
 // aggregates
@@ -72,6 +73,8 @@ static Clp_Option options[] = {
 
     { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
     { "read-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
+    { "dag", 0, READ_DAGDUMP_OPT, 0, 0 },
+    { "read-dag", 0, READ_DAGDUMP_OPT, 0, 0 },
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
@@ -172,6 +175,7 @@ Other aggregate options:\n\
 \n\
 Data source options (give exactly one):\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
+      --dag                  Read DAG files (from Waikato, NZ).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
       --ipsumdump            Read ipsumdump FILES.\n\
       --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
@@ -383,6 +387,7 @@ main(int argc, char *argv[])
 	  case READ_TUDUMP_OPT:
 	  case READ_IPADDR_OPT:
 	  case READ_BROCONN_OPT:
+	  case READ_DAGDUMP_OPT:
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
@@ -644,6 +649,25 @@ particular purpose.\n");
 	}
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
+	
+    } else if (action == READ_DAGDUMP_OPT) {
+	if (files.size() == 0)
+	    files.push_back("-");
+	String config = ", FORCE_IP true, STOP true";
+	if (do_sample) {
+	    config += ", SAMPLE " + String(sample);
+	    sample_elt = "src0";
+	}
+	if (time_config && files.size() == 1) {
+	    config += ", " + time_config;
+	    time_config = String();
+	}
+	if (timerisset(&split_time)) {
+	    config += ", END_CALL output";
+	    output_call_sa << "src0.extend_interval " << split_time;
+	}
+	for (int i = 0; i < files.size(); i++)
+	    psa << "src" << i << " :: FromDAGDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
 	
     } else if (action == READ_NETFLOW_SUMMARY_OPT) {
 	if (files.size() == 0)
