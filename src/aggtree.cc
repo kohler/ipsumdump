@@ -2,7 +2,6 @@
 #include "aggtree.hh"
 #include <click/confparse.hh>
 #include <click/error.hh>
-#include <packet_anno.hh>
 
 void
 AggregateTree::initialize_root()
@@ -18,14 +17,14 @@ AggregateTree::initialize_root()
 }
 
 void
-AggregateTree::copy_nodes(Node *n)
+AggregateTree::copy_nodes(Node *n, uint32_t mask)
 {
     if (n->count)
-	add(n->aggregate, n->count);
-    if (n->child[0])
-	copy_nodes(n->child[0]);
-    if (n->child[1])
-	copy_nodes(n->child[1]);
+	add(n->aggregate & mask, n->count);
+    if (n->child[0]) {
+	copy_nodes(n->child[0], mask);
+	copy_nodes(n->child[1], mask);
+    }
 }
 
 AggregateTree::AggregateTree()
@@ -114,52 +113,58 @@ bi_ffs(uint32_t value)
 // check to see tree is OK
 //
 
-static int
-node_ok(Node *n, int last_swivel, ErrorHandler *errh)
+static uint32_t
+node_ok(AggregateTree::Node *n, int last_swivel, ErrorHandler *errh)
 {
     if (n->child[0] && n->child[1]) {
 	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
 	if (swivel <= last_swivel)
-	    return errh->error("%u: bad swivel %d <= %d", n->aggregate, swivel, last_swivel);
+	    return errh->error("%x: bad swivel %d <= %d (%x-%x)", n->aggregate, swivel, last_swivel, n->child[0]->aggregate, n->child[1]->aggregate);
 	
 	uint32_t mask = (swivel == 1 ? 0 : 0xFFFFFFFFU << (33 - swivel));
 	if ((n->child[0]->aggregate & mask) != (n->aggregate & mask))
-	    return errh->error("%u: left child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
+	    return errh->error("%x: left child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
 	if ((n->child[1]->aggregate & mask) != (n->aggregate & mask))
-	    return errh->error("%u: right child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
+	    return errh->error("%x: right child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
 
 	mask = (1 << (32 - swivel));
 	if ((n->child[0]->aggregate & mask) != 0)
-	    return errh->error("%u: left child swivel bit one (swivel %d)", n->aggregate, swivel);
+	    return errh->error("%x: left child swivel bit one (swivel %d)", n->aggregate, swivel);
 	if ((n->child[1]->aggregate & mask) == 0)
-	    return errh->error("%u: right child swivel bit zero (swivel %d)", n->aggregate, swivel);
+	    return errh->error("%x: right child swivel bit zero (swivel %d)", n->aggregate, swivel);
+
+	mask = (swivel == 1 ? 0xFFFFFFFFU : (1 << (32 - swivel)) - 1);
+	if (n->aggregate & mask)
+	    return errh->error("%x: lower bits nonzero (swivel %d)", n->aggregate, swivel);
 
 	int ok1 = node_ok(n->child[0], swivel, errh);
 	int ok2 = node_ok(n->child[1], swivel, errh);
-	return (ok1 >= 0 && ok2 >= 0 ? 0 : -1);
+	int local_nnz = (n->count ? 1 : 0);
+	return ok1 + ok2 + local_nnz;
 	
     } else if (n->child[0] || n->child[1])
-	return errh->error("%u: only one live child", n->aggregate);
+	return errh->error("%x: only one live child", n->aggregate);
     else
-	return 0;
+	return (n->count ? 1 : 0);
 }
 
 bool
 AggregateTree::ok(ErrorHandler *errh) const
 {
     if (!errh)
-	errh = ErrorHandler::silent_handler();
-    return (node_ok(_root, -1, errh) >= 0);
+	errh = ErrorHandler::default_handler();
+
+    int before = errh->nerrors();
+    uint32_t nnz = node_ok(_root, -1, errh);
+    if (errh->nerrors() == before && nnz != _num_nonzero)
+	errh->error("bad num_nonzero: nominally %u, calculated %u", _num_nonzero, nnz);
+    
+    return (errh->nerrors() == before ? 0 : -1);
 }
 
 AggregateTree::Node *
 AggregateTree::make_peer(uint32_t a, Node *n)
 {
-    if (n->count == 0) {
-	n->aggregate = a;
-	return n;
-    }
-    
     /*
      * become a peer
      * algo: create two nodes, the two peers.  leave orig node as
@@ -178,6 +183,8 @@ AggregateTree::make_peer(uint32_t a, Node *n)
     int swivel = bi_ffs(a ^ n->aggregate);
     // bitvalue is the value of that bit of 'a'
     int bitvalue = (a >> (32 - swivel)) & 1;
+    // mask masks off all bits before swivel
+    uint32_t mask = (swivel == 1 ? 0 : (0xFFFFFFFFU << (33 - swivel)));
 
     down[bitvalue]->aggregate = a;
     down[bitvalue]->count = 0;
@@ -185,12 +192,14 @@ AggregateTree::make_peer(uint32_t a, Node *n)
 
     *down[1 - bitvalue] = *n;	/* copy orig node down one level */
 
-    n->aggregate = down[0]->aggregate;
-    n->count = down[0]->count;
+    n->aggregate = (down[0]->aggregate & mask);
+    if (down[0]->aggregate == n->aggregate) {
+	n->count = down[0]->count;
+	down[0]->count = 0;
+    } else
+	n->count = 0;
     n->child[0] = down[0];	/* point to children */
     n->child[1] = down[1];
-
-    down[0]->count = 0;
 
     return (n->aggregate == a ? n : down[bitvalue]);
 }
@@ -217,15 +226,106 @@ AggregateTree::find_node(uint32_t a)
 	}
     }
     
-    click_chatter("AggregateTree: out of memory!");
+    fprintf(stderr, "AggregateTree: out of memory!\n");
     return 0;
+}
+
+
+void
+AggregateTree::hard_fix_children(Node *n)
+{
+    int badbit = (n->child[0] ? 1 : 0);
+    assert(!n->child[badbit]);
+
+    int swivel = bi_ffs(n->child[1-badbit]->aggregate ^ n->aggregate);
+    if (swivel == 0)
+	swivel = 32;
+    uint32_t a = n->child[1-badbit]->aggregate ^ (1 << (32 - swivel));
+
+    Node *nn = n->child[badbit] = new_node();
+    if (nn) {
+	nn->aggregate = a;
+	nn->count = 0;
+	nn->child[0] = nn->child[1] = 0;
+    }
+}
+
+
+void
+AggregateTree::collapse_subtree(Node *root)
+{
+    if (root->child[0]) {
+	collapse_subtree(root->child[0]);
+	collapse_subtree(root->child[1]);
+	
+	int old_nnz = (root->count != 0) + (root->child[0]->count != 0) + (root->child[1]->count != 0);
+	root->count += root->child[0]->count + root->child[1]->count;
+	_num_nonzero += (root->count != 0) - old_nnz;
+	
+	free_node(root->child[0]);
+	free_node(root->child[1]);
+	root->child[0] = root->child[1] = 0;
+    }
+}
+
+void
+AggregateTree::node_to_prefix(Node *n, int prefix)
+{
+    uint32_t mask = (prefix == 0 ? 0 : 0xFFFFFFFFU << (32 - prefix));
+
+    if ((n->aggregate & mask) != n->aggregate) {
+	collapse_subtree(n);
+	n->aggregate &= mask;
+    
+    } else if (n->child[0]) {
+	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	//ErrorHandler::default_handler()->message("%d", swivel);
+	
+	if (swivel <= prefix) {
+	    node_to_prefix(n->child[0], prefix);
+	    node_to_prefix(n->child[1], prefix);
+	} else {
+	    // assert((n->child[0]->aggregate & mask) == (n->child[1]->aggregate & mask)); -- true
+	    collapse_subtree(n->child[0]);
+	    collapse_subtree(n->child[1]);
+	    if (n->child[0]->count && n->child[1]->count)
+		_num_nonzero--;
+	    n->child[0]->aggregate &= mask;
+	    n->child[0]->count += n->child[1]->count;
+	    n->child[1]->aggregate = n->child[0]->aggregate | 1;
+	    n->child[1]->count = 0;
+	}
+
+	if (n->child[0]->aggregate == n->aggregate) {
+	    if (n->child[0]->count && n->count)
+		_num_nonzero--;
+	    n->count += n->child[0]->count;
+	    n->child[0]->count = 0;
+	}
+    }
+}
+
+void
+AggregateTree::to_prefix(int prefix_len)
+{
+    assert(prefix_len >= 0 && prefix_len <= 32);
+    if (prefix_len < 32)
+	node_to_prefix(_root, prefix_len);
+}
+
+void
+AggregateTree::make_prefix(int prefix_len, AggregateTree &t)
+{
+    assert(prefix_len >= 0 && prefix_len <= 32);
+    uint32_t mask = (prefix_len == 0 ? 0 : 0xFFFFFFFFU << (32 - prefix_len));
+    t.copy_nodes(_root, mask);
 }
 
 
 int
 AggregateTree::read_file(FILE *f, ErrorHandler *errh)
 {
-    char buf[BUFSIZ];
+    char s[BUFSIZ];
     uint32_t agg, value;
     while (fgets(s, BUFSIZ, f)) {
 	if (strlen(s) == BUFSIZ - 1 && s[BUFSIZ - 2] != '\n')
@@ -305,10 +405,38 @@ AggregateTree::write_file(FILE *f, bool binary, ErrorHandler *errh) const
     }
 
     if (ferror(f))
-	return errh->error("%s: file error", where.cc());
+	return errh->error("file error");
     else
 	return 0;
 }
 
-ELEMENT_REQUIRES(userlevel)
-EXPORT_ELEMENT(AggregateTree)
+
+int
+main(int argc, char *argv[])
+{
+    /*Clp_Parser *clp = Clp_NewParser
+	(argc, argv, sizeof(options) / sizeof(options[0]), options);
+	program_name = Clp_ProgramName(clp);*/
+    
+    String::static_initialize();
+    cp_va_static_initialize();
+    ErrorHandler *errh = new FileErrorHandler(stderr, "");
+    ErrorHandler::static_initialize(errh);
+
+    AggregateTree orig_tree;
+    orig_tree.read_file(stdin, errh);
+    orig_tree.ok();
+    
+    AggregateTree tree(orig_tree);
+    tree.ok();
+    
+    fprintf(stderr, "NNZ 32 %u\n", tree.nnz());
+    for (int i = 31; i >= 0; i--) {
+	tree.to_prefix(i);
+	//AggregateTree q;
+	//orig_tree.make_prefix(i, q);
+	fprintf(stderr, "NNZ %d %u\n", i, tree.nnz());
+	//assert(tree.nnz() == q.nnz());
+    }
+    return 0;
+}
