@@ -280,7 +280,8 @@ minutes.) A sample comment:
   !counts out 0 kdrop 0
 
 This says that B<ipsumdump> has output 0 records, and the kernel reported 0
-packet drops since B<ipsumdump> began.
+packet drops since B<ipsumdump> began. `C<!bad>' lines are counted as
+records.
 
 =item B<--random-seed>=I<seed>
 
