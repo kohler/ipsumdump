@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.27   25.Apr.2003
+
+* Change build process to put dependency flags in their own variable (avoid
+  ./configure problems reported by Anestis Karasaridis).
+
+
 Version 1.26   22.Apr.2003
 
 * Update to newer version of Click (reduces ./configure problems).
