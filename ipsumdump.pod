@@ -4,7 +4,29 @@ ipsumdump - produce ASCII summary of network traffic or tcpdump(1) file
 
 =head1 SYNOPSIS
 
+ipsumdump [B<-r> | B<-i> | B<--netflow-summary>] [B<--src>, B<--dst>, B<--sport>, B<--dport>, ...] [other options] [I<files> or I<interfaces>]
+
 =head1 DESCRIPTION
+
+The B<ipsumdump> program reads IP packets from one or more data sources,
+then summarizes those packets into a line-based ASCII file. The resulting
+summary dump is easy to process with text-based tools.
+
+Here are the first couple of lines from sample B<ipsumdump> output, from
+`ipsumdump -sd /home/kohler/largedump.gz':
+
+  !IPSummaryDump 1.0
+  !creator "ipsumdump -sd /home/kohler/largedump.gz"
+  !host max.lcdf.org
+  !starttime 1000943858.353723 (Wed Sep 19 16:57:38 2001)
+  !data 'ip src' 'ip dst'
+  64.55.139.202 209.247.204.242
+  18.26.4.9 64.55.139.202
+
+The `B<-sd>' option tells B<ipsumdump> to log source and destination IP
+addresses; `F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file.
+Each data line represents a packet; a space separates the two addresses.
+The `C<!data>' line describes the contents of each data line.
 
 =head1 OPTIONS
 
@@ -14,9 +36,9 @@ B<Ipsumdump> can read data from tcpdump(1) files, from live network
 interfaces, or from NetFlow summary files. An optional data source option
 determines the kind of source B<ipsumdump> will use; any non-option
 arguments specify which files, or interfaces, to read. For example,
-`C<B<ipsumdump> -r eth0 eth1>' will read two tcpdump(1) files, named
-C<eth0> and C<eth1>; `C<B<ipsumdump> -i eth0 eth1>', on the other hand,
-will read from two live network interfaces, C<eth0> and C<eth1>.
+`ipsumdump B<-r> eth0 eth1' will read two tcpdump(1) files, named "eth0"
+and "eth1"; `ipsumdump B<-i> eth0 eth1', on the other hand, will read from
+two live network interfaces, "eth0" and "eth1".
 
 =over 4
 
@@ -24,7 +46,9 @@ will read from two live network interfaces, C<eth0> and C<eth1>.
 
 Read from one or more tcpdump(1) files, and stop when all the files are
 exhausted. This is the default. If no filenames are given, or if one of the
-filenames is a single dash C<->, reads from the standard input.
+filenames is a single dash C<->, reads from the standard input. The files
+may be compressed by gzip(1) or bzip2(1); B<ipsumdump> will uncompress them
+on the fly.
 
 =item B<--interface>, B<-i>
 
@@ -34,9 +58,9 @@ continue until interrupted with SIGINT.
 =item B<--netflow-summary>
 
 Read from one or more NetFlow summary files. These are line-oriented ASCII
-files; blank lines, and lines starting with `C<!>' or `C<#>', are ignored.
-Other lines should contain 15 or more fields separated by vertical bars
-`C<|>'. B<Ipsumdump> pays attention to some of these fields:
+files; blank lines, and lines starting with `!' or `#', are ignored. Other
+lines should contain 15 or more fields separated by vertical bars `|'.
+B<Ipsumdump> pays attention to some of these fields:
 
   Field  Meaning                       Example
   -----  ----------------------------  ----------
@@ -53,6 +77,13 @@ Other lines should contain 15 or more fields separated by vertical bars
 =back
 
 =head2 Dump Contents
+
+These options determine what actually goes in the dump. You can supply an
+arbitrary number of them. If you say `B<-sd>', for example -- or the
+equivalent `B<--src --dst>' -- the dump's data lines will contain an IP
+source address, a space, and an IP destination address:
+
+    192.168.1.101 18.26.4.44
 
 =over 4
 
@@ -120,7 +151,7 @@ Example: C<1>.
 
 =back
 
-=head2
+=head2 Other Options
 
 =over 4
 
@@ -130,8 +161,10 @@ Write the summary dump to I<file> instead of to the standard output.
 
 =item B<--filter>=I<filter>, B<-f> I<filter>
 
-Only include packets and flows matching a tcpdump(1) I<filter>. (The syntax
-for I<filter> is currently a subset of tcpdump's syntax.)
+Only include packets and flows matching a tcpdump(1) I<filter>. For
+example, `ipsumdump B<-f> "tcp && src net 18/8"' will summarize data only
+for TCP packets from net 18. (The syntax for I<filter> is currently a
+subset of tcpdump's syntax.)
 
 =item B<--anonymize>, B<-A>
 
@@ -173,3 +206,16 @@ Print version number and license information to the standard output, then
 exit.
 
 =back
+
+=head1 EXAMPLES
+
+=head1 SEE ALSO
+
+tcpdump(1), tcpdpriv(1)
+
+=head1 AUTHOR
+
+Eddie Kohler <kohler@aciri.org>, based on the Click modular router. See
+http://www.pdos.lcs.mit.edu/click/ for more on Click.
+
+Anonymization algorithm from tcpdpriv(1) by Greg Minshall.

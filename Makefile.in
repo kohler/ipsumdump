@@ -53,6 +53,7 @@ elemlist elemlists: always
 
 $(srcdir)/ipsumdump.1: $(srcdir)/ipsumdump.pod
 	pod2man -c '' -s 1 -r 'Version $(VERSION)' $(srcdir)/ipsumdump.pod > $(srcdir)/ipsumdump.1
+	perl -ni -e 'print unless /^\.if n \.na$$/;' $(srcdir)/ipsumdump.1
 always:
 	@:
 
