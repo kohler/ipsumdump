@@ -167,6 +167,10 @@ node_ok(AggregateTree::Node *n, int last_swivel, ErrorHandler *errh)
 	if (n->aggregate & mask)
 	    return errh->error("%x: lower bits nonzero (swivel %d)", n->aggregate, swivel);
 
+	// check topheaviness
+	if (n->aggregate == n->child[0]->aggregate && n->child[0]->count)
+	    return errh->error("%x: packets present in copied left child", n->aggregate);
+
 	int ok1 = node_ok(n->child[0], swivel, errh);
 	int ok2 = node_ok(n->child[1], swivel, errh);
 	int local_nnz = (n->count ? 1 : 0);
@@ -626,7 +630,7 @@ AggregateTree::make_prefix(int prefix_len, AggregateTree &t) const
 }
 
 void
-AggregateTree::nnz_in_prefixes(Vector<uint32_t> &out) const
+AggregateTree::num_active_prefixes(Vector<uint32_t> &out) const
 {
     AggregateTree copy(*this);
     out.assign(33, 0);
@@ -638,7 +642,7 @@ AggregateTree::nnz_in_prefixes(Vector<uint32_t> &out) const
 }
 
 void
-AggregateTree::nnz_in_left_prefixes(Vector<uint32_t> &out) const
+AggregateTree::num_active_left_prefixes(Vector<uint32_t> &out) const
 {
     AggregateTree copy(*this);
     out.assign(33, 0);
@@ -646,50 +650,6 @@ AggregateTree::nnz_in_left_prefixes(Vector<uint32_t> &out) const
     for (int i = 31; i >= 0; i--) {
 	copy.prefixize(i);
 	out[i] = copy.nnz_match(1 << (32 - i), 0);
-    }
-}
-
-
-//
-// DISCRIMINATING PREFIXES
-//
-
-uint32_t
-AggregateTree::node_to_discriminated_by(Node *n, const AggregateTree &prefix,
-					uint32_t mask, bool count)
-{
-    uint32_t result = 0;
-    
-    if (n->count) {
-	Node *nn = prefix.find_existing_node(n->aggregate & mask);
-	assert(nn && nn->count >= n->count);
-	if (nn->count > n->count) {
-	    result += (count ? n->count : 1);
-	    n->count = 0;
-	}
-    }
-
-    if (n->child[0]) {
-	result += node_to_discriminated_by(n->child[0], prefix, mask, count);
-	result += node_to_discriminated_by(n->child[1], prefix, mask, count);
-	if (!n->child[0]->child[0] && !n->child[1]->child[0]
-	    && !n->child[0]->count && !n->child[1]->count)
-	    collapse_subtree(n);
-    }
-
-    return result;
-}
-
-void
-AggregateTree::nnz_discriminated_by_prefix(Vector<uint32_t> &out) const
-{
-    AggregateTree copy(*this);
-    AggregateTree prefix(*this);
-    out.assign(33, 0);
-
-    for (int i = 32; i >= 1; i--) {
-	prefix.prefixize(i - 1);
-	out[i] = copy.node_to_discriminated_by(copy._root, prefix, prefix_to_mask(i - 1), false);
     }
 }
 
@@ -1039,6 +999,17 @@ AggregateTree::write_nodes(Node *n, FILE *f, bool binary,
 	write_nodes(n->child[0], f, binary, buffer, pos, len, errh);
     if (n->child[1])
 	write_nodes(n->child[1], f, binary, buffer, pos, len, errh);
+}
+
+void
+AggregateTree::write_hex_nodes(Node *n, FILE *f, ErrorHandler *errh)
+{
+    if (n->count > 0)
+	fprintf(f, "%08x %u\n", n->aggregate, n->count);
+    if (n->child[0])
+	write_hex_nodes(n->child[0], f, errh);
+    if (n->child[1])
+	write_hex_nodes(n->child[1], f, errh);
 }
 
 int

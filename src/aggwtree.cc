@@ -13,6 +13,8 @@ static inline uint32_t bswap_32(uint32_t u) {
 }
 #endif
 
+typedef AggregateWTree::WNode WNode;
+
 
 // AggregateTree methods
 
@@ -44,7 +46,8 @@ AggregateWTree::initialize_root()
     }
     _root->aggregate = 0;
     _root->count = _root->full_count = 0;
-    _root->child[0] = _root->child[1] = 0;
+    _root->child(0) = _root->child(1) = 0;
+    _root->depth = 0;
     _num_nonzero = 0;
 }
 
@@ -59,21 +62,30 @@ AggregateWTree::copy_nodes(const Node *n, uint32_t mask)
     }
 }
 
-AggregateWTree::AggregateWTree(int count_what)
-    : _free(0), _count_type(count_what)
+void
+AggregateWTree::set_count_type(int count_what)
 {
+    _topheavy = ((count_what & LEAF) == 0);
+    _count_type = (count_what & ~LEAF);
+}
+
+AggregateWTree::AggregateWTree(int count_what)
+    : _free(0)
+{
+    set_count_type(count_what);
     initialize_root();
 }
 
 AggregateWTree::AggregateWTree(const AggregateTree &o, int count_what)
-    : _free(0), _count_type(count_what)
+    : _free(0)
 {
+    set_count_type(count_what);
     initialize_root();
     copy_nodes(o._root);
 }
 
 AggregateWTree::AggregateWTree(const AggregateWTree &o)
-    : _free(0), _count_type(o._count_type)
+    : _free(0), _count_type(o._count_type), _topheavy(o._topheavy)
 {
     initialize_root();
     copy_nodes(o._root);
@@ -106,8 +118,8 @@ AggregateWTree::new_node_block()
 	return 0;
     _blocks.push_back(block);
     for (int i = 1; i < block_size - 1; i++)
-	block[i].child[0] = &block[i+1];
-    block[block_size - 1].child[0] = 0;
+	block[i].child(0) = &block[i+1];
+    block[block_size - 1].child(0) = 0;
     _free = &block[1];
     return &block[0];
 }
@@ -136,40 +148,46 @@ AggregateWTree::node_ok(WNode *n, int last_swivel, uint32_t *nnz_ptr,
     if (n->count && nnz_ptr)
 	(*nnz_ptr)++;
     uint32_t local_count = node_local_count(n);
+    if (n->depth != last_swivel)
+	errh->error("%x: bad depth %d <= %d", n->aggregate, n->depth, last_swivel);
     
-    if (n->child[0] && n->child[1]) {
-	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+    if (n->child(0) && n->child(1)) {
+	int swivel = bi_ffs(n->child(0)->aggregate ^ n->child(1)->aggregate);
 	if (swivel <= last_swivel)
-	    return errh->error("%x: bad swivel %d <= %d (%x-%x)", n->aggregate, swivel, last_swivel, n->child[0]->aggregate, n->child[1]->aggregate);
+	    return errh->error("%x: bad swivel %d <= %d (%x-%x)", n->aggregate, swivel, last_swivel, n->child(0)->aggregate, n->child(1)->aggregate);
 	
 	uint32_t mask = (swivel == 1 ? 0 : 0xFFFFFFFFU << (33 - swivel));
-	if ((n->child[0]->aggregate & mask) != (n->aggregate & mask))
+	if ((n->child(0)->aggregate & mask) != (n->aggregate & mask))
 	    return errh->error("%x: left child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
-	if ((n->child[1]->aggregate & mask) != (n->aggregate & mask))
+	if ((n->child(1)->aggregate & mask) != (n->aggregate & mask))
 	    return errh->error("%x: right child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
 
 	mask = (1 << (32 - swivel));
-	if ((n->child[0]->aggregate & mask) != 0)
+	if ((n->child(0)->aggregate & mask) != 0)
 	    return errh->error("%x: left child swivel bit one (swivel %d)", n->aggregate, swivel);
-	if ((n->child[1]->aggregate & mask) == 0)
+	if ((n->child(1)->aggregate & mask) == 0)
 	    return errh->error("%x: right child swivel bit zero (swivel %d)", n->aggregate, swivel);
 
 	mask = (swivel == 1 ? 0xFFFFFFFFU : (1 << (32 - swivel)) - 1);
 	if (n->aggregate & mask)
 	    return errh->error("%x: lower bits nonzero (swivel %d)", n->aggregate, swivel);
 
+	// check topheaviness
+	if (_topheavy && n->aggregate == n->child(0)->aggregate && n->child(0)->count)
+	    return errh->error("%x: packets present in copied left child", n->aggregate);
+	else if (!_topheavy && n->count)
+	    return errh->error("%x: packets present in middle of tree", n->aggregate);
+
 	// check child counts
-	uint32_t left_count =
-	    node_ok((WNode *) n->child[0], swivel, nnz_ptr, errh);
-	uint32_t right_count =
-	    node_ok((WNode *) n->child[1], swivel, nnz_ptr, errh);
+	uint32_t left_count = node_ok(n->child(0), swivel, nnz_ptr, errh);
+	uint32_t right_count = node_ok(n->child(1), swivel, nnz_ptr, errh);
 	if (left_count + right_count + local_count != n->full_count
 	    && left_count != NODE_OK_ERROR && right_count != NODE_OK_ERROR)
 	    return errh->error("%x: bad full count: nominally %u, calculated %u", n->aggregate, n->full_count, left_count + right_count + local_count);
 	
 	return left_count + right_count + local_count;
 	
-    } else if (n->child[0] || n->child[1])
+    } else if (n->child(0) || n->child(1))
 	return errh->error("%x: only one live child", n->aggregate);
     
     else if (local_count != n->full_count)
@@ -187,7 +205,7 @@ AggregateWTree::ok(ErrorHandler *errh) const
 
     int before = errh->nerrors();
     uint32_t nnz = 0;
-    (void) node_ok(_root, -1, &nnz, errh);
+    (void) node_ok(_root, 0, &nnz, errh);
     if (errh->nerrors() == before && nnz != _num_nonzero)
 	errh->error("bad num_nonzero: nominally %u, calculated %u", _num_nonzero, nnz);
 
@@ -225,22 +243,23 @@ AggregateWTree::make_peer(uint32_t a, WNode *n)
 
     down[bitvalue]->aggregate = a;
     down[bitvalue]->count = down[bitvalue]->full_count = 0;
-    down[bitvalue]->child[0] = down[bitvalue]->child[1] = 0;
+    down[bitvalue]->child(0) = down[bitvalue]->child(1) = 0;
 
     *down[1 - bitvalue] = *n;	/* copy orig node down one level */
 
+    down[0]->depth = down[1]->depth = swivel;
+    
     n->aggregate = (down[0]->aggregate & mask);
-    if (down[0]->aggregate == n->aggregate) {
+    if (down[0]->aggregate == n->aggregate && _topheavy) {
 	n->count = down[0]->count;
 	down[0]->full_count -= node_local_count(down[0]);
 	down[0]->count = 0;
     } else
 	n->count = 0;
-    n->child[0] = down[0];	/* point to children */
-    n->child[1] = down[1];
+    n->child(0) = down[0];	/* point to children */
+    n->child(1) = down[1];
 
-    (void) node_ok(n, 0, 0, ErrorHandler::default_handler());
-    return (n->aggregate == a ? n : down[bitvalue]);
+    return (n->aggregate == a && _topheavy ? n : down[bitvalue]);
 }
 
 void
@@ -251,7 +270,7 @@ AggregateWTree::finish_add(WNode *n, int32_t delta, WNode *stack[], int pos)
     n->count += delta;
     int32_t nnz_delta = (n->count != 0) - (old_count != 0);
     _num_nonzero += nnz_delta;
-    if (_count_type == COUNT_HOSTS)
+    if (_count_type == COUNT_ADDRS)
 	delta = nnz_delta;
     while (pos > 0) {
 	WNode *x = stack[--pos];
@@ -272,21 +291,25 @@ AggregateWTree::add(uint32_t a, int32_t delta)
 	stack[pos++] = n;
 	
 	if (n->aggregate == a) {
+	    if (!_topheavy && n->child(0) && n->child(0)->aggregate == a) {
+		n = n->child(0);
+		continue;
+	    }
 	    finish_add(n, delta, stack, pos);
 	    return;
 	}
 
-	if (!n->child[0])
+	if (!n->child(0))
 	    n = make_peer(a, n);
 	else {
 	    // swivel is the first bit in which the two children differ
-	    int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+	    int swivel = bi_ffs(n->child(0)->aggregate ^ n->child(1)->aggregate);
 	    if (bi_ffs(a ^ n->aggregate) < swivel) // input differs earlier
 		n = make_peer(a, n);
 	    else if (a & (1 << (32 - swivel)))
-		n = (WNode *)n->child[1];
+		n = n->child(1);
 	    else
-		n = (WNode *)n->child[0];
+		n = n->child(0);
 	}
     }
     
@@ -297,8 +320,8 @@ static void
 check_stack(AggregateWTree::WNode *stack[], int pos)
 {
     for (int i = 0; i < pos - 1; i++) {
-	int bitvalue = (stack[i]->child[1] == stack[i+1]);
-	assert(stack[i]->child[bitvalue] == stack[i+1]);
+	int bitvalue = (stack[i]->child(1) == stack[i+1]);
+	assert(stack[i]->child(bitvalue) == stack[i+1]);
     }
 }
 
@@ -307,7 +330,7 @@ AggregateWTree::adjust_num_nonzero(int32_t delta, WNode *stack[], int pos)
 {
     check_stack(stack, pos);
     _num_nonzero += delta;
-    if (_count_type == COUNT_HOSTS && delta)
+    if (_count_type == COUNT_ADDRS && delta)
 	for (int i = 0; i < pos; i++)
 	    stack[i]->full_count += delta;
 }
@@ -318,9 +341,9 @@ AggregateWTree::free_subtree_x(WNode *n, uint32_t &nnz, uint32_t &count)
     if (n->count)
 	nnz++;
     count += n->count;
-    if (n->child[0]) {
-	free_subtree_x((WNode *) n->child[0], nnz, count);
-	free_subtree_x((WNode *) n->child[1], nnz, count);
+    if (n->child(0)) {
+	free_subtree_x(n->child(0), nnz, count);
+	free_subtree_x(n->child(1), nnz, count);
     }
     free_node(n);
 }
@@ -329,17 +352,14 @@ void
 AggregateWTree::collapse_subtree(WNode *n, WNode *stack[], int pos)
 {
     assert(pos > 0 && stack[pos - 1] == n);
-    if (n->child[0]) {
-	uint32_t nnz = 0, count = 0;
-	free_subtree_x((WNode *) n->child[0], nnz, count);
-	free_subtree_x((WNode *) n->child[1], nnz, count);
-	n->child[0] = n->child[1] = 0;
-
-	nnz += (n->count != 0);
+    if (n->child(0)) {
+	uint32_t nnz = (n->count != 0), count = 0;
+	free_subtree_x(n->child(0), nnz, count);
+	free_subtree_x(n->child(1), nnz, count);
+	n->child(0) = n->child(1) = 0;
 	n->count += count;
 	adjust_num_nonzero((n->count != 0) - nnz, stack, pos);
-	if (_count_type == COUNT_PACKETS && count)
-	    n->full_count += count;
+	assert(n->full_count == node_local_count(n));
     }
 }
 
@@ -356,7 +376,7 @@ AggregateWTree::delete_subtree(WNode *n, WNode *stack[], int pos)
 //
 
 AggregateWTree::WNode *
-AggregateWTree::pick_random_nonzero_node(WNode *stack[], int *store_pos) const
+AggregateWTree::pick_random_active_node(WNode *stack[], int *store_pos) const
 {
     // return early if no nodes whatsoever in tree
     if (_num_nonzero == 0)
@@ -367,18 +387,18 @@ AggregateWTree::pick_random_nonzero_node(WNode *stack[], int *store_pos) const
     uint32_t v = ((uint32_t)random()) % (_root->full_count);
 
     while (n) {
-	uint32_t left_count = node_full_count((WNode *) n->child[0]);
+	uint32_t left_count = node_full_count(n->child(0));
 	uint32_t self_count = node_local_count(n);
-	assert(v < left_count + self_count + node_full_count((WNode *) n->child[1]));
+	assert(v < left_count + self_count + node_full_count(n->child(1)));
 	stack[pos++] = n;
 	if (v < left_count)
-	    n = (WNode *) n->child[0];
+	    n = n->child(0);
 	else if (v < left_count + self_count) {
 	    *store_pos = pos;
 	    return n;
 	} else {
 	    v -= left_count + self_count;
-	    n = (WNode *) n->child[1];
+	    n = n->child(1);
 	}
     }
 
@@ -388,25 +408,25 @@ AggregateWTree::pick_random_nonzero_node(WNode *stack[], int *store_pos) const
 }
 
 void
-AggregateWTree::cull_hosts(uint32_t max_nnz)
+AggregateWTree::cull_addresses(uint32_t max_nnz)
 {
     WNode *stack[32];
     int pos;
-    assert(_count_type == COUNT_HOSTS);
+    assert(_count_type == COUNT_ADDRS);
     while (_num_nonzero > max_nnz) {
-	WNode *n = pick_random_nonzero_node(stack, &pos);
+	WNode *n = pick_random_active_node(stack, &pos);
 	finish_add(n, -n->count, stack, pos);
     }
 }
 
 void
-AggregateWTree::cull_hosts_by_packets(uint32_t max_nnz)
+AggregateWTree::cull_addresses_by_packets(uint32_t max_nnz)
 {
     WNode *stack[32];
     int pos;
     assert(_count_type == COUNT_PACKETS);
     while (_num_nonzero > max_nnz) {
-	WNode *n = pick_random_nonzero_node(stack, &pos);
+	WNode *n = pick_random_active_node(stack, &pos);
 	finish_add(n, -1, stack, pos);
     }
 }
@@ -418,7 +438,7 @@ AggregateWTree::cull_packets(uint32_t max_np)
     int pos;
     assert(_count_type == COUNT_PACKETS);
     for (uint32_t np = _root->full_count; np > max_np; np--) {
-	WNode *n = pick_random_nonzero_node(stack, &pos);
+	WNode *n = pick_random_active_node(stack, &pos);
 	finish_add(n, -1, stack, pos);
     }
 }
@@ -438,17 +458,17 @@ AggregateWTree::node_prefixize(WNode *n, int prefix, WNode *stack[], int pos)
 	collapse_subtree(n, stack, pos);
 	n->aggregate &= mask;
     
-    } else if (n->child[0]) {
-	int swivel = bi_ffs(n->child[0]->aggregate ^ n->child[1]->aggregate);
+    } else if (n->child(0)) {
+	int swivel = bi_ffs(n->child(0)->aggregate ^ n->child(1)->aggregate);
 	//ErrorHandler::default_handler()->message("%d", swivel);
 	
 	if (swivel <= prefix) {
-	    node_prefixize((WNode *) n->child[0], prefix, stack, pos);
-	    node_prefixize((WNode *) n->child[1], prefix, stack, pos);
+	    node_prefixize(n->child(0), prefix, stack, pos);
+	    node_prefixize(n->child(1), prefix, stack, pos);
 	} else {
-	    // assert((n->child[0]->aggregate & mask) == (n->child[1]->aggregate & mask)); -- true
-	    WNode *left = (WNode *) n->child[0];
-	    WNode *right = (WNode *) n->child[1];
+	    // assert((n->child(0)->aggregate & mask) == (n->child(1)->aggregate & mask)); -- true
+	    WNode *left = n->child(0);
+	    WNode *right = n->child(1);
 	    
 	    stack[pos] = left;
 	    collapse_subtree(left, stack, pos + 1);
@@ -468,9 +488,9 @@ AggregateWTree::node_prefixize(WNode *n, int prefix, WNode *stack[], int pos)
 	    right->count = right->full_count = 0;
 	}
 
-	if (n->child[0]->aggregate == n->aggregate && n->child[0]->count) {
-	    uint32_t count = n->child[0]->count;
-	    stack[pos] = (WNode *) n->child[0];
+	if (n->child(0)->aggregate == n->aggregate && n->child(0)->count && _topheavy) {
+	    uint32_t count = n->child(0)->count;
+	    stack[pos] = n->child(0);
 	    finish_add(stack[pos], -count, stack, pos + 1);
 	    finish_add(n, count, stack, pos);
 	}
@@ -491,6 +511,129 @@ AggregateWTree::make_prefix(int prefix_len, AggregateWTree &t) const
 {
     assert(prefix_len >= 0 && prefix_len <= 32);
     t.copy_nodes(_root, prefix_to_mask(prefix_len));
+}
+
+void
+AggregateWTree::num_active_prefixes(Vector<uint32_t> &out) const
+{
+    AggregateTree copy(*this);
+    out.assign(33, 0);
+    out[32] = nnz();
+    for (int i = 31; i >= 0; i--) {
+	copy.prefixize(i);
+	out[i] = copy.nnz();
+    }
+}
+
+
+//
+// DISCRIMINATING PREFIXES
+//
+
+static uint32_t
+node_discriminated_by(WNode *n, Vector<uint32_t> &ndp)
+{
+    if (n->child(0)) {
+	assert(!n->count);
+	WNode *left = n->child(0), *right = n->child(1);
+	uint32_t nnondiscrim = node_discriminated_by(left, ndp)
+	    + node_discriminated_by(right, ndp);
+	if (nnondiscrim && left->full_count && right->full_count) {
+	    int swivel = bi_ffs(left->aggregate ^ right->aggregate);
+	    ndp[swivel] += nnondiscrim;
+	    nnondiscrim = 0;
+	}
+	return nnondiscrim;
+    } else
+	return (n->count != 0);
+}
+
+void
+AggregateWTree::num_discriminated_by_prefix(Vector<uint32_t> &ndp) const
+{
+    assert(!_topheavy);
+    ndp.assign(33, 0);
+    uint32_t any = node_discriminated_by(_root, ndp);
+    assert(any == 0 || any == 1);
+    ndp[0] += any;
+}
+
+
+//
+// COLLECT ACTIVE NODES
+//
+
+static void
+node_collect_active(WNode *n, Vector<WNode *> &v)
+{
+    if (n->count)
+	v.push_back(n);
+    if (n->child(0)) {
+	node_collect_active(n->child(0), v);
+	node_collect_active(n->child(1), v);
+    }
+}
+
+void
+AggregateWTree::collect_active(Vector<WNode *> &v) const
+{
+    v.reserve(v.size() + _num_nonzero);
+    node_collect_active(_root, v);
+}
+
+
+//
+// FAKING BASED ON DISCRIMINATING PREFIX
+//
+
+void
+AggregateWTree::fake_by_discriminating_prefix(int p, const Vector<uint32_t> &ndp)
+{
+    assert(ndp.size() == p + 1 && !_topheavy);
+    
+    if (p == 0) {
+	assert(_num_nonzero == 0 && _root->count == 0 && !_root->child(0));
+	assert(ndp[0] == 0 || ndp[0] == 1);
+	if (ndp[0])
+	    add(0, 1);
+	return;
+    }
+    ok();
+    fprintf(stderr, "\n");
+    if (p < 10)
+	write_hex_file(stderr, ErrorHandler::default_handler());
+
+    assert(p == 32 || _num_nonzero <= (1U << p));
+
+    // collect nonzero nodes
+    Vector<WNode *> nzn;
+    collect_active(nzn);
+    for (int i = 0; i < nzn.size(); i++)
+	assert(nzn[i]->depth <= p);
+
+    // XXX permute nzn
+
+    for (int q = 0; q <= p; q++)
+	for (int count = ndp[q]; count > 0; count--) {
+	    // choose an element of 'nzn' with size at least 'q'
+	    int j;
+	    for (j = 0; j < nzn.size() && nzn[j]->depth > q; j++)
+		/* nada */;
+
+	    // split that node at this level
+	    WNode *n = nzn[j];
+	    uint32_t right_aggregate = n->aggregate | (1 << (32 - q));
+	    if (n->depth < q)
+		(void) make_peer(right_aggregate, n);
+	    if (count > 1) {
+		add(right_aggregate, 1);
+		count--;
+	    }
+
+	    // remove from nzn
+	    nzn[j] = nzn.back();
+	    nzn.pop_back();
+	}
 }
 
 
@@ -559,6 +702,19 @@ AggregateWTree::write_file(FILE *f, bool binary, ErrorHandler *errh) const
     AggregateTree::write_nodes(_root, f, binary, buf, pos, 1024, errh);
     if (pos)
 	AggregateTree::write_batch(f, binary, buf, pos, errh);
+
+    if (ferror(f))
+	return errh->error("file error");
+    else
+	return 0;
+}
+
+int
+AggregateWTree::write_hex_file(FILE *f, ErrorHandler *errh) const
+{
+    fprintf(f, "$num_nonzero %u\n", _num_nonzero);
+    
+    AggregateTree::write_hex_nodes(_root, f, errh);
 
     if (ferror(f))
 	return errh->error("file error");

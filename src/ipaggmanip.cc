@@ -35,13 +35,14 @@
 #define SAMPLE_ACT		403
 #define CUT_SMALLER_ACT		404
 #define CUT_LARGER_ACT		405
-#define CULL_HOSTS_ACT		406
-#define CULL_HOSTS_BY_PACKETS_ACT 407
+#define CULL_ADDRS_ACT		406
+#define CULL_ADDRS_BY_PACKETS_ACT 407
 #define CULL_PACKETS_ACT	408
 #define CUT_SMALLER_AGG_ACT	409
 #define CUT_LARGER_AGG_ACT	410
-#define CUT_SMALLER_HOST_AGG_ACT 411
-#define CUT_LARGER_HOST_AGG_ACT	412
+#define CUT_SMALLER_ADDR_AGG_ACT 411
+#define CUT_LARGER_ADDR_AGG_ACT	412
+#define FAKE_BY_DISCRIM_ACT	413
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -55,6 +56,7 @@
 #define SORTED_SIZES_ACT	508
 #define BALANCE_ACT		509
 #define BALANCE_HISTOGRAM_ACT	510
+#define ALL_NNZ_DISCRIM_ACT	511
 
 #define CLP_TWO_UINTS_TYPE	(Clp_MaxDefaultType + 1)
 
@@ -76,13 +78,18 @@ static Clp_Option options[] = {
 
   { "num", 'n', NNZ_ACT, 0, 0 },
   { "num-nonzero", 'n', NNZ_ACT, 0, 0 },
-  { "nnz", 'n', NNZ_ACT, 0, 0 },
+  { "num-active", 'n', NNZ_ACT, 0, 0 },
+  { "nnz", 'N', NNZ_ACT, 0, 0 },
   { "num-in-prefixes", 0, NNZ_PREFIX_ACT, 0, 0 },
   { "nnz-in-prefixes", 0, NNZ_PREFIX_ACT, 0, 0 },
   { "num-in-left-prefixes", 0, NNZ_LEFT_PREFIX_ACT, 0, 0 },
   { "nnz-in-left-prefixes", 0, NNZ_LEFT_PREFIX_ACT, 0, 0 },
+  { "discriminating-prefix-counts", 0, NNZ_DISCRIM_ACT, 0, 0 },
+  { "discpfx-counts", 0, NNZ_DISCRIM_ACT, 0, 0 },
   { "num-discriminated-by-prefix", 0, NNZ_DISCRIM_ACT, 0, 0 },
-  { "nnz-discriminated-by-prefix", 0, NNZ_DISCRIM_ACT, 0, 0 },
+  { "all-discriminating-prefix-counts", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
+  { "all-discpfx-counts", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
+  { "all-num-discriminated-by-prefix", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
   { "prefix", 'p', PREFIX_ACT, Clp_ArgUnsigned, 0 },
   { "posterize", 'P', POSTERIZE_ACT, 0, 0 },
   { "average-and-variance", 0, AVG_VAR_ACT, 0, 0 },
@@ -92,18 +99,25 @@ static Clp_Option options[] = {
   { "sample", 0, SAMPLE_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller-aggregates", 0, CUT_SMALLER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
-  { "cut-smaller-host-aggregates", 0, CUT_SMALLER_HOST_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "cut-smaller-host-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "cut-smaller-address-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger", 0, CUT_LARGER_ACT, Clp_ArgUnsigned, 0 },
   { "cut-larger-aggregates", 0, CUT_LARGER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
-  { "cut-larger-host-aggregates", 0, CUT_LARGER_HOST_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
-  { "cull-hosts", 0, CULL_HOSTS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-hosts-by-packets", 0, CULL_HOSTS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+  { "cut-larger-host-aggregates", 0, CUT_LARGER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "cut-larger-address-aggregates", 0, CUT_LARGER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "cull-addresses", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-addrs", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-hosts", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-addresses-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-addrs-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-hosts-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "haar-wavelet-energy", 0, HAAR_WAVELET_ENERGY_ACT, 0, 0 },
   { "sizes", 0, SIZES_ACT, 0, 0 },
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "fake-by-discriminating-prefix", 0, FAKE_BY_DISCRIM_ACT, 0, 0 },
   
 };
 
@@ -134,33 +148,36 @@ Usage: %s ACTION [ACTIONS...] [FILES] > OUTPUT\n\
 \n\
 Actions: (Results of final action sent to output.)\n\
   -|, --or                   Combine all packets from FILES.\n\
-  -&, --and                  Combine FILES, but drop any host not present in\n\
-                             every file.\n\
+  -&, --and                  Combine FILES, but drop any address not present\n\
+                             in every file.\n\
       --and-list             Output results for FILE1, then FILE1 & FILE2,\n\
                              then FILE1 & FILE2 & FILE3, and so on.\n\
-      --minus                Drop any host in FILE1 present in any other FILE.\n\
-  -^, --xor                  Combine FILES, but drop any host present in more\n\
-                             than one FILE.\n\
+      --minus                Drop any address in FILE1 present in any other\n\
+                             FILE.\n\
+  -^, --xor                  Combine FILES, but drop any address present in\n\
+                             more than one FILE.\n\
   -e, --each                 Output result for each FILE separately.\n\
   Also say \"'(+' FILE FILE ... ')'\" to --or particular files, or\n\
   \"'(&' FILE ... ')'\" for --and, \"'(-' FILE ... ')'\" for --minus,\n\
   \"'(^' FILE ... ')'\" for --xor.\n\
 \n\
-  -n, --num-nonzero          Number of nonzero hosts.\n\
-      --nnz-in-prefixes      Number of nonzero p-aggregates for all p.\n\
-      --nnz-in-left-prefixes Number nonzero left-hand p-aggregates for all p.\n\
-      --nnz-discriminated-by-prefix   Number of nonzero hosts with\n\
+  -N, --num-active           Number of active addresses.\n\
+      --num-in-prefixes      Number of active p-aggregates for all p.\n\
+      --num-in-left-prefixes Number of active left-hand p-aggregates for all p.\n\
+      --discriminating-prefix-counts   Number of active addresses with\n\
                              discriminating prefix p for all p.\n\
-      --sizes                All nonzero aggregate sizes in arbitrary order.\n\
-      --sorted-sizes         All nonzero aggregate sizes in decreasing order\n\
+      --all-discriminating-prefix-counts   Number of active p-aggregates with\n\
+                             p-discriminating prefix q for all p, q.\n\
+      --sizes                All active aggregate sizes in arbitrary order.\n\
+      --sorted-sizes         All active aggregate sizes in decreasing order\n\
                              by size.\n\
       --balance P            Print left-right balance at prefix level P.\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
       --sample N             Reduce counts by randomly sampling 1 in N.\n\
-      --cull-hosts N         Reduce --num-nonzero to at most N by removing\n\
-                             randomly selected hosts.\n\
-      --cull-hosts-by-packets N       Reduce --num-nonzero to at most N by\n\
+      --cull-addresses N     Reduce --num-active to at most N by removing\n\
+                             randomly selected addresses.\n\
+      --cull-addresses-by-packets N   Reduce --num-active to at most N by\n\
                              removing randomly selected packets.\n\
       --cull-packets N       Reduce total number of packets to at most N by
                              removing randomly selected packets.\n\
@@ -170,14 +187,14 @@ Actions: (Results of final action sent to output.)\n\
                              less than N.
       --cut-larger-aggregates P,N     Zero counts for P-aggregates with size\n\
                              greater than or equal to N.
-      --cut-smaller-host-aggregates P,N    Zero counts for P-aggregates with\n\
-                             less than N nonempty hosts.\n\
-      --cut-larger-host-aggregates P,N     Zero counts for P-aggregates with\n\
-                             greater than or equal to N nonempty hosts.\n\
+      --cut-smaller-address-aggregates P,N   Zero counts for P-aggregates with\n\
+                             less than N active addresses.\n\
+      --cut-larger-address-aggregates P,N    Zero counts for P-aggregates with\n\
+                             greater than or equal to N active addresses.\n\
       --average-and-variance, --avg-var\n\
-                             Average and variance of nonzero hosts.\n\
+                             Average and variance of active addresses.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
-                             Average and variance of nonzero p-aggregates for\n\
+                             Average and variance of active p-aggregates for\n\
                              all p.\n\
       --haar-wavelet-energy  Haar wavelet energy coefficients.\n\
       --balance N\n\
@@ -422,35 +439,53 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 #endif
 	    break;
 
-	  case CUT_SMALLER_HOST_AGG_ACT:
+	  case CUT_SMALLER_ADDR_AGG_ACT:
 	    tree.cut_smaller_host_aggregates(action_extra, action_extra2);
 	    break;
 	    
-	  case CUT_LARGER_HOST_AGG_ACT:
+	  case CUT_LARGER_ADDR_AGG_ACT:
 	    tree.cut_larger_host_aggregates(action_extra, action_extra2);
 	    break;
 	    
-	  case CULL_HOSTS_ACT: {
-	      AggregateWTree wtree(tree, false);
-	      wtree.cull_hosts(action_extra);
+	  case CULL_ADDRS_ACT: {
+	      AggregateWTree wtree(tree, AggregateWTree::COUNT_ADDRS);
+	      wtree.cull_addresses(action_extra);
 	      //wtree.ok();
 	      tree = wtree;
 	      break;
 	  }
 	  
-	  case CULL_HOSTS_BY_PACKETS_ACT: {
-	      AggregateWTree wtree(tree, true);
-	      wtree.cull_hosts_by_packets(action_extra);
+	  case CULL_ADDRS_BY_PACKETS_ACT: {
+	      AggregateWTree wtree(tree, AggregateWTree::COUNT_PACKETS);
+	      wtree.cull_addresses_by_packets(action_extra);
 	      //wtree.ok();
 	      tree = wtree;
 	      break;
 	  }
 	  
 	  case CULL_PACKETS_ACT: {
-	      AggregateWTree wtree(tree, true);
+	      AggregateWTree wtree(tree, AggregateWTree::COUNT_PACKETS);
 	      wtree.cull_packets(action_extra);
 	      //wtree.ok();
 	      tree = wtree;
+	      break;
+	  }
+
+	  case FAKE_BY_DISCRIM_ACT: {
+	      Vector<uint32_t> *nnzp = new Vector<uint32_t>[33];
+	      AggregateWTree wtree(tree, AggregateWTree::COUNT_ADDRS_LEAF);
+	      for (int i = 32; i > 0; i--) {
+		  wtree.num_discriminated_by_prefix(nnzp[i]);
+		  wtree.prefixize(i - 1);
+	      }
+	      wtree.num_discriminated_by_prefix(nnzp[0]);
+	      AggregateWTree new_tree(AggregateWTree::COUNT_ADDRS_LEAF);
+	      for (int i = 0; i <= 32; i++) {
+		  nnzp[i].resize(i + 1);
+		  new_tree.fake_by_discriminating_prefix(i, nnzp[i]);
+	      }
+	      delete[] nnzp;
+	      tree = new_tree;
 	      break;
 	  }
 
@@ -469,22 +504,39 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 
       case NNZ_PREFIX_ACT: {
 	  Vector<uint32_t> nnzp;
-	  tree.nnz_in_prefixes(nnzp);
+	  tree.num_active_prefixes(nnzp);
 	  write_vector(nnzp, out);
 	  break;
       }
 
       case NNZ_LEFT_PREFIX_ACT: {
 	  Vector<uint32_t> nnzp;
-	  tree.nnz_in_left_prefixes(nnzp);
+	  tree.num_active_left_prefixes(nnzp);
 	  write_vector(nnzp, out);
 	  break;
       }
 
       case NNZ_DISCRIM_ACT: {
 	  Vector<uint32_t> nnzp;
-	  tree.nnz_discriminated_by_prefix(nnzp);
+	  AggregateWTree wtree(tree, AggregateWTree::COUNT_ADDRS_LEAF);
+	  wtree.num_discriminated_by_prefix(nnzp);
 	  write_vector(nnzp, out);
+	  break;
+      }
+
+      case ALL_NNZ_DISCRIM_ACT: {
+	  Vector<uint32_t> *nnzp = new Vector<uint32_t>[33];
+	  AggregateWTree wtree(tree, AggregateWTree::COUNT_ADDRS_LEAF);
+	  for (int i = 32; i > 0; i--) {
+	      wtree.num_discriminated_by_prefix(nnzp[i]);
+	      wtree.prefixize(i - 1);
+	  }
+	  wtree.num_discriminated_by_prefix(nnzp[0]);
+	  for (int i = 0; i <= 32; i++) {
+	      nnzp[i].resize(i + 1);
+	      write_vector(nnzp[i], out);
+	  }
+	  delete[] nnzp;
 	  break;
       }
 
@@ -557,13 +609,14 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case SAMPLE_ACT:
       case CUT_SMALLER_ACT:
       case CUT_LARGER_ACT:
-      case CULL_HOSTS_ACT:
-      case CULL_HOSTS_BY_PACKETS_ACT:
+      case CULL_ADDRS_ACT:
+      case CULL_ADDRS_BY_PACKETS_ACT:
       case CULL_PACKETS_ACT:
       case CUT_SMALLER_AGG_ACT:
       case CUT_LARGER_AGG_ACT:
-      case CUT_SMALLER_HOST_AGG_ACT:
-      case CUT_LARGER_HOST_AGG_ACT:
+      case CUT_SMALLER_ADDR_AGG_ACT:
+      case CUT_LARGER_ADDR_AGG_ACT:
+      case FAKE_BY_DISCRIM_ACT:
       case NO_ACT:
 	tree.write_file(out, output_binary, errh);
 	break;
@@ -645,6 +698,8 @@ particular purpose.\n");
 	  case HAAR_WAVELET_ENERGY_ACT:
 	  case SIZES_ACT:
 	  case SORTED_SIZES_ACT:
+	  case ALL_NNZ_DISCRIM_ACT:
+	  case FAKE_BY_DISCRIM_ACT:
 	    add_action(opt);
 	    break;
 
@@ -662,8 +717,8 @@ particular purpose.\n");
 
 	  case CUT_SMALLER_AGG_ACT:
 	  case CUT_LARGER_AGG_ACT:
-	  case CUT_SMALLER_HOST_AGG_ACT:
-	  case CUT_LARGER_HOST_AGG_ACT:
+	  case CUT_SMALLER_ADDR_AGG_ACT:
+	  case CUT_LARGER_ADDR_AGG_ACT:
 	  case BALANCE_HISTOGRAM_ACT:
 	    if (clp->val.us[0] > 31)
 		die_usage("`" + String(Clp_CurOptionName(clp)) + "' prefix must be between 0 and 31");
@@ -673,8 +728,8 @@ particular purpose.\n");
 	  case SAMPLE_ACT:
 	  case CUT_SMALLER_ACT:
 	  case CUT_LARGER_ACT:
-	  case CULL_HOSTS_ACT:
-	  case CULL_HOSTS_BY_PACKETS_ACT:
+	  case CULL_ADDRS_ACT:
+	  case CULL_ADDRS_BY_PACKETS_ACT:
 	  case CULL_PACKETS_ACT:
 	    add_action(opt, clp->val.u);
 	    break;
