@@ -78,8 +78,10 @@ B<Ipsumdump> pays attention to some of these fields:
   5      Packet count in flow          5
   6      Byte count in flow            10932
   7      Flow timestamp (UNIX-style)   998006995
+  8      Flow end timestamp            998006999
   9      Source port                   3917
   10     Destination port              80
+  12     TCP flags (OR of all pkts)    18
   13     IP protocol                   6
   14     IP TOS bits                   0
 
@@ -114,7 +116,14 @@ tcpdump file with B<--write-tcpdump>.
 
 =item B<--timestamp>, B<-t>
 
-Include packet timestamp in the dump. Example: C<1000212480.005813>.
+Include packet timestamp in the dump. Example: C<1000212480.005813>. For
+NetFlow summary input, the packet timestamp equals the flow-end timestamp.
+
+=item B<--first-timestamp>, B<-T>
+
+Include flow-begin timestamp in the dump. Example: C<1000212479.001937>.
+This is meaningful only for packet sources that include flow-begin
+timestamps, such as NetFlow summaries.
 
 =item B<--src>, B<-s>
 

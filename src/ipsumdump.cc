@@ -50,6 +50,7 @@
 // options for logging
 #define FIRST_LOG_OPT	1000
 #define TIMESTAMP_OPT	(1000 + ToIPSummaryDump::W_TIMESTAMP)
+#define FIRST_TIMESTAMP_OPT (1000 + ToIPSummaryDump::W_FIRST_TIMESTAMP)
 #define SRC_OPT		(1000 + ToIPSummaryDump::W_SRC)
 #define DST_OPT		(1000 + ToIPSummaryDump::W_DST)
 #define SPORT_OPT	(1000 + ToIPSummaryDump::W_SPORT)
@@ -104,7 +105,8 @@ static Clp_Option options[] = {
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
 
-    { "timestamps", 't', TIMESTAMP_OPT, 0, 0 },
+    { "timestamp", 't', TIMESTAMP_OPT, 0, 0 },
+    { "first-timestamp", 'T', FIRST_TIMESTAMP_OPT, 0, 0 },
     { "src", 's', SRC_OPT, 0, 0 },
     { "dst", 'd', DST_OPT, 0, 0 },
     { "sport", 'S', SPORT_OPT, 0, 0 },
@@ -154,6 +156,7 @@ Usage: %s [CONTENT OPTIONS] [-i DEVNAMES | FILES] > LOGFILE\n\
 \n\
 Options that determine summary dump contents (can give multiple options):\n\
   -t, --timestamp            Include packet timestamps.\n\
+  -T, --first-timestamp      Include flow-begin timestamps.\n\
   -s, --src                  Include IP source addresses.\n\
   -d, --dst                  Include IP destination addresses.\n\
   -S, --sport                Include TCP/UDP source ports.\n\
@@ -171,7 +174,8 @@ Options that determine summary dump contents (can give multiple options):\n\
   -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
       --payload              Include packet payloads as quoted strings.\n\
   -c, --packet-count         Include packet counts (usually 1).\n\
-\n\
+\n", program_name);
+  printf("\
 Data source options (give exactly one):\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
@@ -190,7 +194,8 @@ Other options:\n\
       --bad-packets          Print `!bad' messages for bad headers.\n\
       --sample PROB          Sample packets with PROB probability.\n\
       --multipacket          Produce multiple entries for a flow identifier\n\
-                             representing multiple packets (NetFlow only).\n\
+                             representing multiple packets (NetFlow only).\n");
+  printf("\
       --collate              Collate packets from data sources by timestamp.\n\
       --interval TIME        Stop after TIME has elapsed in trace time.\n\
       --limit-packets N      Stop after processing N packets.\n\
@@ -204,7 +209,7 @@ Other options:\n\
   -h, --help                 Print this message and exit.\n\
   -v, --version              Print version number and exit.\n\
 \n\
-Report bugs to <kohler@aciri.org>.\n", program_name);
+Report bugs to <kohler@icir.org>.\n");
 }
 
 // Stop the driver this many aggregate times to end the program.

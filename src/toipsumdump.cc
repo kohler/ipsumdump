@@ -26,8 +26,7 @@
 #include <clicknet/udp.h>
 #include <clicknet/tcp.h>
 #include <unistd.h>
-#include <ctime>
-#include <sys/time.h>
+#include <time.h>
 CLICK_DECLS
 
 #ifdef i386
@@ -589,12 +588,17 @@ ToIPSummaryDump::summary(Packet *p, StringAccum &sa) const
 	  case W_TCP_FLAGS: {
 	      if (!tcph)
 		  goto no_data;
-	      int flags = tcph->th_flags;
-	      for (int flag = 0; flag < 7; flag++)
-		  if (flags & (1 << flag))
-		      sa << tcp_flags_word[flag];
-	      if (!flags)
+	      int flags = tcph->th_flags | (tcph->th_flags2 << 8);
+	      if (flags == (TH_ACK | TH_PUSH))
+		  sa << 'P' << 'A';
+	      else if (flags == TH_ACK)
+		  sa << 'A';
+	      else if (flags == 0)
 		  sa << '.';
+	      else
+		  for (int flag = 0; flag < 9; flag++)
+		      if (flags & (1 << flag))
+			  sa << tcp_flags_word[flag];
 	      break;
 	  }
 	  case W_TCP_WINDOW:
@@ -1028,13 +1032,28 @@ ToIPSummaryDump::write_packet(Packet *p, bool multipacket)
 	uint32_t len = p->length();
 	if (total_len < count * len)
 	    total_len = count * len;
+
+	// do timestamp stepping
+	struct timeval end_timestamp = p->timestamp_anno();
+	struct timeval timestamp_delta;
+	if (timerisset(&FIRST_TIMESTAMP_ANNO(p))) {
+	    timestamp_delta = (end_timestamp - FIRST_TIMESTAMP_ANNO(p)) / (count - 1);
+	    p->set_timestamp_anno(FIRST_TIMESTAMP_ANNO(p));
+	} else
+	    timestamp_delta = make_timeval(0, 0);
+	
 	SET_EXTRA_PACKETS_ANNO(p, 0);
 	for (uint32_t i = count; i > 0; i--) {
 	    uint32_t l = total_len / i;
 	    SET_EXTRA_LENGTH_ANNO(p, l - len);
 	    total_len -= l;
 	    write_packet(p, false);
+	    if (i == 1)
+		p->timestamp_anno() = end_timestamp;
+	    else
+		p->timestamp_anno() += timestamp_delta;
 	}
+	
     } else {
 	_sa.clear();
 	if (summary(p, _sa))

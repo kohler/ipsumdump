@@ -62,7 +62,7 @@ FromIPSummaryDump::cast(const char *n)
 {
     if (strcmp(n, "Notifier") == 0 && !output_is_push(0)) {
 	_notifier.initialize(router());
-	return &_notifier;
+	return static_cast<Notifier *>(&_notifier);
     } else
 	return Element::cast(n);
 }
@@ -70,7 +70,7 @@ FromIPSummaryDump::cast(const char *n)
 int
 FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
 {
-    bool stop = false, active = true, zero = false, multipacket = false;
+    bool stop = false, active = true, zero = false, checksum = false, multipacket = false;
     uint8_t default_proto = IP_PROTO_TCP;
     _sampling_prob = (1 << SAMPLING_SHIFT);
     String default_contents, default_flowid;
@@ -81,6 +81,7 @@ FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
 		    "STOP", cpBool, "stop driver when done?", &stop,
 		    "ACTIVE", cpBool, "start active?", &active,
 		    "ZERO", cpBool, "zero packet data?", &zero,
+		    "CHECKSUM", cpBool, "set packet checksums?", &checksum,
 		    "SAMPLE", cpUnsignedReal2, "sampling probability", SAMPLING_SHIFT, &_sampling_prob,
 		    "PROTO", cpByte, "default IP protocol", &default_proto,
 		    "MULTIPACKET", cpBool, "generate multiple packets per record?", &multipacket,
@@ -98,6 +99,7 @@ FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
     _stop = stop;
     _active = active;
     _zero = zero;
+    _checksum = checksum;
     _multipacket = multipacket;
     _have_flowid = _have_aggregate = _use_flowid = _use_aggregate = _binary = false;
     if (default_contents)
@@ -793,6 +795,29 @@ handle_tcp_opt(WritablePacket *q, const String &optstr)
     return q;
 }
 
+static void
+set_checksums(WritablePacket *q, click_ip *iph)
+{
+    assert(iph == q->ip_header());
+    
+    iph->ip_sum = 0;
+    iph->ip_sum = click_in_cksum((uint8_t *)iph, iph->ip_hl << 2);
+
+    if (IP_ISFRAG(iph))
+	/* nada */;
+    else if (iph->ip_p == IP_PROTO_TCP) {
+	click_tcp *tcph = q->tcp_header();
+	tcph->th_sum = 0;
+	unsigned csum = click_in_cksum((uint8_t *)tcph, q->transport_length());
+	tcph->th_sum = click_in_cksum_pseudohdr(csum, iph->ip_src.s_addr, iph->ip_dst.s_addr, IP_PROTO_TCP, q->transport_length());
+    } else if (iph->ip_p == IP_PROTO_UDP) {
+	click_udp *udph = q->udp_header();
+	udph->uh_sum = 0;
+	unsigned csum = click_in_cksum((uint8_t *)udph, q->transport_length());
+	udph->uh_sum = click_in_cksum_pseudohdr(csum, iph->ip_src.s_addr, iph->ip_dst.s_addr, IP_PROTO_UDP, q->transport_length());
+    }
+}
+
 Packet *
 FromIPSummaryDump::read_packet(ErrorHandler *errh)
 {
@@ -1185,6 +1210,9 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	      case W_TCP_FLAGS:
 		if (u1 <= 0xFF)
 		    q->tcp_header()->th_flags = u1, ip_ok++;
+		else if (u1 <= 0xFFF)
+		    // th_off will be set later
+		    *reinterpret_cast<uint16_t *>(q->transport_header() + 12) = htons(u1), ip_ok++;
 		break;
 
 	      case W_TCP_WINDOW:
@@ -1244,8 +1272,11 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	if (have_payload) {	// XXX what if byte_count indicates IP options?
 	    int old_length = q->length();
 	    iph->ip_len = ntohs(old_length + payload.length());
-	    if ((q = q->put(payload.length())))
+	    if ((q = q->put(payload.length()))) {
 		memcpy(q->data() + old_length, payload.data(), payload.length());
+		// iph may have changed!!
+		iph = q->ip_header();
+	    }
 	} else if (byte_count) {
 	    iph->ip_len = ntohs(byte_count);
 	    SET_EXTRA_LENGTH_ANNO(q, byte_count - q->length());
@@ -1270,6 +1301,10 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 		SET_AGGREGATE_ANNO(q, _aggregate);
 	} else if (!ip_ok)
 	    q->set_network_header(0, 0);
+
+	// set checksum
+	if (_checksum && ip_ok)
+	    set_checksums(q, iph);
 	
 	return q;
     }
@@ -1292,16 +1327,31 @@ FromIPSummaryDump::handle_multipacket(Packet *p)
 {
     if (p) {
 	uint32_t count = 1 + EXTRA_PACKETS_ANNO(p);
-	if (!_work_packet && count > 1)
+
+	// set up _multipacket variables on new packets (_work_packet == 0)
+	if (!_work_packet && count > 1) {
 	    _multipacket_extra_length = EXTRA_LENGTH_ANNO(p) / count;
+	    _multipacket_end_timestamp = p->timestamp_anno();
+	    if (timerisset(&FIRST_TIMESTAMP_ANNO(p))) {
+		_multipacket_timestamp_delta = (p->timestamp_anno() - FIRST_TIMESTAMP_ANNO(p)) / (count - 1);
+		p->timestamp_anno() = FIRST_TIMESTAMP_ANNO(p);
+	    } else
+		_multipacket_timestamp_delta = make_timeval(0, 0);
+	}
+
 	_work_packet = (count > 1 ? p : 0);
+	
 	if (_work_packet) {
-	    SET_EXTRA_PACKETS_ANNO(_work_packet, count - 2);
-	    SET_EXTRA_LENGTH_ANNO(_work_packet, EXTRA_LENGTH_ANNO(_work_packet) - _multipacket_extra_length);
 	    if ((p = p->clone())) {
 		SET_EXTRA_PACKETS_ANNO(p, 0);
 		SET_EXTRA_LENGTH_ANNO(p, _multipacket_extra_length);
 	    }
+	    SET_EXTRA_PACKETS_ANNO(_work_packet, count - 2);
+	    SET_EXTRA_LENGTH_ANNO(_work_packet, EXTRA_LENGTH_ANNO(_work_packet) - _multipacket_extra_length);
+	    if (count == 2)
+		_work_packet->timestamp_anno() = _multipacket_end_timestamp;
+	    else
+		_work_packet->timestamp_anno() += _multipacket_timestamp_delta;
 	}
     }
     return p;
