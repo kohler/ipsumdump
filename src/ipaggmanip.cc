@@ -506,6 +506,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case CUT_LARGER_AGG_ACT:
       case CUT_SMALLER_HOST_AGG_ACT:
       case CUT_LARGER_HOST_AGG_ACT:
+      case NO_ACT:
 	tree.write_file(out, output_binary, errh);
 	break;
 	
@@ -641,7 +642,7 @@ particular purpose.\n");
     if (files.size() == 0)
 	files.push_back("-");
     if (actions.size() == 0)
-	actions.push_back(NO_ACT);
+	add_action(NO_ACT);
     if (!output)
 	output = "-";
 
