@@ -5,6 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_BYTEORDER_H
+#include <byteorder.h>
+#else
+static inline uint32_t bswap_32(uint32_t u) {
+    return ((u >> 24) | ((u & 0xff0000) >> 8) | ((u & 0xff00) << 8) | ((u & 0xff) << 24));
+}
+#endif
+
+
 void
 AggregateWTree::initialize_root()
 {
@@ -341,6 +350,25 @@ AggregateWTree::cull_packets(uint32_t max_np)
 // READING AND WRITING
 //
 
+static void
+read_packed_file(FILE *f, AggregateWTree *tree, int file_byte_order)
+{
+    uint32_t ubuf[BUFSIZ];
+    if (file_byte_order == CLICK_BYTE_ORDER) {
+	while (!feof(f) && !ferror(f)) {
+	    size_t howmany = fread(ubuf, 8, BUFSIZ / 2, f);
+	    for (size_t i = 0; i < howmany; i++)
+		tree->add(ubuf[2*i], ubuf[2*i + 1]);
+	}
+    } else {
+	while (!feof(f) && !ferror(f)) {
+	    size_t howmany = fread(ubuf, 8, BUFSIZ / 2, f);
+	    for (size_t i = 0; i < howmany; i++)
+		tree->add(bswap_32(ubuf[2*i]), bswap_32(ubuf[2*i + 1]));
+	}
+    }
+}
+
 int
 AggregateWTree::read_file(FILE *f, ErrorHandler *errh)
 {
@@ -349,15 +377,13 @@ AggregateWTree::read_file(FILE *f, ErrorHandler *errh)
     while (fgets(s, BUFSIZ, f)) {
 	if (strlen(s) == BUFSIZ - 1 && s[BUFSIZ - 2] != '\n')
 	    return errh->error("line too long");
-	if (strcmp(s, "$packed\n") == 0) {
-	    // read packed file
-	    uint32_t ubuf[BUFSIZ];
-	    while (!feof(f) && !ferror(f)) {
-		size_t howmany = fread(ubuf, 8, BUFSIZ / 2, f);
-		for (size_t i = 0; i < howmany; i++)
-		    add(ubuf[2*i], ubuf[2*i + 1]);
-	    }
-	    break;
+	if (s[0] == '$') {
+	    if (strcmp(s, "$packed\n") == 0)
+		read_packed_file(f, this, CLICK_BYTE_ORDER);
+	    else if (strcmp(s, "$packed_le\n") == 0)
+		read_packed_file(f, this, CLICK_LITTLE_ENDIAN);
+	    else if (strcmp(s, "$packed_be\n") == 0)
+		read_packed_file(f, this, CLICK_BIG_ENDIAN);
 	} else if (sscanf(s, "%u %u", &agg, &value) == 2)
 	    add(agg, value);
     }
@@ -370,8 +396,15 @@ int
 AggregateWTree::write_file(FILE *f, bool binary, ErrorHandler *errh) const
 {
     fprintf(f, "$num_nonzero %u\n", _num_nonzero);
+#if CLICK_BYTE_ORDER == CLICK_BIG_ENDIAN
     if (binary)
-	fprintf(f, "$packed\n");
+	fprintf(f, "$packed_be\n");
+#elif CLICK_BYTE_ORDER == CLICK_LITTLE_ENDIAN
+    if (binary)
+	fprintf(f, "$packed_le\n");
+#else
+    binary = false;
+#endif
     
     uint32_t buf[1024];
     int pos = 0;
