@@ -48,6 +48,7 @@ class AggregateTree { public:
     void balance_histogram(int prefix_len, uint32_t nbuckets, Vector<uint32_t> &) const;
 
     void branching_counts(int p, int layers_down, Vector<uint32_t> &) const;
+    void subtree_counts(int p, int layers_down, Vector<uint32_t> &) const;
     void conditional_split_counts(int p, Vector<uint32_t> &) const;
     
     void keep_common_hosts(const AggregateTree &, bool add = false);

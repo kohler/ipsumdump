@@ -615,9 +615,9 @@ AggregateWTree::collect_active_depth(int d, Vector<WNode *> &v) const
 
 void
 AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33],
-					      bool randomized)
+					      double randomness)
 {
-    assert(q >= 0 && q <= 32 && !_topheavy);
+    assert(q >= 0 && q <= 32 && !_topheavy && randomness >= 0 && randomness <= 1);
 
     if (q == 0) {
 	assert(_root->count == 0 && !_root->child(0));
@@ -634,9 +634,13 @@ AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33],
     for (int p = q + 1; p <= 32; p++) {
 	assert((uint32_t) s.size() == dp[p-1][q]);
 	
+	uint32_t first_random = dp[p-1][q] - (uint32_t)(randomness * (dp[p-1][q] - dp[p][q]));
+	if (randomness >= 1)
+	    first_random = dp[p][q];
+	
 	for (uint32_t i = dp[p][q]; i < dp[p-1][q]; i++) {
 	    // pick random element of s
-	    int which = (randomized ? ((uint32_t)random()) % s.size() : s.size() - 1);
+	    int which = (i >= first_random ? ((uint32_t)random()) % s.size() : s.size() - 1);
 	    WNode *n = s[which];
 	    assert(n->depth == p - 1 && n->count == 1 && n->full_count == 1);
 	    add(n->aggregate | (1 << (32 - p)), 1);
@@ -667,6 +671,128 @@ AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33],
 	assert((uint32_t) s.size() == nnz);
     }
 #endif
+}
+
+
+static uint32_t branchcount_0[] = { 1, 1 };
+static uint32_t branchcount_1[] = { 1, 2, 1 };
+static uint32_t branchcount_2[] = { 1, 4, 6, 4, 1 };
+static uint32_t branchcount_3[] = { 1, 8, 28, 56, 70, 56, 28, 8, 1 };
+static uint32_t branchcount_4[] = { 1, 16, 120, 560, 1820, 4368, 8008, 11440, 12870, 11440, 8008, 4368, 1820, 560, 120, 16, 1 };
+
+static struct Branch {
+    uint32_t *val, *count, *off;
+} branches[] = {
+    { 0, branchcount_0, 0 },
+    { 0, branchcount_1, 0 },
+    { 0, branchcount_2, 0 },
+    { 0, branchcount_3, 0 },
+    { 0, branchcount_4, 0 },
+};
+
+static uint32_t nbits_set_5[] = {
+    0, 1, 1, 2, 1, 2, 2, 3,
+    1, 2, 2, 3, 2, 3, 3, 4,
+    1, 2, 2, 3, 2, 3, 3, 4,
+    2, 3, 3, 4, 3, 4, 4, 5
+};
+
+static inline int
+nbits_set(uint32_t val)
+{
+    int n = 0;
+    while (val) {
+	n += nbits_set_5[val & 037];
+	val >>= 5;
+    }
+    return n;
+}
+
+static void
+construct_branch(int depth)
+{
+    assert(depth >= 1 && depth <= 4);
+    if (branches[depth].val)
+	return;
+    int n = (1 << depth);
+    uint32_t *val = branches[depth].val = new uint32_t[1 << n];
+    branches[depth].off = new uint32_t[n + 1];
+    
+    int k = 0;
+    for (int i = 0; i <= n; i++) {
+	branches[depth].off[i] = k;
+	k +=  branches[depth].count[i];
+    }
+
+    uint32_t *off = new uint32_t[n + 1];
+    memcpy(off, branches[depth].off, sizeof(uint32_t) * (n + 1));
+
+    uint32_t max = (depth == 5 ? 0xFFFFFFFFU : (1 << n) - 1);
+    for (uint32_t i = 0; i <= max; i++) {
+	int nb = nbits_set(i);
+	val[off[nb]++] = i;
+    }
+
+    for (int i = 0; i < n; i++)
+	assert(off[i] == branches[depth].off[i + 1]);
+    assert(off[n] == off[n-1] + 1);
+
+    delete[] off;
+}
+
+void
+AggregateWTree::fake_by_branching_counts(int p, int depth,
+					 const Vector<uint32_t> &v, bool randomized)
+{
+    assert(p >= 0 && p <= 32 && depth > 0 && p + depth <= 32);
+    assert(v.size() == ((1 << depth) + 1) && depth <= 4);
+
+    if (!branches[depth].val)
+	construct_branch(depth);
+    
+    uint32_t nnz_v = 0;
+    for (int i = 1; i < v.size(); i++)
+	nnz_v += v[i];
+    
+    if (p == 0) {
+	assert(_root->count == 0 && !_root->child(0));
+	assert(nnz_v == 0 || nnz_v == 1);
+	if (nnz_v)
+	    add(0, 1);
+    }
+
+    assert(nnz_v == _num_nonzero);
+
+    // collect nonzero nodes with correct depth
+    Vector<WNode *> s;
+    collect_active(s);
+    
+    //
+    uint32_t mask_delta = (1 << (32 - p - depth));
+    for (int count = 0; count < v.size(); count++) {
+	assert((uint32_t) s.size() >= v[count]);
+	const uint32_t *brval = branches[depth].val + branches[depth].off[count];
+	const uint32_t brcount = branches[depth].count[count];
+	
+	for (uint32_t k = 0; k < v[count]; k++) {
+	    // pick random element of s
+	    int which = (randomized ? ((uint32_t)random()) % s.size() : s.size() - 1);
+	    WNode *n = s[which];
+	    assert(n->count == 1 && n->full_count == 1);
+
+	    // split into count subaggregates in a random manner
+	    uint32_t value = brval[((uint32_t)random()) % brcount];
+	    for (int i = 0; i < (1 << depth); i++, value >>= 1)
+		if (value & 1)
+		    add(n->aggregate + (i * mask_delta), 1);
+	    add(n->aggregate, -1);
+	    
+	    s[which] = s.back();
+	    s.pop_back();
+	}
+    }
+
+    assert(s.size() == 0);
 }
 
 

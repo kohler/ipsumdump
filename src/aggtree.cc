@@ -835,6 +835,45 @@ AggregateTree::branching_counts(int p, int layers_down, Vector<uint32_t> &v) con
 
 
 static void
+node_subtree_counts(AggregateTree::Node *n, uint32_t mask, uint32_t &value, int shift, int &bits, uint32_t *results)
+{
+    if (n->count > 0 && ((n->aggregate & mask) != value || bits < 0)) {
+	uint32_t value_highbits = (value & (mask << shift));
+	uint32_t highbits = (n->aggregate & (mask << shift));
+	if (value_highbits != highbits || bits < 0) {
+	    if (bits >= 0)
+		results[bits]++;
+	    bits = 0;
+	}
+	value = (n->aggregate & mask);
+	uint32_t bit_delta = ~mask + 1;
+	assert((bit_delta & mask) == bit_delta);
+	int which = 0;
+	for (uint32_t x = highbits; x != value; x += bit_delta)
+	    which++;
+	bits |= (1 << which);
+    }
+    if (n->child[0]) {
+	node_subtree_counts(n->child[0], mask, value, shift, bits, results);
+	node_subtree_counts(n->child[1], mask, value, shift, bits, results);
+    }
+}
+
+void
+AggregateTree::subtree_counts(int p, int layers_down, Vector<uint32_t> &v) const
+{
+    assert(p >= 0 && layers_down > 0 && p + layers_down <= 32 && layers_down < 5);
+    v.assign((1 << (1 << layers_down)), 0);
+    int bits = 0;
+    uint32_t value = 0;
+    uint32_t mask = prefix_to_mask(p + layers_down);
+    node_subtree_counts(_root, mask, value, layers_down, bits, &v[0]);
+    if (_num_nonzero)
+	v[bits]++;
+}
+
+
+static void
 cond_split_handle_collection(AggregateTree::Node *collection[4], int &pos, uint32_t results[4], uint32_t mask)
 {
     switch (pos) {

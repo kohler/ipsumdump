@@ -15,6 +15,8 @@
 #include "aggtree.hh"
 #include "aggwtree.hh"
 
+#define DOUBLE_FACTOR		1000000000
+
 #define HELP_OPT		300
 #define VERSION_OPT		301
 #define READ_FILE_OPT		302
@@ -43,6 +45,7 @@
 #define CUT_SMALLER_ADDR_AGG_ACT 411
 #define CUT_LARGER_ADDR_AGG_ACT	412
 #define FAKE_BY_DISCRIM_ACT	413
+#define FAKE_BY_BRANCHING_ACT	414
 
 #define FIRST_END_ACT		500
 #define NNZ_ACT			500
@@ -125,7 +128,8 @@ static Clp_Option options[] = {
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "all-branching-counts", 0, ALL_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
-  { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, Clp_ArgString, Clp_Optional },
+  { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, Clp_ArgDouble, Clp_Optional },
+  { "fake-by-branching-counts", 0, FAKE_BY_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
   
 };
 
@@ -511,9 +515,22 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	      }
 	      
 	      AggregateWTree new_tree(AggregateWTree::COUNT_ADDRS_LEAF);
+	      double randomness = (double)action_extra / DOUBLE_FACTOR;
 	      for (int i = 0; i <= 32; i++)
-		  new_tree.fake_by_discriminating_prefix(i, dp, action_extra);
+		  new_tree.fake_by_discriminating_prefix(i, dp, randomness);
 
+	      tree = new_tree;
+	      break;
+	  }
+
+	  case FAKE_BY_BRANCHING_ACT: {
+	      AggregateWTree new_tree(AggregateWTree::COUNT_ADDRS_LEAF);
+	      for (int p = 0; p < 32; p += action_extra) {
+		  int delta = (p + action_extra <= 32 ? action_extra : 32 - p);
+		  Vector<uint32_t> v;
+		  tree.branching_counts(p, delta, v);
+		  new_tree.fake_by_branching_counts(p, delta, v);
+	      }
 	      tree = new_tree;
 	      break;
 	  }
@@ -686,6 +703,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case CUT_SMALLER_ADDR_AGG_ACT:
       case CUT_LARGER_ADDR_AGG_ACT:
       case FAKE_BY_DISCRIM_ACT:
+      case FAKE_BY_BRANCHING_ACT:
       case NO_ACT:
 	tree.write_file(out, output_binary, errh);
 	break;
@@ -785,6 +803,12 @@ particular purpose.\n");
 	    add_action(opt, clp->val.u);
 	    break;
 
+	  case FAKE_BY_BRANCHING_ACT:
+	    if (clp->val.u == 0 || clp->val.u > 4)
+		die_usage("`" + String(Clp_CurOptionName(clp)) + "' must be between 1 and 4");
+	    add_action(opt, clp->val.u);
+	    break;
+
 	  case COND_SPLIT_ACT:
 	    if (clp->val.u < 1 || clp->val.u > 31)
 		die_usage("`--conditional-split-counts' arg must be between 1 and 31");
@@ -817,13 +841,11 @@ particular purpose.\n");
 	    break;
 
 	  case FAKE_BY_DISCRIM_ACT:
-	    if (!clp->have_arg || strcmp(clp->arg, "random") == 0)
-		clp->val.u = 1;	// random
-	    else if (strcmp(clp->arg, "nonrandom") == 0)
-		clp->val.u = 0;
-	    else
-		die_usage("`" + String(Clp_CurOptionName(clp)) + "' arg should be `random' or `nonrandom'");
-	    add_action(opt, clp->val.u);
+	    if (!clp->have_arg)
+		clp->val.d = 1;	// random
+	    else if (clp->val.d < 0 || clp->val.d > 1)
+		die_usage("`" + String(Clp_CurOptionName(clp)) + "' arg should be between 0 and 1");
+	    add_action(opt, (uint32_t) (clp->val.d * DOUBLE_FACTOR));
 	    break;
 	    
 	  case Clp_NotOption:
