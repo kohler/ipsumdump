@@ -1,5 +1,12 @@
 Ipsumdump NEWS
 
+Version 1.51   3.Feb.2005
+
+* Add '--ip-sum' option; patch from José Maria González.
+
+* Fix '--ip-opt' crash; patch from Mark Allman.
+
+
 Version 1.50   25.Jan.2005
 
 * Add '--ip-opt' option, requested by Mark Allman.
