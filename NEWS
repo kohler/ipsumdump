@@ -1,5 +1,13 @@
 Ipsumdump NEWS
 
+Version 1.23   2.Jun.2002
+
+* Documentation updates.
+
+* TCP flag bits 6 and 7 are printed as E and W, for ECE and CWR, based on
+  the ECN Proposed Standard.
+
+
 Version 1.22   2.Jun.2002
 
 * Fragment offset fields, produced by -G, formerly were expressed in 8-byte

@@ -168,8 +168,16 @@ dash C<->.
 
 =item B<--tcp-flags>, B<-F>
 
-Include TCP flags byte in the dump. Example: C<54>. For non-TCP packets,
-and for fragments after the first, this field is a single dash C<->.
+Include TCP flags byte in the dump. Each flag is represented by an
+uppercase letter. Example: C<PA> (PSH and ACK are on, everything else is
+off). If no flags are on, prints C<.> (a single period). For non-TCP
+packets, and for fragments after the first, this field is a single dash
+C<->.
+
+Flag characters are C<F> for FIN, C<S> for SYN, C<R> for RST, C<P> for PSH,
+C<A> for ACK, C<U> for URG, C<E> for ECE (flag bit 6), and C<W> for CWR
+(flag bit 7). Older versions printed a number between 0 and 255, or used
+characters C<X> and C<Y> for flag bits 6 and 7.
 
 =item B<--payload-length>, B<-L>
 

@@ -498,7 +498,6 @@ particular purpose.\n");
     String shunt_internals = "";
     StringAccum psa;
     String sample_elt;
-    bool interval_packets = true;
     if (snaplen < 0)
 	snaplen = (write_dump ? 2000 : 68);
     if (collate && files.size() < 2)
@@ -527,7 +526,6 @@ particular purpose.\n");
 	    sample_elt = "shunt/samp";
 	}
 	quiet = true;		// does not support filepos handlers
-	interval_packets = false;
 	
     } else if (action == READ_DUMP_OPT) {
 	if (files.size() == 0)
@@ -582,7 +580,7 @@ particular purpose.\n");
 	sa << "  -> IPFilter(0 " << filter << ")\n";
     if (anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
-    if (interval_packets && timerisset(&interval)) {
+    if (action != INTERFACE_OPT && timerisset(&interval)) {
 	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL stop_cold)\n";
 	if (files.size() > 1 && !collate) {
 	    p_errh->warning("`--collate' missing");
@@ -642,12 +640,14 @@ particular purpose.\n");
 
     sa << "DriverManager(";
     stop_driver_count = 1;
-    if (timerisset(&interval) && !interval_packets) {
-	sa << ", wait_for " << interval;
-	stop_driver_count--;
-    }
-    if (action != INTERFACE_OPT || collate)
+    if (action != INTERFACE_OPT)
 	stop_driver_count += files.size() + (collate ? 1 : 0);
+    else {
+	if (timerisset(&interval))
+	    sa << ", wait_for " << interval;
+	if (!timerisset(&interval) || collate)
+	    stop_driver_count++;
+    }
     if (stop_driver_count > 1)
 	sa << ", wait_stop " << stop_driver_count - 1;
     // complete progress bar
