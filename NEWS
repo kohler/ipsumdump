@@ -1,5 +1,12 @@
 Ipsumdump NEWS
 
+Version 1.17   17.Dec.2001
+
+* Reading from network interfaces was broken by version 1.14: unless -w was
+  given, ToIPSummaryDump treated partially-read packets (low SNAPLEN) as
+  erroneous. Reported by Brecht Vermeulen <brecht.vermeulen@rug.ac.be>.
+
+
 Version 1.16   30.Nov.2001
 
 * Progress bar improvements: The progress bar will not appear if normal

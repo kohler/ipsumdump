@@ -300,6 +300,7 @@ main(int argc, char *argv[])
     bool quiet = false;
     bool quiet_explicit = false;
     bool bad_packets = false;
+    int snaplen = -1;
     Vector<String> files;
     const char *record_drops = 0;
     
@@ -435,6 +436,8 @@ particular purpose.\n");
 	  default:
 	    assert(opt >= FIRST_LOG_OPT);
 	    log_contents.push_back(opt - FIRST_LOG_OPT);
+	    if (opt == PAYLOAD_OPT)
+		snaplen = 2000;
 	    break;
 	    
 	}
@@ -455,7 +458,8 @@ particular purpose.\n");
     String shunt_internals = "";
     StringAccum psa;
     String sample_elt;
-    int snaplen = (write_dump ? 2000 : 68);
+    if (snaplen < 0)
+	snaplen = (write_dump ? 2000 : 68);
     if (collate && files.size() < 2)
 	collate = false;
     
