@@ -748,18 +748,18 @@ particular purpose.\n");
     sa << "  -> ac :: AggregateCounter(";
     sa << (aggctr_pb ? aggctr_pb : String("BYTES false")) << ", IP_BYTES true";
     if (aggctr_limit_nnz && multi_output >= 0) {
-	sa << ", CALL_AFTER_AGG " << aggctr_limit_nnz << " output";
-	output_call_sa << "ac.call_after_agg '" << aggctr_limit_nnz << " output'";
+	sa << ", AGGREGATE_CALL " << aggctr_limit_nnz << " output";
+	output_call_sa << "ac.aggregate_call '" << aggctr_limit_nnz << " output'";
     } else if (aggctr_limit_nnz)
-	sa << ", STOP_AFTER_AGG " << aggctr_limit_nnz;
+	sa << ", AGGREGATE_STOP " << aggctr_limit_nnz;
     sa << ")\n";
 
     // remains
     if (aggctr_limit_count) {
-	sa << "  -> counter :: Counter(CALL_AFTER_COUNT " << aggctr_limit_count << " output)\n";
+	sa << "  -> counter :: Counter(COUNT_CALL " << aggctr_limit_count << " output)\n";
 	output_call_sa << "counter.reset";
     } else if (aggctr_limit_bytes) {
-	sa << "  -> counter :: Counter(CALL_AFTER_BYTES " << aggctr_limit_bytes << " output)\n";
+	sa << "  -> counter :: Counter(BYTE_COUNT_CALL " << aggctr_limit_bytes << " output)\n";
 	output_call_sa << "counter.reset";
     }
     sa << "  -> tr :: TimeRange\n";
