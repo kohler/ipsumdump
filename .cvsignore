@@ -2,3 +2,5 @@ libclick-*
 stamp-h Makefile
 config.h config.log config.cache config.status
 conftest.*
+ipsumdump.1
+autom4te*

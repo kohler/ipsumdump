@@ -1,5 +1,12 @@
 Ipsumdump NEWS
 
+Version 1.48   12.Jan.2005
+
+* ToIPSummaryDump: Fix handling of extra length annotations.  If the IP
+  length is available, use that (not extra length), except for packets that
+  represent flows.  Problem reported by Ruoming Pang.
+
+
 Version 1.47   12.Jan.2005
 
 * More AMD64 stuff, this time reported by Kirill Ponomarew.
