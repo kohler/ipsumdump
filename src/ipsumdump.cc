@@ -18,15 +18,18 @@
 
 #define HELP_OPT	300
 #define VERSION_OPT	301
-#define INTERFACE_OPT	302
-#define READ_DUMP_OPT	303
-#define OUTPUT_OPT	304
-#define CONFIG_OPT	305
-#define WRITE_DUMP_OPT	306
-#define FILTER_OPT	307
-#define VERBOSE_OPT	308
-#define ANONYMIZE_OPT	309
-#define MAP_PREFIX_OPT	310
+#define OUTPUT_OPT	302
+#define CONFIG_OPT	303
+#define WRITE_DUMP_OPT	304
+#define FILTER_OPT	305
+#define VERBOSE_OPT	306
+#define ANONYMIZE_OPT	307
+#define MAP_PREFIX_OPT	308
+
+// data sources
+#define INTERFACE_OPT	400
+#define READ_DUMP_OPT	401
+#define READ_BRESLAU1_DUMP_OPT 402
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -42,6 +45,7 @@
 #define TCP_ACK_OPT	(1000 + ToIPSummaryDump::W_TCP_ACK)
 #define TCP_FLAGS_OPT	(1000 + ToIPSummaryDump::W_TCP_FLAGS)
 #define PAYLOAD_LEN_OPT	(1000 + ToIPSummaryDump::W_PAYLOAD_LENGTH)
+#define COUNT_OPT	(1000 + ToIPSummaryDump::W_COUNT)
 
 static Clp_Option options[] = {
 
@@ -49,8 +53,11 @@ static Clp_Option options[] = {
   { "version", 'v', VERSION_OPT, 0, 0 },
   { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
 
-  { "interface", 'i', INTERFACE_OPT, Clp_ArgString, 0 },
-  { "read-tcpdump", 'r', READ_DUMP_OPT, Clp_ArgString, 0 },
+  { "interface", 'i', INTERFACE_OPT, 0, 0 },
+  { "read-tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
+  { "from-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
+  { "read-breslau1-dump", 0, READ_BRESLAU1_DUMP_OPT, 0, 0 },
+  { "from-breslau1-dump", 0, READ_BRESLAU1_DUMP_OPT, 0, 0 },
   { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
   { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
   { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
@@ -60,18 +67,19 @@ static Clp_Option options[] = {
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "config", 0, CONFIG_OPT, 0, 0 },
 
-  { "log-timestamps", 't', TIMESTAMP_OPT, 0, Clp_Negate },
-  { "log-src", 's', SRC_OPT, 0, Clp_Negate },
-  { "log-dst", 'd', DST_OPT, 0, Clp_Negate },
-  { "log-sport", 'S', SPORT_OPT, 0, Clp_Negate },
-  { "log-dport", 'D', DPORT_OPT, 0, Clp_Negate },
-  { "log-length", 'l', LENGTH_OPT, 0, Clp_Negate },
-  { "log-id", 0, IPID_OPT, 0, Clp_Negate },
-  { "log-protocol", 'p', PROTO_OPT, 0, Clp_Negate },
-  { "log-tcp-seq", 'Q', TCP_SEQ_OPT, 0, Clp_Negate },
-  { "log-tcp-ack", 'K', TCP_ACK_OPT, 0, Clp_Negate },
-  { "log-tcp-flags", 'F', TCP_FLAGS_OPT, 0, Clp_Negate },
-  { "log-payload-length", 'L', PAYLOAD_LEN_OPT, 0, Clp_Negate },
+  { "timestamps", 't', TIMESTAMP_OPT, 0, Clp_Negate },
+  { "src", 's', SRC_OPT, 0, Clp_Negate },
+  { "dst", 'd', DST_OPT, 0, Clp_Negate },
+  { "sport", 'S', SPORT_OPT, 0, Clp_Negate },
+  { "dport", 'D', DPORT_OPT, 0, Clp_Negate },
+  { "length", 'l', LENGTH_OPT, 0, Clp_Negate },
+  { "id", 0, IPID_OPT, 0, Clp_Negate },
+  { "protocol", 'p', PROTO_OPT, 0, Clp_Negate },
+  { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, Clp_Negate },
+  { "tcp-ack", 'K', TCP_ACK_OPT, 0, Clp_Negate },
+  { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, Clp_Negate },
+  { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, Clp_Negate },
+  { "packet-count", 'c', COUNT_OPT, 0, Clp_Negate },
   
 };
 
@@ -85,7 +93,7 @@ die_usage(const char *specific = 0)
     ErrorHandler *errh = ErrorHandler::default_handler();
     if (specific)
 	errh->error("%s: %s", program_name, specific);
-    errh->fatal("Usage: %s [-i INTERFACE | -r FILE] [OPTION]...\n\
+    errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
 Try `%s --help' for more information.",
 		program_name, program_name);
     // should not get here, but just in case...
@@ -99,26 +107,30 @@ usage()
 `Aciri-ipsumdump' reads IP packets from the network or a tcpdump(1) file and\n\
 summarizes their contents in an ASCII log. It generally runs until interrupted.\n\
 \n\
-Usage: %s [-i INTERFACE | -r FILE] [CONTENT OPTIONS] > LOGFILE\n\
+Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES] > LOGFILE\n\
 \n\
 Options that determine log contents (can give multiple options):\n\
-  -t, --log-timestamps       Log packet timestamps.\n\
-  -s, --log-src              Log IP source addresses.\n\
-  -d, --log-dst              Log IP destination addresses.\n\
-  -S, --log-sport            Log TCP/UDP source ports.\n\
-  -D, --log-dport            Log TCP/UDP destination ports.\n\
-  -l, --log-length           Log IP lengths.\n\
-  -p, --log-protocol         Log IP protocols.\n\
-      --log-id               Log IP IDs.\n\
-  -Q, --log-tcp-seq          Log TCP sequence numbers.\n\
-  -K, --log-tcp-ack          Log TCP acknowledgement numbers.\n\
-  -F, --log-tcp-flags        Log TCP flags words.\n\
-  -L, --log-payload-length   Log payload lengths (no IP/UDP/TCP headers).\n\
+  -t, --timestamps           Log packet timestamps.\n\
+  -s, --src                  Log IP source addresses.\n\
+  -d, --dst                  Log IP destination addresses.\n\
+  -S, --sport                Log TCP/UDP source ports.\n\
+  -D, --dport                Log TCP/UDP destination ports.\n\
+  -l, --length               Log IP lengths.\n\
+  -p, --protocol             Log IP protocols.\n\
+      --id                   Log IP IDs.\n\
+  -Q, --tcp-seq              Log TCP sequence numbers.\n\
+  -K, --tcp-ack              Log TCP acknowledgement numbers.\n\
+  -F, --tcp-flags            Log TCP flags words.\n\
+  -L, --payload-length       Log payload lengths (no IP/UDP/TCP headers).\n\
+  -c, --packet-count         Log packet count (usually 1).\n\
 Default contents option is `-sd' (log source and destination addresses).\n\
 \n\
+Data source options (give exactly one):\n\
+  -i, --interface            Read packets from network devices DEVNAMES.\n\
+  -r, --read-tcpdump         Read packets from tcpdump(1) file FILES.\n\
+      --read-breslau1-dump   Read Breslau1 summarized NetFlow format FILES.\n\
+\n\
 Other options:\n\
-  -i, --interface DEVNAME    Read packets from network device DEVNAME.\n\
-  -r, --read-tcpdump FILE    Read packets from tcpdump(1) file FILE.\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
@@ -166,8 +178,6 @@ main(int argc, char *argv[])
     ErrorHandler::static_initialize(errh);
     ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
 
-    String interface;
-    String read_dump;
     String write_dump;
     String output;
     String filter;
@@ -176,6 +186,8 @@ main(int argc, char *argv[])
     bool verbose = false;
     bool anonymize = false;
     int log_contents = -1;
+    int action = 0;
+    Vector<String> files;
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -188,17 +200,13 @@ main(int argc, char *argv[])
 	    break;
 	    
 	  case INTERFACE_OPT:
-	    if (interface)
-		die_usage("`--interface' already specified");
-	    interface = clp->arg;
+	  case READ_DUMP_OPT:
+	  case READ_BRESLAU1_DUMP_OPT:
+	    if (action)
+		die_usage("data source option already specified");
+	    action = opt;
 	    break;
 	    
-	  case READ_DUMP_OPT:
-	    if (read_dump)
-		die_usage("`--read-tcpdump' already specified");
-	    read_dump = clp->arg;
-	    break;
-
 	  case WRITE_DUMP_OPT:
 	    if (write_dump)
 		die_usage("`--write-tcpdump' already specified");
@@ -259,6 +267,9 @@ particular purpose.\n");
 	    break;
 
 	  case Clp_NotOption:
+	    files.push_back(cp_quote(clp->arg));
+	    break;
+	    
 	  case Clp_BadOption:
 	    die_usage();
 	    break;
@@ -281,6 +292,7 @@ particular purpose.\n");
   
   done:
     StringAccum sa;
+    String toipsumdump_extra;
 
     // check file usage
     if (!output)
@@ -289,16 +301,31 @@ particular purpose.\n");
 	p_errh->fatal("standard output used for both log output and tcpdump output");
 
     // elements to read packets
-    if (interface && read_dump)
-	die_usage("can't give both `--interface' and `--read-tcpdump'");
-    else if (interface)
-	sa << "FromDevice(" << interface << ", SNAPLEN 60, FORCE_IP true, BPF_FILTER " << cp_quote(filter) << ")\n";
-    else if (read_dump) {
-	sa << "FromDump(" << read_dump << ", FORCE_IP true, STOP true)\n";
+    if (action == INTERFACE_OPT) {
+	if (files.size() != 1)
+	    p_errh->fatal("`-i' option takes exactly one DEVNAME");
+	sa << "FromDevice(" << files[0] << ", SNAPLEN 60, FORCE_IP true, BPF_FILTER " << cp_quote(filter) << ")\n";
+    } else if (action == READ_DUMP_OPT) {
+	if (files.size() == 0)
+	    files.push_back("-");
+	sa << "shunt :: { input -> output };\n";
+	for (int i = 0; i < files.size(); i++)
+	    sa << "FromDump(" << files[i] << ", FORCE_IP true, STOP true) -> shunt;\n";
+	sa << "shunt\n";
 	if (filter)
 	    sa << "  -> IPClassifier(" << filter << ")\n";
+    } else if (action == READ_BRESLAU1_DUMP_OPT) {
+	if (files.size() == 0)
+	    files.push_back("-");
+	sa << "shunt :: { input -> output };\n";
+	for (int i = 0; i < files.size(); i++)
+	    sa << "FromBreslau1Dump(" << files[i] << ", STOP true) -> shunt;\n";
+	sa << "shunt\n";
+	if (filter)
+	    sa << "  -> IPClassifier(" << filter << ")\n";
+	toipsumdump_extra += ", MULTIPACKET true";
     } else
-	die_usage("must supply either `--interface' or `--read-tcpdump'");
+	die_usage("must supply a data source option");
 
     // possible elements to anonymize packets
     if (anonymize)
@@ -325,7 +352,10 @@ particular purpose.\n");
     for (int i = 0; i < argc; i++)
 	banner << argv[i] << ' ';
     banner.pop_back();
-    sa << cp_quote(banner.take_string()) << ")\n";
+    sa << cp_quote(banner.take_string()) << toipsumdump_extra << ");\n";
+
+    if (files.size() > 1)
+	sa << "DriverManager(wait_stop " << files.size() - 1 << ");\n";
 
     // output config if required
     if (config) {

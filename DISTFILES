@@ -12,5 +12,9 @@ src/anonipaddr.cc
 src/anonipaddr.hh
 src/bailerror.cc
 src/bailerror.hh
+src/fromipsumdump.cc
+src/fromipsumdump.hh
+src/frombreslau1dump.cc
+src/frombreslau1dump.hh
 src/toipsumdump.cc
 src/toipsumdump.hh

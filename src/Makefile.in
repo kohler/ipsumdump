@@ -45,7 +45,8 @@ mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 	$(CXXCOMPILE) -E $< > $@
 
 
-OBJS = fromdevice.o fromdump.o todump.o anonipaddr.o toipsumdump.o \
+OBJS = fromdevice.o fromdump.o fromipsumdump.o frombreslau1dump.o \
+	anonipaddr.o toipsumdump.o todump.o \
 	bailerror.o aciri-ipsumdump.o elements.o
 
 CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL

@@ -34,7 +34,7 @@ contain those fields. Valid field names, with examples, are:
    ts usec      Microseconds portion of timestamp: `451094'
    ip src       IP source address: `192.150.187.37'
    ip dst       IP destination address: `192.168.1.100'
-   len          IP length field: `132'
+   len          Packet length: `132'
    proto        IP protocol: `10', or `I' for ICMP, `T' for TCP, `U' for UDP
    ip id        IP ID: `48759'
    sport        TCP/UDP source port: `22'
@@ -43,6 +43,7 @@ contain those fields. Valid field names, with examples, are:
    tcp ack      TCP acknowledgement number: `93178192'
    tcp flags    TCP flags: `SA', `.'
    payload len  Payload length (not including IP/TCP/UDP headers): `34'
+   count        Number of packets: `1'
 
 If a field does not apply to a particular packet -- for example, `C<sport>' on
 an ICMP packet -- ToIPSummaryDump prints a single dash for that value.
@@ -73,6 +74,11 @@ Here are a couple lines from the start of a sample verbose dump.
   63.250.213.167 192.150.187.106
   63.250.213.167 192.150.187.106
 
+=n
+
+The `C<len>' and `C<payload len>' content types use the extra length
+annotation. The `C<count>' content type uses the packet count annotation.
+
 =a
 
 FromDump, ToDump */
@@ -99,7 +105,7 @@ class ToIPSummaryDump : public Element { public:
 	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
 	W_SRC, W_DST, W_LENGTH, W_PROTO, W_IPID,
 	W_SPORT, W_DPORT, W_TCP_SEQ, W_TCP_ACK, W_TCP_FLAGS,
-	W_PAYLOAD_LENGTH,
+	W_PAYLOAD_LENGTH, W_COUNT,
 	W_LAST
     };
     static int parse_content(const String &);
@@ -113,13 +119,14 @@ class ToIPSummaryDump : public Element { public:
     FILE *_f;
     StringAccum _sa;
     Vector<unsigned> _contents;
+    bool _multipacket;
     bool _active;
     Task _task;
     bool _verbose : 1;
     String _banner;
 
     bool ascii_summary(Packet *, StringAccum &) const;
-    void write_packet(Packet *);
+    void write_packet(Packet *, bool multipacket = false);
     
 };
 
