@@ -31,6 +31,7 @@
 #define SAMPLE_OPT	310
 #define COLLATE_OPT	311
 #define RANDOM_SEED_OPT	312
+#define PROMISCUOUS_OPT	313
 
 // data sources
 #define INTERFACE_OPT	400
@@ -76,6 +77,7 @@ static Clp_Option options[] = {
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
     { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
+    { "promiscuous", 0, PROMISCUOUS_OPT, 0, Clp_Negate },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -150,12 +152,13 @@ Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
-      --map-address ADDRS    When done, print to stderr the anonymized IP\n\
-                             addresses and/or prefixes corresponding to ADDRS.\n\
+      --no-promiscuous       Do not put interfaces into promiscuous mode.\n\
+      --sample PROB          Sample packets with PROB probability.\n\
       --multipacket          Produce multiple entries for a flow identifier\n\
                              representing multiple packets (NetFlow only).\n\
-      --sample PROB          Sample packets with PROB probability.\n\
       --collate              Collate packets from data sources by timestamp.\n\
+      --map-address ADDRS    When done, print to stderr the anonymized IP\n\
+                             addresses and/or prefixes corresponding to ADDRS.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
@@ -271,6 +274,7 @@ main(int argc, char *argv[])
     Vector<int> log_contents;
     int action = 0;
     bool do_seed = true;
+    bool promisc = true;
     Vector<String> files;
     
     while (1) {
@@ -311,6 +315,9 @@ main(int argc, char *argv[])
 	  case MULTIPACKET_OPT:
 	    multipacket = !clp->negated;
 	    break;
+
+	  case PROMISCUOUS_OPT:
+	    promisc = !clp->negated;
 
 	  case MAP_PREFIX_OPT: {
 	      String arg(clp->arg);
@@ -420,6 +427,8 @@ particular purpose.\n");
 	if (collate)
 	    p_errh->fatal("`--collate' may not be used with `--interface' yet");
 	String config = ", SNAPLEN " + String(snaplen) + ", FORCE_IP true";
+	if (promisc)
+	    config += ", PROMISC true";
 #if FROMDEVICE_PCAP
 	if (filter)
 	    config += ", BPF_FILTER " + cp_quote(filter);
@@ -482,7 +491,7 @@ particular purpose.\n");
     // possible elements to filter and/or anonymize
     sa << "shunt\n";
     if (filter)
-	sa << "  -> IPClassifier(" << filter << ")\n";
+	sa << "  -> IPFilter(0 " << filter << ")\n";
     if (anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
     

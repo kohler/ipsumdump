@@ -85,12 +85,15 @@ fetch-click:
 	cd $(clickbuilddir)/etc/libclick; $(MAKE) $(libclick).tar.gz
 	cd $(top_srcdir); tar xzf $(clickbuilddir)/etc/libclick/$(libclick).tar.gz
 	@for fgroup in `cat $(top_srcdir)/CLICKFILES`; do \
+	  alteration=`echo "$$fgroup" | sed 's/[^:]*://'`; \
+	  fgroup=`echo "$$fgroup" | sed 's/:.*//'`; \
 	  for f in `cd $(clicksrcdir) && eval echo $$fgroup`; do \
 	    g=`echo $$f | sed 's/.*\/\([^/]*\)$$/\1/'`; \
 	    rm -f $(top_srcdir)/src/$$g; \
 	    ln $(clicksrcdir)/$$f $(top_srcdir)/src/$$g 2>/dev/null \
 	    || cp -p $(clicksrcdir)/$$f $(top_srcdir)/src/$$g \
 	    || echo "Could not copy $(clicksrcdir)/$$f!" 1>&2; \
+	    test "$$alteration" = "$$fgroup" || perl -pi -e "$$alteration" $(top_srcdir)/src/$$g; \
 	  done; done
 	cd $(top_srcdir); cp $(libclick)/acclick.m4 $(libclick)/aclocal.m4 .
 
@@ -119,6 +122,7 @@ distdir:
 	  fi; \
 	done
 	@for fgroup in `cat $(top_srcdir)/CLICKFILES`; do \
+	  fgroup=`echo "$$fgroup" | sed 's/:.*//'`; \
 	  g=`echo $$fgroup | sed 's/.*\/\([^/]*\)$$/src\/\1/'`; \
 	  for file in `cd $(top_srcdir) && eval echo $$g`; do \
 	    ln $(top_srcdir)/$$file $(distdir)/src/$$file 2> /dev/null \

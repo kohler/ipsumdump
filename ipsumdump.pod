@@ -190,18 +190,16 @@ and second, that anonymized addresses will be in the same class (A, B, C,
 or D) as their non-anonymized counterparts. The anonymization algorithm
 comes from tcpdpriv(1); it works like `tcpdpriv B<-A50 -C4>'.
 
+=item B<--no-promiscuous>
+
+Do not place interfaces into promiscuous mode. Promiscuous mode is the
+default.
+
 =item B<--map-address>=I<addrs>
 
 I<addrs> is a space- or comma-separated list of IP addresses and/or
 prefixes. When the summary dump completes, B<ipsumdump> will write those
 addresses to the standard error, paired with their anonymized counterparts.
-
-=item B<--multipacket>
-
-Supply this option if you are reading NetFlow or IP summaries -- files
-where each record might represent multiple packets -- and you would like
-the output summary to have one line per packet, instead of the default one
-line per record. See also B<--packet-count>, above.
 
 =item B<--sample>=I<p>
 
@@ -211,6 +209,13 @@ from the specified probability, due to fixed point arithmetic; check the
 output for a `C<!sampling_prob>' comment to see the real probability.
 Strictly speaking, this option samples records, not packets; so for NetFlow
 summaries without B<--multipacket>, it will sample flows.
+
+=item B<--multipacket>
+
+Supply this option if you are reading NetFlow or IP summaries -- files
+where each record might represent multiple packets -- and you would like
+the output summary to have one line per packet, instead of the default one
+line per record. See also B<--packet-count>, above.
 
 =item B<--collate>
 

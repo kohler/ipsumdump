@@ -8,6 +8,10 @@ elements/userlevel/fromdevice.cc
 elements/userlevel/fromdevice.hh
 elements/local/mergebyts.cc
 elements/local/mergebyts.hh
+elements/standard/classifier.cc
+elements/standard/classifier.hh
+elements/ip/ipfilter.cc
+elements/ip/ipfilter.hh:s{"elements/standard/}{"}
 elements/standard/randomsample.cc
 elements/standard/randomsample.hh
 elements/standard/tee.cc
