@@ -14,6 +14,8 @@ elements/analysis/fromipsumdump.cc
 elements/analysis/fromipsumdump.hh
 elements/analysis/fromnetflowsumdump.cc
 elements/analysis/fromnetflowsumdump.hh
+elements/analysis/ipsumdumpinfo.cc
+elements/analysis/ipsumdumpinfo.hh
 elements/analysis/mergebyts.cc
 elements/analysis/mergebyts.hh
 elements/analysis/timefilter.cc

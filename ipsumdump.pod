@@ -10,7 +10,8 @@ ipsumdump [B<-r> | B<-i> | B<--netflow-summary>] [B<--src>, B<--dst>, B<--sport>
 
 The B<ipsumdump> program reads IP packets from one or more data sources,
 then summarizes those packets into a line-based ASCII file. The resulting
-summary dump is easy to process with text-based tools.
+summary dump is easy to process with text-based tools. (But see the
+B<--binary> option, which generates a smaller binary file.)
 
 Here are a couple lines of B<ipsumdump> output, from `ipsumdump -sd
 /home/kohler/largedump.gz':
@@ -215,6 +216,10 @@ Write processed packets to a tcpdump(1) I<file> -- or to the standard
 output, if I<file> is a single dash C<-> -- in addition to the usual
 summary output.
 
+=item B<--binary>, B<-b>
+
+Write the summary dump in binary format. See below for more information.
+
 =item B<--filter>=I<filter>, B<-f> I<filter>
 
 Only include packets and flows matching a tcpdump(1) filter. For example,
@@ -353,7 +358,7 @@ B<-tsSdDp>' might produce output like this:
   !creator "ipsumdump -i eth1 -tsSdDp"
   !host max.lcdf.org
   !starttime 1000967293.569808 (Wed Sep 19 23:28:13 2001)
-  !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'
+  !data timestamp ip_src sport ip_dst dport ip_proto
   1000967303.641581 64.71.165.130 80 192.168.1.101 4450 T
   1000967303.670506 64.71.165.130 80 192.168.1.101 4450 T
   1000967303.882621 18.26.4.44 - 192.168.1.101 - I
@@ -367,7 +372,7 @@ Here is the same data, anonymized with B<-A>:
   !creator "ipsumdump --ipsumdump -A -tsSdDp"
   !host max.lcdf.org
   !starttime 1000968019.67508 (Wed Sep 19 23:40:19 2001)
-  !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'
+  !data timestamp ip_src sport ip_dst dport ip_proto
   1000967303.641581 29.50.142.215 80 204.196.101.50 4450 T
   1000967303.670506 29.50.142.215 80 204.196.101.50 4450 T
   1000967303.882621 89.142.236.79 - 204.196.101.50 - I
@@ -375,7 +380,60 @@ Here is the same data, anonymized with B<-A>:
   1000967304.390016 204.224.59.219 53 204.196.101.50 1299 U
   1000967304.425992 192.230.64.231 80 204.196.101.50 4451 T
 
-=head1 NOTE
+=head1 BINARY FORMAT
+
+Binary ipsumdump files begin with several ASCII lines, just like regular
+ipsumdump files. The line `C<!binary>' indicates that the rest of the file,
+starting immediately after the newline, consists of binary records.
+(`C<!binary>' may be followed by several space characters to ensure that
+the first binary record begins on a 4-byte boundary.) 
+Each record is a multiple of 4 bytes long, and looks like this:
+
+   +---------------+------------...
+   |X|record length|    data
+   +---------------+------------...
+    <---4 bytes--->
+
+The initial word of data stores the record length in words. (All numbers in
+the file are stored in network byte order.) The record length includes the
+initial word itself, so the minimum valid record length is 1. The
+high-order bit `C<X>' is the metadata indicator. It is zero for regular
+packets and one for metadata lines.
+
+Regular packet records have binary fields stored in the order indicated by
+the `C<!data>' line, as follows:
+
+   Field Name  Length Align  Description
+   timestamp      8     4    timestamp sec, usec
+   ip_src         4     4    source IP address
+   ip_dst         4     4    destination IP address
+   sport          2     2    source port
+   dport          2     2    destination port
+   ip_len         4     4    IP length field
+   ip_proto       1     1    IP protocol
+   ip_id          2     2    IP ID
+   ip_frag        1     1    fragment descriptor
+                             ('F', 'f', or '.')
+   ip_fragoff     2     2    IP fragment offset field
+   tcp_seq        4     4    TCP seqnece number
+   tcp_ack        4     4    TCP ack number
+   tcp_flags      1     1    TCP flags
+   payload_len    4     4    payload length
+   count          4     4    packet count
+
+Each field is Length bytes long, and aligned on an Align-byte boundary,
+possibly by introducing padding between fields. Some option orders may
+introduce unnecessary padding. For example, the records for options
+`C<--sport --src --dport>' will be 12 bytes long (because `C<--sport>' is
+padded by two bytes so `C<--src>' can start on a 4-byte boundary), but the
+records for `C<--src --sport --dport>' will be 8 bytes long.
+
+The data stored in a metadata record is just an ASCII string, ending with
+newline (possibly padded with zero bytes on the right), same as in a
+regular ASCII ipsumdump file. For instance, `C<!count>' records are stored
+this way.
+
+=head1 CLICK
 
 The B<ipsumdump> program uses the Click modular router, an extensible
 system for processing packets. Click routers consist of C++ components
@@ -398,6 +456,13 @@ This is, I think, a pleasant way to write a packet processor!
 Version 1.0 of the IPSummaryDump file format expressed 'ip fragoff' fields
 in units of 8 bytes. In version 1.1 and later, these fields are expressed
 in bytes.
+
+The names of `C<!data>' fields were formerly printed in quotes, and could
+contain spaces, like the following:
+
+  !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'
+
+B<ipsumdump> still understands files with the old format.
 
 =head1 SEE ALSO
 

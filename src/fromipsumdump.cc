@@ -34,23 +34,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-const char * const FromIPSummaryDump::tcp_flags_word = "FSRPAUEW";
-static uint8_t flag_mapping[256];
+CLICK_DECLS
 
 FromIPSummaryDump::FromIPSummaryDump()
     : Element(0, 1), _fd(-1), _buffer(0), _pos(0), _len(0), _buffer_len(0),
       _work_packet(0), _task(this), _pipe(0)
 {
     MOD_INC_USE_COUNT;
-    if (!flag_mapping[(uint8_t)'A']) {
-	const char *x = tcp_flags_word;
-	for (int i = 0; *x; x++, i++)
-	    flag_mapping[(uint8_t)(*x)] = i + 1;
-	// old mappings for flag bits 6 and 7
-	flag_mapping[(uint8_t)('X')] = 6 + 1;
-	flag_mapping[(uint8_t)('Y')] = 7 + 1;
-    }
 }
 
 FromIPSummaryDump::~FromIPSummaryDump()
@@ -64,7 +54,7 @@ FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
     bool stop = false, active = true, zero = false, multipacket = false;
     uint8_t default_proto = IP_PROTO_TCP;
     _sampling_prob = (1 << SAMPLING_SHIFT);
-    String default_contents;
+    String default_contents, default_flowid;
     
     if (cp_va_parse(conf, this, errh,
 		    cpFilename, "dump file name", &_filename,
@@ -76,6 +66,7 @@ FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
 		    "PROTO", cpByte, "default IP protocol", &default_proto,
 		    "MULTIPACKET", cpBool, "generate multiple packets per record?", &multipacket,
 		    "DEFAULT_CONTENTS", cpArgument, "default contents of log", &default_contents,
+		    "DEFAULT_FLOWID", cpArgument, "default flow ID", &default_flowid,
 		    0) < 0)
 	return -1;
     if (_sampling_prob > (1 << SAMPLING_SHIFT)) {
@@ -89,8 +80,11 @@ FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
     _active = active;
     _zero = zero;
     _multipacket = multipacket;
+    _have_flowid = _have_aggregate = _use_flowid = _use_aggregate = _binary = false;
     if (default_contents)
 	bang_data(default_contents, errh);
+    if (default_flowid)
+	bang_flowid(default_flowid, 0, errh);
     return 0;
 }
 
@@ -141,6 +135,33 @@ FromIPSummaryDump::read_line(String &result, ErrorHandler *errh)
     if (_save_char)
 	_buffer[epos] = _save_char;
 
+    if (_binary) {
+	if (_pos > _len - 4) {
+	    int errcode = read_buffer(errh);
+	    if (errcode <= 0)
+		return errcode;
+	}
+	int record_length = ntohl(*(reinterpret_cast<const uint32_t *>(_buffer + _pos))) << 2;
+	if (record_length == 0)
+	    return error_helper(errh, "zero-length binary record");
+	while (_pos > _len - record_length) {
+	    int errcode = read_buffer(errh);
+	    if (errcode <= 0)
+		return errcode;
+	}
+	if (_buffer[_pos] & 0x80) { // textual interpolation
+	    int l = record_length;
+	    while (l > 0 && _buffer[_pos + l - 1] == 0)
+		l--;
+	    result = String::stable_string(_buffer + _pos + 4, l - 4);
+	} else {
+	    _buffer[_pos] = 0;	// ensure it's not a special character
+	    result = String::stable_string(_buffer + _pos, record_length);
+	}
+	_pos += record_length;
+	return 1;
+    }
+    
     while (1) {
 	bool done = false;
 	
@@ -282,6 +303,111 @@ FromIPSummaryDump::bang_data(const String &line, ErrorHandler *errh)
 	for (int i = 0; i < _contents.size(); i++)
 	    if (_contents[i] == W_FRAG)
 		_contents[i] = W_NONE;
+
+    // recheck whether to use `!flowid' and `!aggregate'
+    check_defaults();
+}
+
+void
+FromIPSummaryDump::check_defaults()
+{
+    _use_flowid = false;
+    _flowid = (_have_flowid ? _given_flowid : IPFlowID());
+    _use_aggregate = _have_aggregate;
+    for (int i = 0; i < _contents.size(); i++)
+	if (_contents[i] == W_SRC)
+	    _flowid.set_saddr(IPAddress());
+	else if (_contents[i] == W_DST)
+	    _flowid.set_daddr(IPAddress());
+	else if (_contents[i] == W_SPORT)
+	    _flowid.set_sport(0);
+	else if (_contents[i] == W_DPORT)
+	    _flowid.set_dport(0);
+	else if (_contents[i] == W_AGGREGATE)
+	    _use_aggregate = false;
+    if (_flowid || _flowid.sport() || _flowid.dport())
+	_use_flowid = true;
+}
+
+void
+FromIPSummaryDump::bang_flowid(const String &line, click_ip *iph,
+			       ErrorHandler *errh)
+{
+    Vector<String> words;
+    cp_spacevec(line, words);
+
+    IPAddress src, dst;
+    uint32_t sport = 0, dport = 0, proto = 0;
+    if (words.size() < 5
+	|| (!cp_ip_address(words[1], &src) && words[1] != "-")
+	|| (!cp_unsigned(words[2], &sport) && words[2] != "-")
+	|| (!cp_ip_address(words[3], &dst) && words[3] != "-")
+	|| (!cp_unsigned(words[4], &dport) && words[4] != "-")
+	|| sport > 65535 || dport > 65535) {
+	error_helper(errh, "bad !flowid specification");
+	_have_flowid = _use_flowid = false;
+    } else {
+	if (words.size() >= 6) {
+	    if (cp_unsigned(words[5], &proto) && proto < 256)
+		_default_proto = proto;
+	    else if (words[5] == "T")
+		_default_proto = IP_PROTO_TCP;
+	    else if (words[5] == "U")
+		_default_proto = IP_PROTO_UDP;
+	    else if (words[5] == "I")
+		_default_proto = IP_PROTO_ICMP;
+	    else
+		error_helper(errh, "bad protocol in !flowid");
+	}
+	_given_flowid = IPFlowID(src, htons(sport), dst, htons(dport));
+	_have_flowid = true;
+	check_defaults();
+	if (iph)
+	    iph->ip_p = _default_proto;
+    }
+}
+
+void
+FromIPSummaryDump::bang_aggregate(const String &line, ErrorHandler *errh)
+{
+    Vector<String> words;
+    cp_spacevec(line, words);
+
+    if (words.size() != 2
+	|| !cp_unsigned(words[1], &_aggregate)) {
+	error_helper(errh, "bad !aggregate specification");
+	_have_aggregate = _use_aggregate = false;
+    } else {
+	_have_aggregate = true;
+	check_defaults();
+    }
+}
+
+void
+FromIPSummaryDump::bang_binary(const String &line, ErrorHandler *errh)
+{
+    Vector<String> words;
+    cp_spacevec(line, words);
+    if (words.size() != 1)
+	error_helper(errh, "bad !binary specification");
+    if (_save_char)
+	_buffer[_pos] = _save_char;
+    if (_pos & 3) {
+	// move data to align on word boundary; shouldn't be necessary if
+	// file was generated by ToIPSummaryDump
+	int offset = _pos & 3;
+	memmove(_buffer + _pos - offset, _buffer + _pos, _len - _pos);
+	_pos -= offset;
+	_len -= offset;
+    }
+    _binary_size = 0;
+    for (int i = 0; i < _contents.size(); i++)
+	_binary_size += content_binary_size(_contents[i]);
+    if (_binary_size < 0) {
+	error_helper(errh, "contents incompatible with !binary");
+	_pos = 0xFFFFFFFFU;	// prevent reading more data
+    }
+    _binary = true;
 }
 
 Packet *
@@ -314,17 +440,23 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	const char *data = line.data();
 	int len = line.length();
 
-	if (len >= 6 && memcmp(data, "!data", 5) == 0 && isspace(data[5])) {
-	    bang_data(line, errh);
+	if (len == 0)
 	    continue;
-	} else if (len >= 7 && memcmp(data, "!proto", 6) == 0 && isspace(data[6])) {
-	    //handle_proto_line(line, errh);
+	else if (data[0] == '!') {
+	    if (len >= 6 && memcmp(data, "!data", 5) == 0 && isspace(data[5]))
+		bang_data(line, errh);
+	    else if (len >= 8 && memcmp(data, "!flowid", 7) == 0 && isspace(data[7]))
+		bang_flowid(line, iph, errh);
+	    else if (len >= 11 && memcmp(data, "!aggregate", 10) == 0 && isspace(data[10]))
+		bang_aggregate(line, errh);
+	    else if (len >= 8 && memcmp(data, "!binary", 7) == 0 && isspace(data[7]))
+		bang_binary(line, errh);
 	    continue;
-	} else if (len == 0 || data[0] == '!' || data[0] == '#')
+	} else if (data[0] == '#')
 	    continue;
 
-	int ok = 0;
-	int pos = 0;
+	int ok = (_binary ? 1 : 0);
+	int pos = (_binary ? 4 : 0);
 	uint32_t byte_count = 0;
 	uint32_t payload_len = 0;
 	bool have_payload_len = false;
@@ -335,6 +467,56 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	    char *next;
 	    uint32_t u1 = 0, u2 = 0;
 
+	    // check binary case
+	    if (_binary) {
+		switch (_contents[i]) {
+		  case W_TIMESTAMP:
+		    pos = (pos + 3) & ~3;
+		    u1 = ntohl(*(reinterpret_cast<const uint32_t *>(data + pos)));
+		    u2 = ntohl(*(reinterpret_cast<const uint32_t *>(data + pos + 4)));
+		    pos += 8;
+		    break;
+		  case W_TIMESTAMP_SEC:
+		  case W_TIMESTAMP_USEC:
+		  case W_LENGTH:
+		  case W_PAYLOAD_LENGTH:
+		  case W_TCP_SEQ:
+		  case W_TCP_ACK:
+		  case W_COUNT:
+		  case W_AGGREGATE:
+		  case W_SRC:
+		  case W_DST:
+		    pos = (pos + 3) & ~3;
+		    u1 = ntohl(*(reinterpret_cast<const uint32_t *>(data + pos)));
+		    pos += 4;
+		    break;
+		  case W_IPID:
+		  case W_SPORT:
+		  case W_DPORT:
+		  case W_FRAGOFF:
+		    pos = (pos + 1) & ~1;
+		    u1 = ntohs(*(reinterpret_cast<const uint16_t *>(data + pos)));
+		    pos += 2;
+		    break;
+		  case W_PROTO:
+		  case W_TCP_FLAGS:
+		  case W_LINK:
+		    u1 = *(data + pos);
+		    pos++;
+		    break;
+		  case W_FRAG:
+		    // XXX less checking here
+		    if (data[pos] == 'F')
+			u1 = htons(IP_MF);
+		    else if (data[pos] == 'f')
+			u1 = htons(10);	// random number
+		    pos++;	// u1 already 0
+		    break;
+		}
+		goto store_contents;
+	    }
+
+	    // otherwise, ascii
 	    // first, parse contents
 	    switch (_contents[i]) {
 
@@ -364,6 +546,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	      case W_TCP_SEQ:
 	      case W_TCP_ACK:
 	      case W_COUNT:
+	      case W_AGGREGATE:
 		u1 = strtoul(data + pos, &next, 0);
 		pos = next - data;
 		break;
@@ -432,17 +615,17 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 		} else if (data[pos] == '.')
 		    pos++;
 		else
-		    while (flag_mapping[data[pos]]) {
-			u1 |= 1 << (flag_mapping[data[pos]] - 1);
+		    while (tcp_flag_mapping[data[pos]]) {
+			u1 |= 1 << (tcp_flag_mapping[data[pos]] - 1);
 			pos++;
 		    }
 		break;
 		
 	      case W_LINK:
-		if (data[pos] == 'L' || data[pos] == '>') {
+		if (data[pos] == '>' || data[pos] == 'L') {
 		    u1 = 0;
 		    pos++;
-		} else if (data[pos] == 'R' || data[pos] == 'X' || data[pos] == '<') {
+		} else if (data[pos] == '<' || data[pos] == 'X' || data[pos] == 'R') {
 		    u1 = 1;
 		    pos++;
 		} else {
@@ -475,15 +658,18 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	    }
 
 	    // check whether we correctly parsed something
-	    bool this_ok = (pos > original_pos && (!data[pos] || isspace(data[pos])));
-	    while (data[pos] && !isspace(data[pos]))
-		pos++;
-	    while (isspace(data[pos]))
-		pos++;
-	    if (!this_ok)
-		continue;
+	    {
+		bool this_ok = (pos > original_pos && (!data[pos] || isspace(data[pos])));
+		while (data[pos] && !isspace(data[pos]))
+		    pos++;
+		while (isspace(data[pos]))
+		    pos++;
+		if (!this_ok)
+		    continue;
+	    }
 
 	    // store contents
+	  store_contents:
 	    switch (_contents[i]) {
 
 	      case W_TIMESTAMP:
@@ -569,6 +755,10 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 		SET_PAINT_ANNO(q, u1), ok++;
 		break;
 
+	      case W_AGGREGATE:
+		SET_AGGREGATE_ANNO(q, u1), ok++;
+		break;
+
 	    }
 	}
 
@@ -582,6 +772,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	    q->take(sizeof(click_tcp) - sizeof(click_udp));
 	else
 	    q->take(sizeof(click_tcp));
+	
 	if (have_payload) {	// XXX what if byte_count indicates IP options?
 	    iph->ip_len = ntohs(q->length() + payload.length());
 	    if ((q = q->put(payload.length())))
@@ -595,6 +786,19 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 	} else
 	    iph->ip_len = ntohs(q->length());
 
+	// set data from flow ID
+	if (_use_flowid) {
+	    IPFlowID flowid = (PAINT_ANNO(q) ? _flowid.rev() : _flowid);
+	    if (flowid.saddr())
+		iph->ip_src = flowid.saddr();
+	    if (flowid.daddr())
+		iph->ip_dst = flowid.daddr();
+	    if (flowid.sport() && IP_FIRSTFRAG(iph))
+		q->tcp_header()->th_sport = flowid.sport();
+	    if (flowid.dport() && IP_FIRSTFRAG(iph))
+		q->tcp_header()->th_dport = flowid.dport();
+	}
+	
 	return q;
     }
 
@@ -751,68 +955,6 @@ FromIPSummaryDump::add_handlers()
 	add_task_handlers(&_task);
 }
 
-
-static const char *content_names[] = {
-    "??", "timestamp", "ts sec", "ts usec",
-    "ip src", "ip dst", "ip len", "ip proto", "ip id",
-    "sport", "dport", "tcp seq", "tcp ack", "tcp flags",
-    "payload len", "count", "ip frag", "ip fragoff",
-    "payload", "direction"
-};
-
-const char *
-FromIPSummaryDump::unparse_content(int what)
-{
-    if (what < 0 || what >= (int)(sizeof(content_names) / sizeof(content_names[0])))
-	return "??";
-    else
-	return content_names[what];
-}
-
-int
-FromIPSummaryDump::parse_content(const String &word)
-{
-    if (word == "timestamp" || word == "ts")
-	return W_TIMESTAMP;
-    else if (word == "sec" || word == "ts sec")
-	return W_TIMESTAMP_SEC;
-    else if (word == "usec" || word == "ts usec")
-	return W_TIMESTAMP_USEC;
-    else if (word == "src" || word == "ip src")
-	return W_SRC;
-    else if (word == "dst" || word == "ip dst")
-	return W_DST;
-    else if (word == "sport")
-	return W_SPORT;
-    else if (word == "dport")
-	return W_DPORT;
-    else if (word == "frag" || word == "ip frag")
-	return W_FRAG;
-    else if (word == "fragoff" || word == "ip fragoff")
-	return W_FRAGOFF;
-    else if (word == "len" || word == "length" || word == "ip len")
-	return W_LENGTH;
-    else if (word == "id" || word == "ip id")
-	return W_IPID;
-    else if (word == "proto" || word == "ip proto")
-	return W_PROTO;
-    else if (word == "tcp seq" || word == "tcp seqno")
-	return W_TCP_SEQ;
-    else if (word == "tcp ack" || word == "tcp ackno")
-	return W_TCP_ACK;
-    else if (word == "tcp flags")
-	return W_TCP_FLAGS;
-    else if (word == "payload len" || word == "payload length")
-	return W_PAYLOAD_LENGTH;
-    else if (word == "count" || word == "pkt count" || word == "packet count")
-	return W_COUNT;
-    else if (word == "payload")
-	return W_PAYLOAD;
-    else if (word == "link" || word == "direction")
-	return W_LINK;
-    else
-	return W_NONE;
-}
-
-ELEMENT_REQUIRES(userlevel)
+ELEMENT_REQUIRES(userlevel IPSummaryDumpInfo)
 EXPORT_ELEMENT(FromIPSummaryDump)
+CLICK_ENDDECLS

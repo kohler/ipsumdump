@@ -3,6 +3,9 @@
 #define CLICK_FROMIPSUMDUMP_HH
 #include <click/element.hh>
 #include <click/task.hh>
+#include <click/ipflowid.hh>
+#include "ipsumdumpinfo.hh"
+CLICK_DECLS
 
 /*
 =c
@@ -72,6 +75,12 @@ String, containing a space-separated list of content names (see
 ToIPSummaryDump for the possibilities). Defines the default contents of the
 dump.
 
+=item DEFAULT_FLOWID
+
+String, containing a space-separated flow ID (source address, source port,
+destination address, destination port, and, optionally, protocol). Defines the
+IP addresses and ports used by default.
+
 =back
 
 Only available in user-level processes.
@@ -112,7 +121,7 @@ When written, sets `active' to false and stops the driver.
 
 ToIPSummaryDump */
 
-class FromIPSummaryDump : public Element { public:
+class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
 
     FromIPSummaryDump();
     ~FromIPSummaryDump();
@@ -129,20 +138,6 @@ class FromIPSummaryDump : public Element { public:
     void run_scheduled();
     Packet *pull(int);
 
-    enum Content {	// must agree with ToIPSummaryDump
-	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
-	W_SRC, W_DST, W_LENGTH, W_PROTO, W_IPID,
-	W_SPORT, W_DPORT, W_TCP_SEQ, W_TCP_ACK, W_TCP_FLAGS,
-	W_PAYLOAD_LENGTH, W_COUNT, W_FRAG, W_FRAGOFF,
-	W_PAYLOAD, W_LINK,
-	W_LAST
-    };
-    static int parse_content(const String &);
-    static const char *unparse_content(int);
-
-    static const char * const tcp_flags_word;
-    enum { MAJOR_VERSION = 1, MINOR_VERSION = 1 };
-
   private:
 
     enum { BUFFER_SIZE = 32768, SAMPLING_SHIFT = 28 };
@@ -157,14 +152,22 @@ class FromIPSummaryDump : public Element { public:
     Vector<int> _contents;
     uint16_t _default_proto;
     uint32_t _sampling_prob;
+    IPFlowID _flowid;
+    uint32_t _aggregate;
 
     bool _stop : 1;
     bool _format_complaint : 1;
-    bool _zero;
-    bool _active;
-    bool _multipacket;
+    bool _zero : 1;
+    bool _active : 1;
+    bool _multipacket : 1;
+    bool _have_flowid : 1;
+    bool _use_flowid : 1;
+    bool _have_aggregate : 1;
+    bool _use_aggregate : 1;
+    bool _binary : 1;
     Packet *_work_packet;
     uint32_t _multipacket_extra_length;
+    int _binary_size;
 
     Task _task;
     Vector<String> _words;	// for speed
@@ -173,12 +176,17 @@ class FromIPSummaryDump : public Element { public:
     FILE *_pipe;
     off_t _file_offset;
     int _minor_version;
+    IPFlowID _given_flowid;
 
     int error_helper(ErrorHandler *, const char *);
     int read_buffer(ErrorHandler *);
     int read_line(String &, ErrorHandler *);
 
     void bang_data(const String &, ErrorHandler *);
+    void bang_flowid(const String &, click_ip *, ErrorHandler *);
+    void bang_aggregate(const String &, ErrorHandler *);
+    void bang_binary(const String &, ErrorHandler *);
+    void check_defaults();
     Packet *read_packet(ErrorHandler *);
     Packet *handle_multipacket(Packet *);
 
@@ -187,4 +195,5 @@ class FromIPSummaryDump : public Element { public:
     
 };
 
+CLICK_ENDDECLS
 #endif

@@ -38,6 +38,7 @@
 #define BAD_PACKETS_OPT		316
 #define INTERVAL_OPT		317
 #define LIMIT_PACKETS_OPT	318
+#define BINARY_OPT		319
 
 // data sources
 #define INTERFACE_OPT		400
@@ -82,6 +83,7 @@ static Clp_Option options[] = {
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
+    { "binary", 'b', BINARY_OPT, 0, Clp_Negate },
     { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
     { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
@@ -172,6 +174,7 @@ Data source options (give exactly one):\n\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
+  -b, --binary               Create binary output file.\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
       --no-promiscuous       Do not put interfaces into promiscuous mode.\n\
@@ -230,7 +233,7 @@ write_sampling_prob_message(Router *r, const String &sample_elt)
 	String s = r->handler(hi).call_read(sample);
 	ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(r->find("to_dump"));
 	if (td)
-	    td->write_string("!sampling_prob " + s);
+	    td->write_line("!sampling_prob " + s);
     }
 }
 
@@ -258,11 +261,11 @@ record_drops_hook(const String &, Element *, void *, ErrorHandler *)
     if (td) {
 	String head = "!counts out " + String(td->output_count()) + " kdrop ";
 	if (!all_known)
-	    td->write_string(head + "??\n");
+	    td->write_line(head + "??\n");
 	else if (less_than)
-	    td->write_string(head + "<" + String(max_drops) + "\n");
+	    td->write_line(head + "<" + String(max_drops) + "\n");
 	else
-	    td->write_string(head + String(max_drops) + "\n");
+	    td->write_line(head + String(max_drops) + "\n");
     }
 
     return 0;
@@ -340,6 +343,7 @@ main(int argc, char *argv[])
     bool quiet = false;
     bool quiet_explicit = false;
     bool bad_packets = false;
+    bool binary = false;
     int snaplen = -1;
     Vector<String> files;
     const char *record_drops = 0;
@@ -388,6 +392,7 @@ main(int argc, char *argv[])
 
 	  case PROMISCUOUS_OPT:
 	    promisc = !clp->negated;
+	    break;
 
 	  case WRITE_DROPS_OPT:
 	    record_drops = clp->arg;
@@ -395,6 +400,10 @@ main(int argc, char *argv[])
 
 	  case LIMIT_PACKETS_OPT:
 	    limit_packets = (clp->negated ? 0 : clp->val.u);
+	    break;
+
+	  case BINARY_OPT:
+	    binary = !clp->negated;
 	    break;
 
 	  case MAP_PREFIX_OPT: {
@@ -622,6 +631,8 @@ particular purpose.\n");
 	sa << "  -> to_dump :: ToIPSummaryDump(" << output << ", CONTENTS";
 	for (int i = 0; i < log_contents.size(); i++)
 	    sa << ' ' << cp_quote(FromIPSummaryDump::unparse_content(log_contents[i]));
+	if (binary)
+	    sa << ", BINARY true";
 	if (action == READ_DUMP_OPT)
 	    sa << ", CAREFUL_TRUNC false";
 	sa << ", VERBOSE true, BAD_PACKETS " << bad_packets << ", BANNER ";

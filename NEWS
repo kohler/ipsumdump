@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.25
+
+* Add `--binary' option and support for binary IPSummaryDump files.
+
+
 Version 1.24   31.Jul.2002
 
 * Speed up interaction of `-r' (read from tcpdump(1) files) and `-A'

@@ -5,6 +5,8 @@
 #include <click/task.hh>
 #include <click/straccum.hh>
 #include <click/notifier.hh>
+#include "ipsumdumpinfo.hh"
+CLICK_DECLS
 
 /*
 =c
@@ -34,44 +36,51 @@ Space-separated list of field names. Each line of the summary dump will
 contain those fields. Valid field names, with examples, are:
 
    timestamp    Packet timestamp: `996033261.451094'
-   ts sec       Seconds portion of timestamp: `996033261'
-   ts usec      Microseconds portion of timestamp: `451094'
-   ip src       IP source address: `192.150.187.37'
-   ip dst       IP destination address: `192.168.1.100'
-   ip frag      IP fragment: `F' (1st frag), `f' (2nd or
+   ts_sec       Seconds portion of timestamp: `996033261'
+   ts_usec      Microseconds portion of timestamp: `451094'
+   ip_src       IP source address: `192.150.187.37'
+   ip_dst       IP destination address: `192.168.1.100'
+   ip_frag      IP fragment: `F' (1st frag), `f' (2nd or
                 later frag), or `.' (not frag)
-   ip fragoff   IP fragmentation offset: `0', `0+' (suffix
+   ip_fragoff   IP fragmentation offset: `0', `0+' (suffix
                 `+' means MF is set; offset in bytes)
    len          Packet length: `132'
    proto        IP protocol: `10', or `I' for ICMP, `T' for
                 TCP, `U' for UDP
-   ip id        IP ID: `48759'
+   ip_id        IP ID: `48759'
    sport        TCP/UDP source port: `22'
    dport        TCP/UDP destination port: `2943'
-   tcp seq      TCP sequence number: `93167339'
-   tcp ack      TCP acknowledgement number: `93178192'
-   tcp flags    TCP flags: `SA', `.'
-   payload len  Payload length (not including IP/TCP/UDP
+   tcp_seq      TCP sequence number: `93167339'
+   tcp_ack      TCP acknowledgement number: `93178192'
+   tcp_flags    TCP flags: `SA', `.'
+   payload_len  Payload length (not including IP/TCP/UDP
                 headers): `34'
    count        Number of packets: `1'
-   direction    Link number (PAINT_ANNO): `L' (paint 0),
-                `R' (paint 1), or `2'
+   direction    Link number (PAINT_ANNO): '2', or '>'/'L'
+                for paint 0, '<'/'R'/'X' for paint 1
+   aggregate    Aggregate number (AGGREGATE_ANNO): '973'
 
 If a field does not apply to a particular packet -- for example, `C<sport>' on
 an ICMP packet -- ToIPSummaryDump prints a single dash for that value.
 
-Default CONTENTS is `src dst'. You must quote field names that contain a
-space -- for example, `C<src dst "tcp seq">'.
+Default CONTENTS is `src dst'. You may also use spaces instead of underscores,
+in which case you must quote field names that contain a space -- for example,
+`C<src dst "tcp seq">'.
 
 =item VERBOSE
 
 Boolean. If true, then print out a couple comments at the beginning of the
-dump describing the hostname and starting time, in addition to the `C<!data>' line describing the log contents.
+dump describing the hostname and starting time, in addition to the `C<!data>' line describing the log contents. Default is false.
 
 =item BANNER
 
 String. If supplied, prints a `C<!creator "BANNER">' comment at the beginning
 of the dump.
+
+=item BINARY
+
+Boolean. If true, then output packet records in a binary format (explained
+below). Defaults to false.
 
 =item MULTIPACKET
 
@@ -104,7 +113,7 @@ Here are a couple lines from the start of a sample verbose dump.
   !IPSummaryDump 1.1
   !creator "aciri-ipsumdump -i wvlan0"
   !host no.lcdf.org
-  !starttime 996022410.322317 (Tue Jul 24 17:53:30 2001)
+  !runtime 996022410.322317 (Tue Jul 24 17:53:30 2001)
   !data 'ip src' 'ip dst'
   63.250.213.167 192.150.187.106
   63.250.213.167 192.150.187.106
@@ -112,9 +121,12 @@ Here are a couple lines from the start of a sample verbose dump.
 The end of the dump may contain a comment `C<!drops N>', meaning that C<N>
 packets were dropped before they could be entered into the dump.
 
+A `C<!flowid>' comment can specify source and destination addresses and ports
+for packets that otherwise don't have one.
+
 =n
 
-The `C<len>' and `C<payload len>' content types use the extra length
+The `C<len>' and `C<payload_len>' content types use the extra length
 annotation. The `C<count>' content type uses the packet count annotation.
 
 The characters corresponding to TCP flags are as follows:
@@ -135,13 +147,67 @@ flags byte, or might use characters X and Y for flags ECE and CWR,
 respectively.
 
 Verson 1.0 of the IPSummaryDump file format expressed fragment offsets in
-8-byte units, not bytes.
+8-byte units, not bytes. Content types in old dumps were sometimes quoted and
+contained spaces instead of underscores.
+
+=head1 BINARY FORMAT
+
+Binary IPSummaryDump files begin with several ASCII lines, just like regular
+files. The line `C<!binary>' indicates that the rest of the file, starting
+immediately after the newline, consists of binary records. (`C<!binary>' may
+be followed by several space characters to ensure that the first binary record
+begins on a 4-byte boundary.) Each record is a multiple of 4 bytes long, and
+looks like this:
+
+   +---------------+------------...
+   |X|record length|    data
+   +---------------+------------...
+    <---4 bytes--->
+
+The initial word of data stores the record length in words. (All numbers in
+the file are stored in network byte order.) The record length includes the
+initial word itself, so the minimum valid record length is 1. The
+high-order bit `C<X>' is the metadata indicator. It is zero for regular
+packets and one for metadata lines.
+
+Regular packet records have binary fields stored in the order indicated by
+the `C<!data>' line, as follows:
+
+   Field Name  Length Align  Description
+   timestamp      8     4    timestamp sec, usec
+   ip_src         4     4    source IP address
+   ip_dst         4     4    destination IP address
+   sport          2     2    source port
+   dport          2     2    destination port
+   ip_len         4     4    IP length field
+   ip_proto       1     1    IP protocol
+   ip_id          2     2    IP ID
+   ip_frag        1     1    fragment descriptor
+                             ('F', 'f', or '.')
+   ip_fragoff     2     2    IP fragment offset field
+   tcp_seq        4     4    TCP seqnece number
+   tcp_ack        4     4    TCP ack number
+   tcp_flags      1     1    TCP flags
+   payload_len    4     4    payload length
+   count          4     4    packet count
+
+Each field is Length bytes long, and aligned on an Align-byte boundary,
+possibly by introducing padding between fields. Some CONTENTS orders may
+introduce unnecessary padding. For example, the records for CONTENTS
+`C<sport src dport>' will be 12 bytes long (because `C<sport>' is
+padded by two bytes so `C<src>' can start on a 4-byte boundary), but the
+records for `C<src sport dport>' will be 8 bytes long.
+
+The data stored in a metadata record is just an ASCII string, ending with
+newline (possibly padded with zero bytes on the right), same as in a regular
+ASCII IPSummaryDump file. For instance, `C<!bad>' records are stored this
+way.
 
 =a
 
 FromDump, ToDump */
 
-class ToIPSummaryDump : public Element { public:
+class ToIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
 
     ToIPSummaryDump();
     ~ToIPSummaryDump();
@@ -160,17 +226,8 @@ class ToIPSummaryDump : public Element { public:
     void run_scheduled();
 
     uint32_t output_count() const	{ return _output_count; }
-    void write_string(const String &);
+    void write_line(const String &);
     void flush_buffer();
-
-    enum Content {		// must agree with FromIPSummaryDump
-	W_NONE, W_TIMESTAMP, W_TIMESTAMP_SEC, W_TIMESTAMP_USEC,
-	W_SRC, W_DST, W_LENGTH, W_PROTO, W_IPID,
-	W_SPORT, W_DPORT, W_TCP_SEQ, W_TCP_ACK, W_TCP_FLAGS,
-	W_PAYLOAD_LENGTH, W_COUNT, W_FRAG, W_FRAGOFF,
-	W_PAYLOAD, W_LINK,
-	W_LAST
-    };
 
   private:
 
@@ -178,21 +235,25 @@ class ToIPSummaryDump : public Element { public:
     FILE *_f;
     StringAccum _sa;
     Vector<unsigned> _contents;
-    bool _multipacket;
-    bool _active;
-    uint32_t _output_count;
-    Task _task;
-    NotifierSignal _signal;
     bool _verbose : 1;
     bool _bad_packets : 1;
     bool _careful_trunc : 1;
+    bool _multipacket : 1;
+    bool _active : 1;
+    bool _binary : 1;
+    int32_t _binary_size;
+    uint32_t _output_count;
+    Task _task;
+    NotifierSignal _signal;
     
     String _banner;
 
     bool ascii_summary(Packet *, StringAccum &) const;
+    bool binary_summary(Packet *, const click_ip *, const click_tcp *, const click_udp *, StringAccum &) const;
     bool bad_packet(StringAccum &, const String &, int) const;
     void write_packet(Packet *, bool multipacket = false);
     
 };
 
+CLICK_ENDDECLS
 #endif
