@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.42   3.Sep.2004
+
+* Add support for PPP-encapsulated DAG dumps, via the '--dag-ppp' option,
+  and for PPP-encapsulated tcpdump files.  Requested by Pedro Torres.
+
+
 Version 1.41   18.Aug.2004
 
 * Add support for IEEE 802.11/Prism2 encapsulated dumps.  Requested by

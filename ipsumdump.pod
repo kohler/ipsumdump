@@ -95,25 +95,32 @@ specified by the input files are set to 0.
 =item B<--format>=I<format>
 
 Read from one or more B<ipsumdump> files, using the specified default
-format. The I<format> should be a space-separated list of content types;
+format.  The I<format> should be a space-separated list of content types;
 see L<ToIPSummaryDump(n)> for a list.
 
 =item B<--tcpdump-text>
 
-Read from one or more files containing L<tcpdump(1)> textual output. It's
+Read from one or more files containing L<tcpdump(1)> textual output.  It's
 much better to use the binary files produced by 'tcpdump B<-w>', but if
 someone threw those file away and all you have is the ASCII output, you can
-still make do.
+still make do.  Only works with tcpdump versions 3.7 and earlier.
 
 =item B<--nlanr>
 
 Read from one or more NLANR-formatted trace files (fr, fr+, or tsh
-format). See L<http://pma.nlanr.net/Traces/>.
+format).  See L<http://pma.nlanr.net/Traces/>.
 
 =item B<--dag>
 
-Read from one or more DAG-formatted trace files. See
+Read from one or more DAG-formatted trace files.  Use this option for
+new-style ERF dumps (which contain encapsulation type information), or for
+old-style dumps with ATM encapsulation.  See
 L<http://dag.cs.waikato.ac.nz/>.
+
+=item B<--dag-ppp>
+
+Read from one or more DAG-formatted trace files with old-style PPP
+encapsulation.  See L<http://dag.cs.waikato.ac.nz/>.
 
 =back
 

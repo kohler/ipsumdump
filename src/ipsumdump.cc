@@ -72,6 +72,7 @@
 #define IPSUMDUMP_FORMAT_OPT	405
 #define READ_NLANR_DUMP_OPT	406
 #define READ_DAG_DUMP_OPT	407
+#define READ_DAG_PPP_DUMP_OPT	408
 
 // options for logging
 #define FIRST_LOG_OPT	1000
@@ -111,6 +112,7 @@ static Clp_Option options[] = {
     { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
     { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
     { "dag", 0, READ_DAG_DUMP_OPT, 0, 0 },
+    { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -214,9 +216,11 @@ Data source options (give exactly one):\n\
       --tcpdump-text         Read packets from tcpdump(1) text output FILES.\n\
       --nlanr                Read packets from NLANR-format FILES (fr/fr+/tsh).\n\
       --dag                  Read packets from DAG-format FILES.\n\
+      --dag-ppp              Read packets from DAG-format FILES with PPP encap.\n\
   -i, --interface            Read packets from network devices DEVNAMES until\n\
                              interrupted.\n\
-\n\
+\n");
+  printf("\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
@@ -243,7 +247,7 @@ Other options:\n\
   -h, --help                 Print this message and exit.\n\
   -v, --version              Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n");
+Report bugs to <kohler@cs.ucla.edu>.\n");
 }
 
 // Stop the driver this many aggregate times to end the program.
@@ -416,6 +420,7 @@ main(int argc, char *argv[])
 	  case READ_IPSUMDUMP_OPT:
 	  case READ_ASCII_TCPDUMP_OPT:
 	  case READ_DAG_DUMP_OPT:
+	  case READ_DAG_PPP_DUMP_OPT:
 	  case READ_NLANR_DUMP_OPT:
 	    if (action)
 		die_usage("data source option already specified");
@@ -614,7 +619,7 @@ particular purpose.\n");
 	quiet = true;		// does not support filepos handlers
 	
     } else if (action == READ_DUMP_OPT || action == READ_NLANR_DUMP_OPT
-	       || action == READ_DAG_DUMP_OPT) {
+	       || action == READ_DAG_DUMP_OPT || action == READ_DAG_PPP_DUMP_OPT) {
 	String eclass = (action == READ_DUMP_OPT ? "FromDump" : (action == READ_NLANR_DUMP_OPT ? "FromNLANRDump" : "FromDAGDump"));
 	if (files.size() == 0)
 	    files.push_back("-");
@@ -623,6 +628,8 @@ particular purpose.\n");
 	    config += ", SAMPLE " + String(sample);
 	if (mmap >= 0)
 	    config += ", MMAP " + String(mmap);
+	if (action == READ_DAG_PPP_DUMP_OPT)
+	    config += ", ENCAP PPP";
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: " << eclass << "(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
 	sample_elt = "src0";
