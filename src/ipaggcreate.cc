@@ -17,24 +17,24 @@
 
 #include <click/standard/drivermanager.hh>
 
-#define HELP_OPT	300
-#define VERSION_OPT	301
-#define OUTPUT_OPT	302
-#define CONFIG_OPT	303
-#define WRITE_DUMP_OPT	304
-#define FILTER_OPT	305
-#define VERBOSE_OPT	306
-#define ANONYMIZE_OPT	307
-#define MULTIPACKET_OPT	309
-#define SAMPLE_OPT	310
-#define COLLATE_OPT	311
-#define RANDOM_SEED_OPT	312
-#define INTERVAL_OPT	315
-#define TIME_OFFSET_OPT	316
-#define BINARY_OPT	317
-#define ASCII_OPT	318
-#define START_TIME_OPT	319
-#define QUIET_OPT	320
+#define HELP_OPT		300
+#define VERSION_OPT		301
+#define OUTPUT_OPT		302
+#define CONFIG_OPT		303
+#define WRITE_DUMP_OPT		304
+#define FILTER_OPT		305
+#define VERBOSE_OPT		306
+#define ANONYMIZE_OPT		307
+#define MULTIPACKET_OPT		309
+#define SAMPLE_OPT		310
+#define COLLATE_OPT		311
+#define RANDOM_SEED_OPT		312
+#define INTERVAL_OPT		315
+#define TIME_OFFSET_OPT		316
+#define BINARY_OPT		317
+#define ASCII_OPT		318
+#define START_TIME_OPT		319
+#define QUIET_OPT		320
 
 // data sources
 #define READ_DUMP_OPT		401
@@ -47,22 +47,22 @@
 #define IPSUMDUMP_FORMAT_OPT	450
 
 // aggregates
-#define AGG_SRC_OPT	500
-#define AGG_DST_OPT	501
-#define AGG_LENGTH_OPT	502
-#define AGG_FLOWS_OPT	503
-#define AGG_UNI_FLOWS_OPT 504
-#define AGG_ADDRPAIR_OPT 505
-#define AGG_UNI_ADDRPAIR_OPT 506
-#define AGG_IP_OPT	507
+#define AGG_SRC_OPT		500
+#define AGG_DST_OPT		501
+#define AGG_LENGTH_OPT		502
+#define AGG_FLOWS_OPT		503
+#define AGG_UNI_FLOWS_OPT	504
+#define AGG_ADDRPAIR_OPT	505
+#define AGG_UNI_ADDRPAIR_OPT	506
+#define AGG_IP_OPT		507
 
-#define AGG_BYTES_OPT	600
-#define AGG_PACKETS_OPT	601
-#define LIMIT_AGG_OPT	602
-#define SPLIT_AGG_OPT	603
-#define SPLIT_TIME_OPT	604
-#define SPLIT_PACKETS_OPT 605
-#define SPLIT_BYTES_OPT	606
+#define AGG_BYTES_OPT		600
+#define AGG_PACKETS_OPT		601
+#define LIMIT_AGG_OPT		602
+#define SPLIT_AGG_OPT		603
+#define SPLIT_TIME_OPT		604
+#define SPLIT_PACKETS_OPT	605
+#define SPLIT_BYTES_OPT		606
 
 #define CLP_TIMEVAL_TYPE	(Clp_MaxDefaultType + 1)
 
