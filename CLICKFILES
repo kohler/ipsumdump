@@ -35,6 +35,8 @@ elements/analysis/toipsumdump.cc
 elements/analysis/toipsumdump.hh
 elements/ip/ipfilter.cc
 elements/ip/ipfilter.hh:s{"elements/standard/}{"}
+elements/ip/ipnameinfo.cc
+elements/ip/ipnameinfo.hh
 elements/standard/classifier.cc
 elements/standard/classifier.hh
 elements/standard/counter.cc
