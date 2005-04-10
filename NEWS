@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.54   10.Apr.2005
+
+* Bug fix: Mac OS X defines pcap_setnonblock, but does not declare it.
+
+
 Version 1.53   9.Apr.2005
 
 * Bug fix: include IPNameInfo.  Reported by Vern Paxson.
