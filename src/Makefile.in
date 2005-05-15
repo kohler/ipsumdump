@@ -45,13 +45,30 @@ mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 	$(CXXCOMPILE) -E $< > $@
 
 
-OBJS = fromdevice.o fromdump.o fromfile.o fromdagdump.o fromipsumdump.o \
-	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o ipsumdumpinfo.o \
-	ipsumdump_anno.o ipsumdump_ip.o ipsumdump_tcp.o toipsumdump.o todump.o \
+IPSUMDUMP_ELEMENT_OBJS = \
+	fromdagdump.o fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
+	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o \
+	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_ip.o ipsumdump_tcp.o \
+	toipsumdump.o todump.o \
 	anonipaddr.o classifier.o counter.o discard.o fakepcap.o ipfilter.o \
 	ipnameinfo.o pokehandlers.o progressbar.o randomsample.o \
-	switch.o tee.o timefilter.o timesortedsched.o unqueue.o \
-	ipsumdump.o elements.o
+	switch.o tee.o timefilter.o timesortedsched.o unqueue.o
+
+IPSUMDUMP_OBJS = \
+	$(IPSUMDUMP_ELEMENT_OBJS) ipsumdump.o sd_elements.o
+
+IPAGGCREATE_ELEMENT_OBJS = \
+	fromdagdump.o fromdump.o fromfile.o fromipsumdump.o \
+	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o \
+	ipsumdumpinfo.o \
+	aggcounter.o aggregateip.o aggregateipflows.o aggregatelen.o \
+	anonipaddr.o classifier.o counter.o discard.o fakepcap.o \
+	ipfilter.o ipmirror.o progressbar.o randomsample.o tee.o \
+	timefilter.o timerange.o todump.o
+
+IPAGGCREATE_OBJS = \
+	$(IPAGGCREATE_ELEMENT_OBJS) ipaggcreate.o ac_elements.o
+
 
 CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL
 CFLAGS = @CFLAGS@
@@ -67,28 +84,37 @@ CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(CXXFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) $(DEPCFLAGS)
 
-all: ipsumdump
-all-local: ipsumdump
+all: ipsumdump ipaggcreate
+all-local: ipsumdump ipaggcreate
 
-ipsumdump: $(OBJS) @CLICKLIBFILE@
-	$(CXXLINK) -rdynamic $(OBJS) $(LIBS)
+ipsumdump: $(IPSUMDUMP_OBJS) @CLICKLIBFILE@
+	$(CXXLINK) -rdynamic $(IPSUMDUMP_OBJS) $(LIBS)
+
+ipaggcreate: $(IPAGGCREATE_OBJS) @CLICKLIBFILE@
+	$(CXXLINK) -rdynamic $(IPAGGCREATE_OBJS) $(LIBS)
 
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	cd $(top_builddir) && \
 	  CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 elemlist: always
-	@rm -f elements.conf
-	@$(MAKE) elements.conf
-elements.conf: $(CLICK_BUILDTOOL)
-	echo $(srcdir) | $(CLICK_BUILDTOOL) findelem -r userlevel -S > elements.conf
-elements.cc: elements.conf $(CLICK_BUILDTOOL)
-	$(CLICK_BUILDTOOL) elem2export -S < elements.conf > elements.cc
-	@rm -f elements.d
+	@rm -f sd_elements.conf ac_elements.conf
+	@$(MAKE) sd_elements.conf ac_elements.conf
+sd_elements.conf: $(CLICK_BUILDTOOL)
+	(for i in $(IPSUMDUMP_ELEMENT_OBJS); do echo "$(srcdir)/$$i" | sed 's/\.o/\.cc/'; done) | $(CLICK_BUILDTOOL) findelem -r userlevel -S > sd_elements.conf
+sd_elements.cc: sd_elements.conf $(CLICK_BUILDTOOL)
+	$(CLICK_BUILDTOOL) elem2export -S < sd_elements.conf > sd_elements.cc
+	@rm -f sd_elements.d
+ac_elements.conf: $(CLICK_BUILDTOOL)
+	(for i in $(IPAGGCREATE_ELEMENT_OBJS); do echo "$(srcdir)/$$i" | sed 's/\.o/\.cc/'; done) | $(CLICK_BUILDTOOL) findelem -r userlevel -S > ac_elements.conf
+ac_elements.cc: ac_elements.conf $(CLICK_BUILDTOOL)
+	$(CLICK_BUILDTOOL) elem2export -S < ac_elements.conf > ac_elements.cc
+	@rm -f ac_elements.d
 
-install: ipsumdump
+install: ipsumdump ipaggcreate
 	$(mkinstalldirs) $(bindir)
 	$(INSTALL) ipsumdump $(bindir)/ipsumdump
+	$(INSTALL) ipaggcreate $(bindir)/ipaggcreate
 
 always:
 	@:
@@ -101,7 +127,8 @@ endif
 #!end gmake
 
 clean:
-	-rm -f *.d *.o elements.mk elements.cc elements.conf ipsumdump
+	-rm -f *.d *.o sd_elements.mk sd_elements.cc sd_elements.conf \
+	ac_elements.mk ac_elements.cc ac_elements.conf ipsumdump
 distclean: clean
 	-rm -f Makefile
 

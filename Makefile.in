@@ -38,6 +38,10 @@ $(libclick): always
 	@cd $(libclick) && $(MAKE) all
 src: always stamp-h
 	@cd src && $(MAKE) all-local
+ipsumdump: always stamp-h
+	@cd src && $(MAKE) ipsumdump
+ipaggcreate: always stamp-h
+	@cd src && $(MAKE) ipaggcreate
 
 install: always @LIBCLICK_TARGET@ stamp-h
 	@cd src && $(MAKE) install
@@ -134,7 +138,7 @@ distdir: $(srcdir)/configure
 	mv $(libclick)/$(libclick) $(distdir)
 
 
-.PHONY: all always $(libclick) src elemlist elemlists \
+.PHONY: all always $(libclick) src ipsumdump ipaggcreate elemlist elemlists \
 	clean distclean dist distdir \
 	install install-doc install-man install-local install-include \
 	fetch-click

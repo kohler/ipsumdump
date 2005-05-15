@@ -34,7 +34,7 @@
 #define INTERVAL_OPT		315
 #define TIME_OFFSET_OPT		316
 #define BINARY_OPT		317
-#define ASCII_OPT		318
+#define TEXT_OPT		318
 #define START_TIME_OPT		319
 #define QUIET_OPT		320
 
@@ -66,7 +66,7 @@
 #define SPLIT_PACKETS_OPT	605
 #define SPLIT_BYTES_OPT		606
 
-#define CLP_TIMEVAL_TYPE	(Clp_FirstUserType)
+#define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
 
 static Clp_Option options[] = {
 
@@ -94,7 +94,7 @@ static Clp_Option options[] = {
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
     { "binary", 'B', BINARY_OPT, 0, 0 },
-    { "ascii", 0, ASCII_OPT, 0, 0 },
+    { "text", 0, TEXT_OPT, 0, 0 },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
@@ -117,12 +117,12 @@ static Clp_Option options[] = {
     
     { "packets", 'p', AGG_PACKETS_OPT, 0, 0 },
     { "bytes", 'b', AGG_BYTES_OPT, 0, 0 },
-    { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMEVAL_TYPE, 0 },
-    { "interval", 't', INTERVAL_OPT, CLP_TIMEVAL_TYPE, 0 },
-    { "start-time", 0, START_TIME_OPT, CLP_TIMEVAL_TYPE, 0 },
+    { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMESTAMP_TYPE, 0 },
+    { "interval", 't', INTERVAL_OPT, CLP_TIMESTAMP_TYPE, 0 },
+    { "start-time", 0, START_TIME_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "limit-aggregates", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
     { "split-aggregates", 0, SPLIT_AGG_OPT, Clp_ArgUnsigned, 0 },
-    { "split-time", 0, SPLIT_TIME_OPT, CLP_TIMEVAL_TYPE, 0 },
+    { "split-time", 0, SPLIT_TIME_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "split-packets", 0, SPLIT_PACKETS_OPT, Clp_ArgUnsigned, 0 },
     { "split-count", 0, SPLIT_PACKETS_OPT, Clp_ArgUnsigned, 0 },
     { "split-bytes", 0, SPLIT_BYTES_OPT, Clp_ArgUnsigned, 0 },
@@ -141,7 +141,7 @@ die_usage(String specific = String())
     if (specific)
 	errh->error("%s: %s", program_name, specific.c_str());
     errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
-Try `%s --help' for more information.",
+Try '%s --help' for more information.",
 		program_name, program_name);
     // should not get here, but just in case...
     exit(1);
@@ -151,7 +151,7 @@ void
 usage()
 {
   printf("\
-`ipaggcreate' reads IP packets from the tcpdump(1) files, or other related\n\
+'ipaggcreate' reads IP packets from the tcpdump(1) files, or other related\n\
 files, and aggregates their contents into a simple file.\n\
 \n\
 Usage: %s [OPTIONS] [FILES] > AGGFILE\n\
@@ -170,7 +170,7 @@ Other aggregate options:\n\
   -p, --packets              Count number of packets (default).\n\
   -b, --bytes                Count number of bytes.\n\
   -T, --time-offset TIME     Ignore first TIME in input.\n\
-  -t, --interval TIME        Output TIME worth of packets. Example: `1hr'.\n\
+  -t, --interval TIME        Output TIME worth of packets. Example: '1hr'.\n\
       --start-time TIME\n\
       --limit-aggregates K   Stop once K aggregates are encountered.\n\
       --split-aggregates K   Output new file every K aggregates.\n\
@@ -199,14 +199,14 @@ Other options:\n\
       --collate              Collate packets from data sources by timestamp.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
   -B, --binary               Output aggregate file in binary.\n\
-      --ascii                Output aggregate file in ASCII (default).\n\
+      --text                 Output aggregate file in ASCII text (default).\n\
   -q, --quiet                Do not print progress bar.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
   -v, --version              Print version number and exit.\n\
 \n\
-Report bugs to <kohler@aciri.org>.\n", program_name);
+Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
 }
 
 // Stop the driver this many aggregate times to end the program.
@@ -225,12 +225,12 @@ catch_signal(int sig)
 }
 
 static int
-parse_timeval(Clp_Parser *clp, const char *arg, int complain, void *)
+parse_timestamp(Clp_Parser *clp, const char *arg, int complain, void *)
 {
-    if (cp_timeval(arg, (struct timeval *)&clp->val))
+    if (cp_time(arg, (Timestamp *)&clp->val))
 	return 1;
     else if (complain)
-	return Clp_OptionError(clp, "`%O' expects a time value, not `%s'", arg);
+	return Clp_OptionError(clp, "'%O' expects a time value, not '%s'", arg);
     else
 	return 0;
 }
@@ -295,7 +295,7 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     AggregateCounter *ac = (AggregateCounter *)(router->find("ac"));
     int result = 0;
     if (multi_output < 0 || !ac->empty()) {
-	result = HandlerCall::call_write(ac, (binary ? "write_file" : (agg_is_ip ? "write_ip_file" : "write_ascii_file")), cp_quote(cur_output), errh);
+	result = HandlerCall::call_write(ac, (binary ? "write_file" : (agg_is_ip ? "write_ip_file" : "write_text_file")), cp_quote(cur_output), errh);
 	if (result < 0)		// file errors are fatal
 	    catch_signal(SIGINT);
     } else if (multi_output >= 0) // skip empty files
@@ -338,7 +338,7 @@ main(int argc, char *argv[])
     Clp_Parser *clp = Clp_NewParser
 	(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
-    Clp_AddType(clp, CLP_TIMEVAL_TYPE, 0, parse_timeval, 0);
+    Clp_AddType(clp, CLP_TIMESTAMP_TYPE, 0, parse_timestamp, 0);
     
     String::static_initialize();
     cp_va_static_initialize();
@@ -366,15 +366,11 @@ main(int argc, char *argv[])
     bool do_seed = true;
     bool progress_bar_ok = true;
     //bool binary;
-    struct timeval time_offset;
-    struct timeval interval;
-    struct timeval split_time;
-    struct timeval start_time;
+    Timestamp time_offset;
+    Timestamp interval;
+    Timestamp split_time;
+    Timestamp start_time;
     Vector<String> files;
-    timerclear(&time_offset);
-    timerclear(&interval);
-    timerclear(&split_time);
-    timerclear(&start_time);
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -382,7 +378,7 @@ main(int argc, char *argv[])
 
 	  case OUTPUT_OPT:
 	    if (output)
-		die_usage("`--output' already specified");
+		die_usage("'--output' already specified");
 	    output = clp->arg;
 	    break;
 	    
@@ -400,19 +396,19 @@ main(int argc, char *argv[])
 
 	  case IPSUMDUMP_FORMAT_OPT:
 	    if (ipsumdump_format)
-		die_usage("`--format' already specified");
+		die_usage("'--format' already specified");
 	    ipsumdump_format = clp->arg;
 	    break;
 	    
 	  case WRITE_DUMP_OPT:
 	    if (write_dump)
-		die_usage("`--write-tcpdump' already specified");
+		die_usage("'--write-tcpdump' already specified");
 	    write_dump = clp->arg;
 	    break;
 
 	  case FILTER_OPT:
 	    if (filter)
-		die_usage("`--filter' already specified");
+		die_usage("'--filter' already specified");
 	    filter = clp->arg;
 	    break;
 
@@ -428,7 +424,7 @@ main(int argc, char *argv[])
 	    binary = true;
 	    break;
 
-	  case ASCII_OPT:
+	  case TEXT_OPT:
 	    binary = false;
 	    break;
 
@@ -438,7 +434,7 @@ main(int argc, char *argv[])
 	    else {
 		do_sample = true;
 		if (clp->val.d < 0 || clp->val.d > 1)
-		    die_usage("`--sample' probability must be between 0 and 1");
+		    die_usage("'--sample' probability must be between 0 and 1");
 		sample = clp->val.d;
 	    }
 	    break;
@@ -457,15 +453,15 @@ main(int argc, char *argv[])
 	    break;
 	    
 	  case TIME_OFFSET_OPT:
-	    time_offset = *((const struct timeval *)&clp->val);
+	    time_offset = *((const Timestamp *)&clp->val);
 	    break;
 	    
 	  case START_TIME_OPT:
-	    start_time = *((const struct timeval *)&clp->val);
+	    start_time = *((const Timestamp *)&clp->val);
 	    break;
 	    
 	  case INTERVAL_OPT:
-	    interval = *((const struct timeval *)&clp->val);
+	    interval = *((const Timestamp *)&clp->val);
 	    break;
 
 	  case AGG_SRC_OPT:
@@ -505,7 +501,7 @@ main(int argc, char *argv[])
 	  case AGG_BYTES_OPT:
 	  case AGG_PACKETS_OPT:
 	    if (aggctr_pb)
-		die_usage("`--bytes' or `--packets' specified twice");
+		die_usage("'--bytes' or '--packets' specified twice");
 	    aggctr_pb = "BYTES " + cp_unparse_bool(opt == AGG_BYTES_OPT);
 	    break;
 
@@ -526,12 +522,12 @@ main(int argc, char *argv[])
 	    goto multi_output;
 
 	  case SPLIT_TIME_OPT:
-	    split_time = *((const struct timeval *)&clp->val);
+	    split_time = *((const Timestamp *)&clp->val);
 	    goto multi_output;
 
 	  multi_output:
 	    if (multi_output >= 0)
-		die_usage("supply at most one of the `--split' options");
+		die_usage("supply at most one of the '--split' options");
 	    multi_output = 0;
 	    break;
 	    
@@ -580,7 +576,7 @@ particular purpose.\n");
     if (!output)
 	output = "-";
     if (multi_output >= 0 && !check_multi_output(output))
-	p_errh->fatal("When generating multiple files, you must supply `--output',\nwhich should contain exactly one `%%d' or equivalent.");
+	p_errh->fatal("When generating multiple files, you must supply '--output',\nwhich should contain exactly one '%%d' or equivalent.");
     if (output == "-" && write_dump == "-")
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
@@ -598,17 +594,17 @@ particular purpose.\n");
 
     // figure out time argument
     StringAccum time_config_sa;
-    if (timerisset(&start_time) && timerisset(&time_offset))
-	p_errh->fatal("specify at most one of `--start-time' and `--time-offset'");
-    else if (timerisset(&time_offset))
+    if (start_time && time_offset)
+	p_errh->fatal("specify at most one of '--start-time' and '--time-offset'");
+    else if (time_offset)
 	time_config_sa << ", START_AFTER " << time_offset;
-    else if (timerisset(&start_time))
+    else if (start_time)
 	time_config_sa << ", START " << start_time;
-    if (timerisset(&interval) && timerisset(&split_time))
-	p_errh->fatal("supply at most one of `--interval' and `--split-time'");
-    else if (timerisset(&interval))
+    if (interval && split_time)
+	p_errh->fatal("supply at most one of '--interval' and '--split-time'");
+    else if (interval)
 	time_config_sa << ", INTERVAL " << interval;
-    else if (timerisset(&split_time))
+    else if (split_time)
 	time_config_sa << ", INTERVAL " << split_time;
     String time_config = (time_config_sa ? time_config_sa.take_string().substring(2) : String());
     
@@ -629,7 +625,7 @@ particular purpose.\n");
     // prepare ipsumdump format
     if (ipsumdump_format) {
 	if (action != READ_IPSUMDUMP_OPT)
-	    die_usage("`--format' option requires `--ipsumdump'");
+	    die_usage("'--format' option requires '--ipsumdump'");
     } else if (action == READ_TUDUMP_OPT) {
 	ipsumdump_format = "timestamp ip_src sport ip_dst dport proto payload_len";
 	action = READ_IPSUMDUMP_OPT;
@@ -637,7 +633,7 @@ particular purpose.\n");
 	if (agg.substring(0, 6) == "ip src" || agg.substring(0, 6) == "ip dst")
 	    ipsumdump_format = "'" + agg + "'";
 	else
-	    die_usage("can't aggregate `" + agg + "' with `--ip-addresses'");
+	    die_usage("can't aggregate '" + agg + "' with '--ip-addresses'");
 	action = READ_IPSUMDUMP_OPT;
     } else if (action == READ_BROCONN_OPT) {
 	ipsumdump_format = "timestamp ip_src ip_dst direction";
@@ -658,7 +654,7 @@ particular purpose.\n");
 	    config += ", " + time_config;
 	    time_config = String();
 	}
-	if (timerisset(&split_time)) {
+	if (split_time) {
 	    config += ", END_CALL output";
 	    output_call_sa << "src0.extend_interval " << split_time;
 	}
@@ -677,7 +673,7 @@ particular purpose.\n");
 	    config += ", " + time_config;
 	    time_config = String();
 	}
-	if (timerisset(&split_time)) {
+	if (split_time) {
 	    config += ", END_CALL output";
 	    output_call_sa << "src0.extend_interval " << split_time;
 	}
@@ -693,7 +689,7 @@ particular purpose.\n");
 	for (int i = 0; i < files.size(); i++)
 	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
 	if (do_sample && !multipacket)
-	    p_errh->warning("`--sample' option will sample flows, not packets\n(If you want to sample packets, use `--multipacket'.)");
+	    p_errh->warning("'--sample' option will sample flows, not packets\n(If you want to sample packets, use '--multipacket'.)");
 	
     } else if (action == READ_IPSUMDUMP_OPT) {
 	if (files.size() == 0)
@@ -726,11 +722,11 @@ particular purpose.\n");
     
     // possible elements to filter and/or anonymize
     sa << "shunt\n";
-    if (time_config || (timerisset(&split_time) && !output_call_sa)) {
+    if (time_config || (split_time && !output_call_sa)) {
 	sa << "  -> time :: TimeFilter(";
 	if (time_config)
 	    sa << time_config << ", ";
-	if (timerisset(&split_time)) {
+	if (split_time) {
 	    sa << "END_CALL output";
 	    output_call_sa << "time.extend_interval " << split_time;
 	} else
@@ -813,7 +809,7 @@ particular purpose.\n");
     if (progress_bar_ok)
 	sa << ", write_skip progress.mark_done";
     sa << ", write_skip output);\n";
-    sa << "// Outside of ipaggcreate, try a handler like\n// `write " << (binary ? "ac.write_file" : "ac.write_ascii_file") << " " << cp_quote(output) << "' instead of `write_skip output'.\n";
+    sa << "// Outside of ipaggcreate, try a handler like\n// 'write " << (binary ? "ac.write_file" : "ac.write_text_file") << " " << cp_quote(output) << "' instead of 'write_skip output'.\n";
 
     // output config if required
     if (config) {
