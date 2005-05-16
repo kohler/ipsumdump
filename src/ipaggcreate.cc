@@ -1,3 +1,22 @@
+// -*- mode: c++; c-basic-offset: 4 -*-
+/*
+ * ipsumdump.cc -- driver for the ipsumdump program
+ * Eddie Kohler
+ *
+ * Copyright (c) 2001-4 International Computer Science Institute
+ * Copyright (c) 2004-5 Regents of the University of California
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, subject to the conditions
+ * listed in the Click LICENSE file. These conditions include: you must
+ * preserve this copyright notice, and you cannot mention the copyright
+ * holders in advertising related to the Software without their permission.
+ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
+ * notice is a summary of the Click LICENSE file; the license in that file is
+ * legally binding.
+ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -15,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <click/standard/drivermanager.hh>
@@ -31,6 +51,7 @@
 #define SAMPLE_OPT		310
 #define COLLATE_OPT		311
 #define RANDOM_SEED_OPT		312
+#define PROMISCUOUS_OPT		313
 #define INTERVAL_OPT		315
 #define TIME_OFFSET_OPT		316
 #define BINARY_OPT		317
@@ -39,13 +60,17 @@
 #define QUIET_OPT		320
 
 // data sources
+#define INTERFACE_OPT		400
 #define READ_DUMP_OPT		401
 #define READ_NETFLOW_SUMMARY_OPT 402
 #define READ_IPSUMDUMP_OPT	403
-#define READ_TUDUMP_OPT		404
-#define READ_IPADDR_OPT		405
-#define READ_BROCONN_OPT	406
-#define READ_DAGDUMP_OPT	407
+#define READ_ASCII_TCPDUMP_OPT	404
+#define READ_NLANR_DUMP_OPT	405
+#define READ_DAG_DUMP_OPT	406
+#define READ_DAG_PPP_DUMP_OPT	407
+#define READ_TUDUMP_OPT		408
+#define READ_IPADDR_OPT		409
+#define READ_BROCONN_OPT	410
 #define IPSUMDUMP_FORMAT_OPT	450
 
 // aggregates
@@ -74,21 +99,18 @@ static Clp_Option options[] = {
     { "version", 'v', VERSION_OPT, 0, 0 },
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
 
+    { "interface", 'i', INTERFACE_OPT, 0, 0 },
     { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
-    { "read-tcpdump", 0, READ_DUMP_OPT, 0, 0 },
-    { "dag", 0, READ_DAGDUMP_OPT, 0, 0 },
-    { "read-dag", 0, READ_DAGDUMP_OPT, 0, 0 },
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
-    { "read-netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
-    { "read-ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
+    { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
+    { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
+    { "dag", 0, READ_DAG_DUMP_OPT, 0, 0 },
+    { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     { "tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
-    { "read-tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
     { "ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
-    { "read-ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
     { "bro-conn-summary", 0, READ_BROCONN_OPT, 0, 0 },
-    { "read-bro-conn-summary", 0, READ_BROCONN_OPT, 0, 0 },
     
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -99,6 +121,7 @@ static Clp_Option options[] = {
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
     { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
+    { "promiscuous", 0, PROMISCUOUS_OPT, 0, Clp_Negate },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
 
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
@@ -151,7 +174,7 @@ void
 usage()
 {
   printf("\
-'ipaggcreate' reads IP packets from the tcpdump(1) files, or other related\n\
+'Ipaggcreate' reads IP packets from tcpdump(1) files, or other related\n\
 files, and aggregates their contents into a simple file.\n\
 \n\
 Usage: %s [OPTIONS] [FILES] > AGGFILE\n\
@@ -180,10 +203,13 @@ Other aggregate options:\n\
 \n\
 Data source options (give exactly one):\n\
   -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
-      --dag                  Read DAG files (from Waikato, NZ).\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
       --ipsumdump            Read ipsumdump FILES.\n\
       --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
+      --tcpdump-text         Read packets from tcpdump(1) text output FILES.\n\
+      --nlanr                Read packets from NLANR-format FILES (fr/fr+/tsh).\n\
+      --dag                  Read packets from DAG-format FILES.\n\
+      --dag-ppp              Read packets from DAG-format FILES with PPP encap.\n\
       --tu-summary           Read TU summary dump FILES.\n\
       --ip-addresses         Read a list of IP addresses, one per line.\n\
       --bro-conn-summary     Read Bro connection summary FILES.\n\
@@ -240,24 +266,9 @@ static StringAccum banner_sa;
 static String::Initializer string_init;
 static String output;
 static int multi_output = -1;
-static String output_call_str;
+static Vector<String> output_calls;
 static bool binary = false;
 static bool collate = false;
-
-static String
-source_config(const String &filename, const String &config, int)
-{
-    return cp_quote(filename) + config;
-}
-
-static String
-source_output_port(int i)
-{
-    if (collate)
-	return "[" + String(i) + "]collate";
-    else
-	return "shunt";
-}
 
 static int
 stop_handler(const String &s, Element *, void *, ErrorHandler *)
@@ -304,8 +315,8 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     (void) HandlerCall::call_write(ac, "clear");
     (void) HandlerCall::call_write("tr.reset", router);
 
-    if (output_call_str)
-	(void) HandlerCall::call_write(output_call_str, router, errh);
+    for (int i = 0; i < output_calls.size(); i++)
+	(void) HandlerCall::call_write(output_calls[i], router, errh);
     
     return result;
 }
@@ -332,6 +343,123 @@ check_multi_output(const String &s)
     return percent_d;
 }
 
+
+
+struct Options {
+    bool anonymize;
+    bool multipacket;
+    double sample;
+    bool do_sample;
+    bool promisc;
+    bool bad_packets;
+    bool mirror;
+    int mmap;
+    int snaplen;
+    String filter;
+    String filename;
+    String ipsumdump_format;
+    String time_config;
+    Timestamp split_time;
+    int nfiles;
+
+    enum { SAMPLED = 1, FILTERED = 2, TIMED = 4, SPLIT_TIMED = 8, MIRRORED = 16 };
+};
+
+static uint32_t
+add_source(StringAccum &sa, int num, int action, const Options &opt)
+{
+    uint32_t result = 0;
+    sa << "src" << num << " :: ";
+    
+    switch (action) {
+	
+      case INTERFACE_OPT:
+	sa << "FromDevice(" << cp_quote(opt.filename)
+	   << ", SNIFFER true, SNAPLEN " << opt.snaplen << ", FORCE_IP true";
+	if (opt.promisc)
+	    sa << ", PROMISC true";
+#if FROMDEVICE_PCAP
+	if (opt.filter)
+	    sa << ", BPF_FILTER " << cp_quote(opt.filter);
+	result |= Options::FILTERED;
+#endif
+	sa << ");\n";
+	return result;
+
+      case READ_DUMP_OPT:
+	sa << "FromDump(" << cp_quote(opt.filename);
+	goto dump_common;
+
+      case READ_NLANR_DUMP_OPT:
+	sa << "FromNLANRDump(" << cp_quote(opt.filename);
+	goto dump_common;
+
+      case READ_DAG_DUMP_OPT:
+	sa << "FromDAGDump(" << cp_quote(opt.filename);
+	goto dump_common;
+
+      case READ_DAG_PPP_DUMP_OPT:
+	sa << "FromDAGDump(" << cp_quote(opt.filename) << ", ENCAP PPP";
+	goto dump_common;
+
+      dump_common:
+	sa << ", FORCE_IP true, STOP true";
+	if (opt.do_sample && !opt.mirror) {
+	    sa << ", SAMPLE " << opt.sample;
+	    result |= Options::SAMPLED;
+	}
+	if (opt.time_config && opt.nfiles == 1) {
+	    sa << ", " << opt.time_config;
+	    result |= Options::TIMED;
+	}
+	if (opt.split_time && opt.nfiles == 1) {
+	    sa << ", END_CALL output";
+	    output_calls.push_back("src" + String(num) + ".extend_interval " + opt.split_time.unparse());
+	    result |= Options::SPLIT_TIMED;
+	}
+	if (opt.mmap >= 0)
+	    sa << ", MMAP " << opt.mmap;
+	sa << ");\n";
+	return result;
+
+      case READ_ASCII_TCPDUMP_OPT:
+	sa << "FromTcpdump(" << cp_quote(opt.filename) << ", STOP true";
+	if (opt.do_sample && !opt.mirror) {
+	    sa << ", SAMPLE " << opt.sample;
+	    result |= Options::SAMPLED;
+	}
+	sa << ");\n";
+	return result;
+
+      case READ_NETFLOW_SUMMARY_OPT:
+	sa << "FromNetFlowSummaryDump(" << cp_quote(opt.filename)
+	   << ", STOP true, ZERO true";
+	if (opt.multipacket)
+	    sa << ", MULTIPACKET true";
+	sa << ");\n";
+	return 0;
+
+      case READ_IPSUMDUMP_OPT:
+	sa << "FromIPSummaryDump(" << cp_quote(opt.filename)
+	   << ", STOP true, ZERO true";
+	if (opt.do_sample && !opt.mirror) {
+	    sa << ", SAMPLE " << opt.sample;
+	    result |= Options::SAMPLED;
+	}
+	if (opt.multipacket)
+	    sa << ", MULTIPACKET true";
+	if (opt.ipsumdump_format)
+	    sa << ", CONTENTS " << opt.ipsumdump_format;
+	sa << ");\n";
+	return result;
+
+      default:
+	assert(0);
+
+    }
+}
+
+
 int
 main(int argc, char *argv[])
 {
@@ -339,38 +467,34 @@ main(int argc, char *argv[])
 	(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
     Clp_AddType(clp, CLP_TIMESTAMP_TYPE, 0, parse_timestamp, 0);
-    
-    String::static_initialize();
-    cp_va_static_initialize();
-    ErrorHandler *errh = new FileErrorHandler(stderr, "");
-    ErrorHandler::static_initialize(errh);
+
+    click_static_initialize();
+    ErrorHandler *errh = ErrorHandler::default_handler();
     ErrorHandler *p_errh = new PrefixErrorHandler(errh, program_name + String(": "));
 
     String write_dump;
     //String output;
-    String filter;
     String agg, agg_flows;
     String aggctr_pb;
-    String ipsumdump_format;
     uint32_t aggctr_limit_nnz = 0;
     uint32_t aggctr_limit_count = 0;
     uint32_t aggctr_limit_bytes = 0;
     bool config = false;
     bool verbose = false;
-    bool anonymize = false;
-    bool multipacket = false;
-    double sample = 0;
-    bool do_sample = false;
     //bool collate;
     int action = 0;
     bool do_seed = true;
-    bool progress_bar_ok = true;
+    bool quiet = false;
     //bool binary;
+    Vector<String> files;
     Timestamp time_offset;
     Timestamp interval;
-    Timestamp split_time;
     Timestamp start_time;
-    Vector<String> files;
+
+    Options options;
+    options.anonymize = options.multipacket = options.do_sample = options.mirror = false;
+    options.promisc = true;
+    options.mmap = options.snaplen = -1;
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -382,22 +506,33 @@ main(int argc, char *argv[])
 	    output = clp->arg;
 	    break;
 	    
+	  case INTERFACE_OPT:
+	    quiet = true;
+	    goto do_action;
+	    
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
+	  case READ_ASCII_TCPDUMP_OPT:
+	  case READ_DAG_DUMP_OPT:
+	  case READ_DAG_PPP_DUMP_OPT:
+	  case READ_NLANR_DUMP_OPT:
 	  case READ_TUDUMP_OPT:
 	  case READ_IPADDR_OPT:
 	  case READ_BROCONN_OPT:
-	  case READ_DAGDUMP_OPT:
-	    if (action)
+	  do_action:
+	    if (action && action != opt)
 		die_usage("data source option already specified");
 	    action = opt;
 	    break;
 
 	  case IPSUMDUMP_FORMAT_OPT:
-	    if (ipsumdump_format)
+	    if (options.ipsumdump_format)
 		die_usage("'--format' already specified");
-	    ipsumdump_format = clp->arg;
+	    else if (action && action != READ_IPSUMDUMP_OPT)
+		die_usage("'--format' only useful with '--ipsumdump'");
+	    action = READ_IPSUMDUMP_OPT;
+	    options.ipsumdump_format = clp->arg;
 	    break;
 	    
 	  case WRITE_DUMP_OPT:
@@ -407,17 +542,21 @@ main(int argc, char *argv[])
 	    break;
 
 	  case FILTER_OPT:
-	    if (filter)
+	    if (options.filter)
 		die_usage("'--filter' already specified");
-	    filter = clp->arg;
+	    options.filter = clp->arg;
 	    break;
 
 	  case ANONYMIZE_OPT:
-	    anonymize = !clp->negated;
+	    options.anonymize = !clp->negated;
 	    break;
 
 	  case MULTIPACKET_OPT:
-	    multipacket = !clp->negated;
+	    options.multipacket = !clp->negated;
+	    break;
+
+	  case PROMISCUOUS_OPT:
+	    options.promisc = !clp->negated;
 	    break;
 
 	  case BINARY_OPT:
@@ -430,12 +569,12 @@ main(int argc, char *argv[])
 
 	  case SAMPLE_OPT:
 	    if (clp->negated)
-		do_sample = false;
+		options.do_sample = false;
 	    else {
-		do_sample = true;
+		options.do_sample = true;
 		if (clp->val.d < 0 || clp->val.d > 1)
 		    die_usage("'--sample' probability must be between 0 and 1");
-		sample = clp->val.d;
+		options.sample = clp->val.d;
 	    }
 	    break;
 
@@ -449,7 +588,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case QUIET_OPT:
-	    progress_bar_ok = clp->negated;
+	    quiet = !clp->negated;
 	    break;
 	    
 	  case TIME_OFFSET_OPT:
@@ -522,7 +661,7 @@ main(int argc, char *argv[])
 	    goto multi_output;
 
 	  case SPLIT_TIME_OPT:
-	    split_time = *((const Timestamp *)&clp->val);
+	    options.split_time = *((const Timestamp *)&clp->val);
 	    goto multi_output;
 
 	  multi_output:
@@ -541,8 +680,9 @@ main(int argc, char *argv[])
 	    break;
 
 	  case VERSION_OPT:
-	    printf("ipaggcreate %s (libclick-%s)\n", "0", CLICK_VERSION);
-	    printf("Copyright (C) 2001-2002 International Computer Science Institute\n\
+	    printf("Ipaggcreate %s (libclick-%s)\n", "0", CLICK_VERSION);
+	    printf("Copyright (c) 2001-2002 International Computer Science Institute\n\
+Copyright (c) 2005 Regents of the University of California\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -589,7 +729,7 @@ particular purpose.\n");
 	agg = "ip " + agg.substring(3);
     
     // set random seed if appropriate
-    if (do_seed && (do_sample || anonymize))
+    if (do_seed && (options.do_sample || options.anonymize))
 	click_random_srandom();
 
     // figure out time argument
@@ -600,150 +740,118 @@ particular purpose.\n");
 	time_config_sa << ", START_AFTER " << time_offset;
     else if (start_time)
 	time_config_sa << ", START " << start_time;
-    if (interval && split_time)
+    if (interval && options.split_time)
 	p_errh->fatal("supply at most one of '--interval' and '--split-time'");
     else if (interval)
 	time_config_sa << ", INTERVAL " << interval;
-    else if (split_time)
-	time_config_sa << ", INTERVAL " << split_time;
-    String time_config = (time_config_sa ? time_config_sa.take_string().substring(2) : String());
-    
-    // other setup
-    StringAccum shunt_sa;
-    StringAccum psa;
-    StringAccum output_call_sa;
-    String sample_elt;
-    int snaplen = (write_dump ? 2000 : 68);
-    bool allow_ipsumdump_sample = true;
+    else if (options.split_time)
+	time_config_sa << ", INTERVAL " << options.split_time;
+    if (time_config_sa)
+	options.time_config = time_config_sa.take_string().substring(2);
+
+    // setup
+    StringAccum sa;
+
+    // clean up options
+    if (action == 0)
+	action = READ_DUMP_OPT;
+    if (action == INTERFACE_OPT) {
+	if (files.size() == 0)
+	    p_errh->fatal("'-i' option requires at least one DEVNAME");
+	else if (collate)
+	    p_errh->fatal("'--collate' may not be used with '--interface'");
+    }
+    if (options.snaplen < 0)
+	options.snaplen = (write_dump ? 2000 : 68);
     if (collate && files.size() < 2)
 	collate = false;
+    if (files.size() == 0)
+	files.push_back("-");
+    options.nfiles = files.size();
     
-    // elements to read packets
-    if (action == 0)
-	action = (ipsumdump_format ? READ_IPSUMDUMP_OPT : READ_DUMP_OPT);
-
     // prepare ipsumdump format
-    if (ipsumdump_format) {
+    if (options.ipsumdump_format) {
 	if (action != READ_IPSUMDUMP_OPT)
 	    die_usage("'--format' option requires '--ipsumdump'");
     } else if (action == READ_TUDUMP_OPT) {
-	ipsumdump_format = "timestamp ip_src sport ip_dst dport proto payload_len";
+	options.ipsumdump_format = "timestamp ip_src sport ip_dst dport proto payload_len";
 	action = READ_IPSUMDUMP_OPT;
     } else if (action == READ_IPADDR_OPT) {
 	if (agg.substring(0, 6) == "ip src" || agg.substring(0, 6) == "ip dst")
-	    ipsumdump_format = "'" + agg + "'";
+	    options.ipsumdump_format = "ip_" + agg.substring(3, 3);
 	else
 	    die_usage("can't aggregate '" + agg + "' with '--ip-addresses'");
 	action = READ_IPSUMDUMP_OPT;
     } else if (action == READ_BROCONN_OPT) {
-	ipsumdump_format = "timestamp ip_src ip_dst direction";
-	shunt_sa << " -> { input -> t :: Tee -> output; t[1] -> IPMirror -> output }\n";
+	options.ipsumdump_format = "timestamp ip_src ip_dst direction";
 	action = READ_IPSUMDUMP_OPT;
-	allow_ipsumdump_sample = false;
+	options.mirror = true;
     }
-    
-    if (action == READ_DUMP_OPT) {
-	if (files.size() == 0)
-	    files.push_back("-");
-	String config = ", FORCE_IP true, STOP true";
-	if (do_sample) {
-	    config += ", SAMPLE " + String(sample);
-	    sample_elt = "src0";
-	}
-	if (time_config && files.size() == 1) {
-	    config += ", " + time_config;
-	    time_config = String();
-	}
-	if (split_time) {
-	    config += ", END_CALL output";
-	    output_call_sa << "src0.extend_interval " << split_time;
-	}
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
-	
-    } else if (action == READ_DAGDUMP_OPT) {
-	if (files.size() == 0)
-	    files.push_back("-");
-	String config = ", FORCE_IP true, STOP true";
-	if (do_sample) {
-	    config += ", SAMPLE " + String(sample);
-	    sample_elt = "src0";
-	}
-	if (time_config && files.size() == 1) {
-	    config += ", " + time_config;
-	    time_config = String();
-	}
-	if (split_time) {
-	    config += ", END_CALL output";
-	    output_call_sa << "src0.extend_interval " << split_time;
-	}
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromDAGDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
-	
-    } else if (action == READ_NETFLOW_SUMMARY_OPT) {
-	if (files.size() == 0)
-	    files.push_back("-");
-	String config = ", STOP true";
-	if (multipacket)
-	    config += ", MULTIPACKET true";
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
-	if (do_sample && !multipacket)
-	    p_errh->warning("'--sample' option will sample flows, not packets\n(If you want to sample packets, use '--multipacket'.)");
-	
-    } else if (action == READ_IPSUMDUMP_OPT) {
-	if (files.size() == 0)
-	    files.push_back("-");
-	String config = ", STOP true, ZERO true";
-	if (do_sample && allow_ipsumdump_sample) {
-	    config += ", SAMPLE " + String(sample);
-	    sample_elt = "src0";
-	}
-	if (multipacket)
-	    config += ", MULTIPACKET true";
-	if (ipsumdump_format)
-	    config += ", DEFAULT_CONTENTS " + ipsumdump_format;
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromIPSummaryDump(" << source_config(files[i], config, i) << ") -> " << source_output_port(i) << ";\n";
-	
-    } else
-	die_usage("must supply a data source option");
 
-    // print collation/shunt
-    StringAccum sa;
-    if (do_sample && !sample_elt) {
-	shunt_sa << " -> samp :: RandomSample(" << sample << ")";
-	sample_elt = "shunt/samp";
+    // source elements
+    Vector<uint32_t> source_flags;
+    uint32_t all_source_flags = ~0U, any_source_flags = 0;
+    for (int i = 0; i < files.size(); i++) {
+	options.filename = files[i];
+	source_flags.push_back(add_source(sa, i, action, options));
+	all_source_flags &= source_flags.back();
+	any_source_flags |= source_flags.back();
     }
-    sa << "shunt :: { input" << shunt_sa << " -> output };\n";
-    if (collate)
-	sa << "collate :: MergeByTimestamp(STOP true, NULL_IS_DEAD true) -> shunt;\n";
-    sa << psa;
-    
-    // possible elements to filter and/or anonymize
-    sa << "shunt\n";
-    if (time_config || (split_time && !output_call_sa)) {
+
+    // collate source streams
+    if (collate) {
+	sa << "collate :: { tss :: TimeSortedSched(STOP true) -> Unqueue -> output;";
+	for (int i = 0; i < files.size(); i++)
+	    sa << " input [" << i << "] -> [" << i << "] tss;";
+	sa << " };\n\n";
+    } else {
+	sa << "collate :: {";
+	for (int i = 0; i < files.size(); i++)
+	    sa << " input [" << i << "] -> output;";
+	sa << " };\n\n";
+    }
+
+    // connect sources to collation
+    for (int i = 0; i < files.size(); i++) {
+	sa << "src" << i << " -> ";
+	if (options.mirror && !(source_flags[i] & Options::MIRRORED) && (any_source_flags & Options::MIRRORED))
+	    sa << "{ input -> t :: Tee -> output; t[1] -> IPMirror -> output } -> ";
+	if (options.filter && !(source_flags[i] & Options::FILTERED) && (any_source_flags & Options::FILTERED))
+	    sa << "IPFilter(0 " << options.filter << ") -> ";
+	if (options.do_sample && !(source_flags[i] & Options::SAMPLED) && (any_source_flags & Options::SAMPLED))
+	    sa << "samp" << i << " :: RandomSample(" << options.sample << ") -> ";
+	sa << "[" << i << "] collate;\n";
+    }
+
+    // output path
+    sa << "\ncollate\n";
+    if (options.mirror && !(any_source_flags & Options::MIRRORED))
+	sa << "  -> { input -> t :: Tee -> output; t[1] -> IPMirror -> output }\n";
+    if (options.filter && !(any_source_flags & Options::FILTERED))
+	sa << "  -> IPFilter(0 " << options.filter << ")\n";
+    if (options.do_sample && !(any_source_flags & Options::SAMPLED))
+	sa << "  -> samp0 :: RandomSample(" << options.sample << ")\n";
+    if (options.anonymize)
+	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
+    if ((options.time_config && !(all_source_flags & Options::TIMED))
+	|| (options.split_time && !(all_source_flags & Options::SPLIT_TIMED))) {
 	sa << "  -> time :: TimeFilter(";
-	if (time_config)
-	    sa << time_config << ", ";
-	if (split_time) {
+	if (options.time_config && !(all_source_flags & Options::TIMED))
+	    sa << options.time_config << ", ";
+	if (options.split_time && !(all_source_flags & Options::SPLIT_TIMED)) {
 	    sa << "END_CALL output";
-	    output_call_sa << "time.extend_interval " << split_time;
+	    output_calls.push_back("time.extend_interval " + options.split_time.unparse());
 	} else
 	    sa << "STOP true";
 	sa << ")\n";
     }
-    if (filter)
-	sa << "  -> IPFilter(0 " << filter << ")\n";
-    if (anonymize)
-	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
 
     // possible elements to write tcpdump file
     if (write_dump) {
-	sa << "  -> { input -> t :: Tee -> output;\n        t[1] -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
+	sa << "  -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
 	for (int i = 0; i < files.size(); i++)
 	    sa << " src" << i;
-	sa << ", SNAPLEN " << snaplen << ") }\n";
+	sa << ", SNAPLEN " << options.snaplen << ")\n";
     }
     
     // elements to aggregate
@@ -763,7 +871,7 @@ particular purpose.\n");
     sa << (aggctr_pb ? aggctr_pb : String("BYTES false")) << ", IP_BYTES true";
     if (aggctr_limit_nnz && multi_output >= 0) {
 	sa << ", AGGREGATE_CALL " << aggctr_limit_nnz << " output";
-	output_call_sa << "ac.aggregate_call '" << aggctr_limit_nnz << " output'";
+	output_calls.push_back("ac.aggregate_call '" + String(aggctr_limit_nnz) + " output'");
     } else if (aggctr_limit_nnz)
 	sa << ", AGGREGATE_STOP " << aggctr_limit_nnz;
     sa << ")\n";
@@ -771,17 +879,17 @@ particular purpose.\n");
     // remains
     if (aggctr_limit_count) {
 	sa << "  -> counter :: Counter(COUNT_CALL " << aggctr_limit_count << " output)\n";
-	output_call_sa << "counter.reset";
+	output_calls.push_back("counter.reset");
     } else if (aggctr_limit_bytes) {
 	sa << "  -> counter :: Counter(BYTE_COUNT_CALL " << aggctr_limit_bytes << " output)\n";
-	output_call_sa << "counter.reset";
+	output_calls.push_back("counter.reset");
     }
     sa << "  -> tr :: TimeRange\n";
     sa << "  -> d :: Discard;\n";
-    sa << "ac[1] -> d;\n";
+    sa << "ac[1] -> d;\n\n";
 
     // progress bar
-    if (progress_bar_ok) {
+    if (!quiet) {
 	sa << "progress :: ProgressBar(";
 	for (int i = 0; i < files.size(); i++)
 	    sa << "src" << i << ".filepos ";
@@ -806,7 +914,7 @@ particular purpose.\n");
     stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
     sa << "DriverManager(wait_stop " << (stop_driver_count - 1);
     // manipulate progress bar
-    if (progress_bar_ok)
+    if (!quiet)
 	sa << ", write_skip progress.mark_done";
     sa << ", write_skip output);\n";
     sa << "// Outside of ipaggcreate, try a handler like\n// 'write " << (binary ? "ac.write_file" : "ac.write_text_file") << " " << cp_quote(output) << "' instead of 'write_skip output'.\n";
@@ -831,7 +939,6 @@ particular purpose.\n");
 	banner_sa << "!creator " << cp_quote(bsa.take_string()) << "\n";
 	banner_sa << "!counts " << (aggctr_pb == "BYTES false" ? "packets\n" : "bytes\n");
     }
-    output_call_str = output_call_sa.take_string();
 
     router->add_write_handler(0, "stop", stop_handler, 0);
     router->add_write_handler(0, "output", output_handler, 0);

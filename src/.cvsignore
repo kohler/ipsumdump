@@ -1,6 +1,18 @@
 Makefile *.d
-elements.cc elements.mk elements.conf
+sd_elements.cc sd_elements.mk sd_elements.conf
+ac_elements.cc ac_elements.mk ac_elements.conf
 ipsumdump
+ipaggcreate
+aggcounter.cc
+aggcounter.hh
+aggregateip.cc
+aggregateip.hh
+aggregateipflows.cc
+aggregateipflows.hh
+aggregatelen.cc
+aggregatelen.hh
+aggregatenotifier.cc
+aggregatenotifier.hh
 classifier.cc
 classifier.hh
 counter.cc
@@ -23,6 +35,10 @@ fromtcpdump.cc
 fromtcpdump.hh
 ipfilter.cc
 ipfilter.hh
+ipmirror.cc
+ipmirror.hh
+ipnameinfo.cc
+ipnameinfo.hh
 ipsumdump_anno.cc
 ipsumdump_ip.cc
 ipsumdump_tcp.cc
@@ -40,6 +56,8 @@ tee.cc
 tee.hh
 timefilter.cc
 timefilter.hh
+timerange.cc
+timerange.hh
 timesortedsched.cc
 timesortedsched.hh
 todump.cc

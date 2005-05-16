@@ -69,10 +69,10 @@
 #define READ_NETFLOW_SUMMARY_OPT 402
 #define READ_IPSUMDUMP_OPT	403
 #define READ_ASCII_TCPDUMP_OPT	404
-#define IPSUMDUMP_FORMAT_OPT	405
-#define READ_NLANR_DUMP_OPT	406
-#define READ_DAG_DUMP_OPT	407
-#define READ_DAG_PPP_DUMP_OPT	408
+#define READ_NLANR_DUMP_OPT	405
+#define READ_DAG_DUMP_OPT	406
+#define READ_DAG_PPP_DUMP_OPT	407
+#define IPSUMDUMP_FORMAT_OPT	450
 
 static const char* const field_names[] = {
     "timestamp", "first_timestamp", "ip_src", "ip_dst", // 0-4
@@ -84,31 +84,31 @@ static const char* const field_names[] = {
 };
 
 // options for logging
-#define FIRST_LOG_OPT	1000
-#define TIMESTAMP_OPT	1000
-#define FIRST_TIMESTAMP_OPT 1001
-#define SRC_OPT		1002
-#define DST_OPT		1003
-#define SPORT_OPT	1004
-#define DPORT_OPT	1005
-#define LENGTH_OPT	1006
-#define IPID_OPT	1007
-#define PROTO_OPT	1008
-#define TCP_SEQ_OPT	1009
-#define TCP_ACK_OPT	1010
-#define TCP_FLAGS_OPT	1011
-#define TCP_OPT_OPT	1012
-#define TCP_SACK_OPT	1013
-#define PAYLOAD_LEN_OPT	1014
-#define COUNT_OPT	1015
-#define FRAG_OPT	1016
-#define FRAGOFF_OPT	1017
-#define PAYLOAD_OPT	1018
-#define IPCAPLEN_OPT	1019
-#define LINK_OPT	1020
-#define UDP_LEN_OPT	1021
-#define IP_OPT_OPT	1022
-#define IP_SUM_OPT	1023
+#define FIRST_LOG_OPT		1000
+#define TIMESTAMP_OPT		1000
+#define FIRST_TIMESTAMP_OPT	1001
+#define SRC_OPT			1002
+#define DST_OPT			1003
+#define SPORT_OPT		1004
+#define DPORT_OPT		1005
+#define LENGTH_OPT		1006
+#define IPID_OPT		1007
+#define PROTO_OPT		1008
+#define TCP_SEQ_OPT		1009
+#define TCP_ACK_OPT		1010
+#define TCP_FLAGS_OPT		1011
+#define TCP_OPT_OPT		1012
+#define TCP_SACK_OPT		1013
+#define PAYLOAD_LEN_OPT		1014
+#define COUNT_OPT		1015
+#define FRAG_OPT		1016
+#define FRAGOFF_OPT		1017
+#define PAYLOAD_OPT		1018
+#define IPCAPLEN_OPT		1019
+#define LINK_OPT		1020
+#define UDP_LEN_OPT		1021
+#define IP_OPT_OPT		1022
+#define IP_SUM_OPT		1023
 
 #define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
 
@@ -127,6 +127,7 @@ static Clp_Option options[] = {
     { "dag", 0, READ_DAG_DUMP_OPT, 0, 0 },
     { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
+    
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
@@ -197,7 +198,7 @@ void
 usage()
 {
   printf("\
-'Ipsumdump' reads IP packets from the tcpdump(1) files, or network interfaces,\n\
+'Ipsumdump' reads IP packets from tcpdump(1) files, or network interfaces,\n\
 and summarizes their contents in an ASCII log.\n\
 \n\
 Usage: %s [CONTENT OPTIONS] [-i DEVNAMES | FILES] > LOGFILE\n\
@@ -360,20 +361,11 @@ stop_hook(const String &s_in, Element *, void *, ErrorHandler *errh)
     else if (s == "cold")
 	router->set_runcount(dm->stopped_count() - stop_driver_count);
     else if (s == "switch") {
-	HandlerCall::call_write(router->find("switch/s"), "switch", "1", errh);
+	HandlerCall::call_write(router->find("switch"), "switch", "-1", errh);
 	router->set_runcount(dm->stopped_count() - stop_driver_count);
     } else
 	return errh->error("bad argument to 'stop'");
     return 0;
-}
-
-static String
-source_output_port(bool collate, int i)
-{
-    if (collate)
-	return "[" + String(i) + "]collate";
-    else
-	return "shunt";
 }
 
 static int
@@ -386,6 +378,104 @@ parse_timestamp(Clp_Parser *clp, const char *arg, int complain, void *)
     else
 	return 0;
 }
+
+
+
+struct Options {
+    bool anonymize;
+    bool multipacket;
+    double sample;
+    bool do_sample;
+    bool promisc;
+    bool bad_packets;
+    int mmap;
+    int snaplen;
+    String filter;
+    String filename;
+    String ipsumdump_format;
+
+    enum { SAMPLED = 1, FILTERED = 2 };
+};
+
+static uint32_t
+add_source(StringAccum &sa, int num, int action, const Options &opt)
+{
+    uint32_t result = 0;
+    sa << "src" << num << " :: ";
+    
+    switch (action) {
+	
+      case INTERFACE_OPT:
+	sa << "FromDevice(" << cp_quote(opt.filename)
+	   << ", SNIFFER true, SNAPLEN " << opt.snaplen << ", FORCE_IP true";
+	if (opt.promisc)
+	    sa << ", PROMISC true";
+#if FROMDEVICE_PCAP
+	if (opt.filter)
+	    sa << ", BPF_FILTER " << cp_quote(opt.filter);
+	result |= Options::FILTERED;
+#endif
+	sa << ");\n";
+	return result;
+
+      case READ_DUMP_OPT:
+	sa << "FromDump(" << cp_quote(opt.filename);
+	goto dump_common;
+
+      case READ_NLANR_DUMP_OPT:
+	sa << "FromNLANRDump(" << cp_quote(opt.filename);
+	goto dump_common;
+
+      case READ_DAG_DUMP_OPT:
+	sa << "FromDAGDump(" << cp_quote(opt.filename);
+	goto dump_common;
+
+      case READ_DAG_PPP_DUMP_OPT:
+	sa << "FromDAGDump(" << cp_quote(opt.filename) << ", ENCAP PPP";
+	goto dump_common;
+
+      dump_common:
+	sa << ", FORCE_IP true, STOP true";
+	if (opt.do_sample)
+	    sa << ", SAMPLE " << opt.sample;
+	if (opt.mmap >= 0)
+	    sa << ", MMAP " << opt.mmap;
+	sa << ");\n";
+	return Options::SAMPLED;
+
+      case READ_ASCII_TCPDUMP_OPT:
+	sa << "FromTcpdump(" << cp_quote(opt.filename) << ", STOP true";
+	if (opt.do_sample)
+	    sa << ", SAMPLE " << opt.sample;
+	sa << ");\n";
+	return Options::SAMPLED;
+
+      case READ_NETFLOW_SUMMARY_OPT:
+	sa << "FromNetFlowSummaryDump(" << cp_quote(opt.filename)
+	   << ", STOP true, ZERO true";
+	if (opt.multipacket)
+	    sa << ", MULTIPACKET true";
+	sa << ");\n";
+	return 0;
+
+      case READ_IPSUMDUMP_OPT:
+	sa << "FromIPSummaryDump(" << cp_quote(opt.filename)
+	   << ", STOP true, ZERO true";
+	if (opt.do_sample)
+	    sa << ", SAMPLE " << opt.sample;
+	if (opt.multipacket)
+	    sa << ", MULTIPACKET true";
+	if (opt.ipsumdump_format)
+	    sa << ", CONTENTS " << opt.ipsumdump_format;
+	sa << ");\n";
+	return Options::SAMPLED;
+
+      default:
+	assert(0);
+
+    }
+}
+
 
 int
 main(int argc, char *argv[])
@@ -401,30 +491,26 @@ main(int argc, char *argv[])
 
     String write_dump;
     String output;
-    String filter;
-    String ipsumdump_format;
     Vector<uint32_t> map_prefixes;
     bool config = false;
     bool verbose = false;
-    bool anonymize = false;
-    bool multipacket = false;
-    double sample = 0;
-    bool do_sample = false;
-    bool collate = false;
     Vector<int> log_contents;
     int action = 0;
     bool do_seed = true;
-    bool promisc = true;
+    bool collate = false;
     bool quiet = false;
     bool quiet_explicit = false;
     bool bad_packets = false;
     bool binary = false;
-    int snaplen = -1;
     Vector<String> files;
     const char *record_drops = 0;
     unsigned limit_packets = 0;
-    int mmap = -1;
     Timestamp interval;
+
+    Options options;
+    options.anonymize = options.multipacket = options.do_sample = false;
+    options.promisc = true;
+    options.mmap = options.snaplen = -1;
     
     while (1) {
 	int opt = Clp_Next(clp);
@@ -437,6 +523,9 @@ main(int argc, char *argv[])
 	    break;
 	    
 	  case INTERFACE_OPT:
+	    quiet = true;
+	    goto do_action;
+	    
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
@@ -444,18 +533,19 @@ main(int argc, char *argv[])
 	  case READ_DAG_DUMP_OPT:
 	  case READ_DAG_PPP_DUMP_OPT:
 	  case READ_NLANR_DUMP_OPT:
-	    if (action)
+	  do_action:
+	    if (action && action != opt)
 		die_usage("data source option already specified");
 	    action = opt;
 	    break;
 	    
 	  case IPSUMDUMP_FORMAT_OPT:
-	    if (ipsumdump_format)
+	    if (options.ipsumdump_format)
 		die_usage("'--format' already specified");
 	    else if (action && action != READ_IPSUMDUMP_OPT)
 		die_usage("'--format' only useful with '--ipsumdump'");
 	    action = READ_IPSUMDUMP_OPT;
-	    ipsumdump_format = clp->arg;
+	    options.ipsumdump_format = clp->arg;
 	    break;
 	    
 	  case WRITE_DUMP_OPT:
@@ -465,21 +555,21 @@ main(int argc, char *argv[])
 	    break;
 
 	  case FILTER_OPT:
-	    if (filter)
+	    if (options.filter)
 		die_usage("'--filter' already specified");
-	    filter = clp->arg;
+	    options.filter = clp->arg;
 	    break;
 
 	  case ANONYMIZE_OPT:
-	    anonymize = !clp->negated;
+	    options.anonymize = !clp->negated;
 	    break;
 
 	  case MULTIPACKET_OPT:
-	    multipacket = !clp->negated;
+	    options.multipacket = !clp->negated;
 	    break;
 
 	  case PROMISCUOUS_OPT:
-	    promisc = !clp->negated;
+	    options.promisc = !clp->negated;
 	    break;
 
 	  case WRITE_DROPS_OPT:
@@ -517,12 +607,12 @@ main(int argc, char *argv[])
 
 	  case SAMPLE_OPT:
 	    if (clp->negated)
-		do_sample = false;
+		options.do_sample = false;
 	    else {
-		do_sample = true;
+		options.do_sample = true;
 		if (clp->val.d < 0 || clp->val.d > 1)
 		    die_usage("'--sample' probability must be between 0 and 1");
-		sample = clp->val.d;
+		options.sample = clp->val.d;
 	    }
 	    break;
 
@@ -549,7 +639,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case MMAP_OPT:
-	    mmap = !clp->negated;
+	    options.mmap = !clp->negated;
 	    break;
 	    
 	  case CONFIG_OPT:
@@ -576,7 +666,7 @@ particular purpose.\n");
 	    break;
 
 	  case Clp_NotOption:
-	    files.push_back(cp_quote(clp->arg));
+	    files.push_back(clp->arg);
 	    break;
 	    
 	  case Clp_BadOption:
@@ -590,7 +680,7 @@ particular purpose.\n");
 	    assert(opt >= FIRST_LOG_OPT);
 	    log_contents.push_back(opt - FIRST_LOG_OPT);
 	    if (opt == PAYLOAD_OPT)
-		snaplen = 2000;
+		options.snaplen = 2000;
 	    break;
 	    
 	}
@@ -604,112 +694,67 @@ particular purpose.\n");
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
     // set random seed if appropriate
-    if (do_seed && (do_sample || anonymize))
+    if (do_seed && (options.do_sample || options.anonymize))
 	click_random_srandom();
 
     // setup
-    String shunt_internals = "";
-    StringAccum psa;
-    String sample_elt;
-    if (snaplen < 0)
-	snaplen = (write_dump ? 2000 : 68);
-    if (collate && files.size() < 2)
-	collate = false;
-    
-    // elements to read packets
+    StringAccum sa;
+
+    // clean up options
     if (action == 0)
 	action = READ_DUMP_OPT;
     if (action == INTERFACE_OPT) {
 	if (files.size() == 0)
-	    p_errh->fatal("'-i' option takes at least one DEVNAME");
-	if (collate)
-	    p_errh->fatal("'--collate' may not be used with '--interface' yet");
-	String config = ", SNIFFER true, SNAPLEN " + String(snaplen) + ", FORCE_IP true";
-	if (promisc)
-	    config += ", PROMISC true";
-#if FROMDEVICE_PCAP
-	if (filter)
-	    config += ", BPF_FILTER " + cp_quote(filter);
-	filter = String();
-#endif
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromDevice(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
-	if (do_sample) {
-	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
-	    sample_elt = "shunt/samp";
-	}
-	quiet = true;		// does not support filepos handlers
-	
-    } else if (action == READ_DUMP_OPT || action == READ_NLANR_DUMP_OPT
-	       || action == READ_DAG_DUMP_OPT || action == READ_DAG_PPP_DUMP_OPT) {
-	String eclass = (action == READ_DUMP_OPT ? "FromDump" : (action == READ_NLANR_DUMP_OPT ? "FromNLANRDump" : "FromDAGDump"));
-	if (files.size() == 0)
-	    files.push_back("-");
-	String config = ", FORCE_IP true, STOP true";
-	if (do_sample)
-	    config += ", SAMPLE " + String(sample);
-	if (mmap >= 0)
-	    config += ", MMAP " + String(mmap);
-	if (action == READ_DAG_PPP_DUMP_OPT)
-	    config += ", ENCAP PPP";
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: " << eclass << "(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
-	sample_elt = "src0";
-	
-    } else if (action == READ_ASCII_TCPDUMP_OPT) {
-	if (files.size() == 0)
-	    files.push_back("-");
-	String config = ", STOP true";
-	if (do_sample)
-	    config += ", SAMPLE " + String(sample);
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromTcpdump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
-	sample_elt = "src0";
-	
-    } else if (action == READ_NETFLOW_SUMMARY_OPT) {
-	if (files.size() == 0)
-	    files.push_back("-");
-	String config = ", STOP true, ZERO true";
-	if (multipacket)
-	    config += ", MULTIPACKET true";
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromNetFlowSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
-	if (do_sample) {
-	    shunt_internals = " -> samp :: RandomSample(" + String(sample) + ")";
-	    sample_elt = "shunt/samp";
-	    if (!multipacket)
-		p_errh->warning("'--sample' option will sample flows, not packets\n(If you want to sample packets, use '--multipacket'.)");
-	}
-	
-    } else if (action == READ_IPSUMDUMP_OPT) {
-	if (files.size() == 0)
-	    files.push_back("-");
-	String config = ", STOP true, ZERO true";
-	if (do_sample)
-	    config += ", SAMPLE " + String(sample);
-	if (multipacket)
-	    config += ", MULTIPACKET true";
-	if (ipsumdump_format)
-	    config += ", DEFAULT_CONTENTS " + ipsumdump_format;
-	for (int i = 0; i < files.size(); i++)
-	    psa << "src" << i << " :: FromIPSummaryDump(" << files[i] << config << ") -> " << source_output_port(collate, i) << ";\n";
-	sample_elt = "src0";
-	
-    } else
-	die_usage("must supply a data source option");
-
-    // print collation/shunt
-    StringAccum sa;
-    sa << "shunt :: { input" << shunt_internals << " -> output };\n";
-    if (collate)
-	sa << "collate :: TimeSortedSched(STOP true) -> Unqueue -> shunt;\n";
-    sa << psa;
+	    p_errh->fatal("'-i' option requires at least one DEVNAME");
+	else if (collate)
+	    p_errh->fatal("'--collate' may not be used with '--interface'");
+    }
+    if (options.snaplen < 0)
+	options.snaplen = (write_dump ? 2000 : 68);
+    if (collate && files.size() < 2)
+	collate = false;
+    if (files.size() == 0)
+	files.push_back("-");
     
-    // possible elements to filter and/or anonymize and/or stop
-    sa << "shunt\n";
-    if (filter)
-	sa << "  -> IPFilter(0 " << filter << ")\n";
-    if (anonymize)
+    // source elements
+    Vector<uint32_t> source_flags;
+    uint32_t any_source_flags = 0;
+    for (int i = 0; i < files.size(); i++) {
+	options.filename = files[i];
+	source_flags.push_back(add_source(sa, i, action, options));
+	any_source_flags |= source_flags.back();
+    }
+
+    // collate source streams
+    if (collate) {
+	sa << "collate :: { tss :: TimeSortedSched(STOP true) -> Unqueue -> output;";
+	for (int i = 0; i < files.size(); i++)
+	    sa << " input [" << i << "] -> [" << i << "] tss;";
+	sa << " };\n\n";
+    } else {
+	sa << "collate :: {";
+	for (int i = 0; i < files.size(); i++)
+	    sa << " input [" << i << "] -> output;";
+	sa << " };\n\n";
+    }
+
+    // connect sources to collation
+    for (int i = 0; i < files.size(); i++) {
+	sa << "src" << i << " -> ";
+	if (options.filter && !(source_flags[i] & Options::FILTERED) && (any_source_flags & Options::FILTERED))
+	    sa << "IPFilter(0 " << options.filter << ") -> ";
+	if (options.do_sample && !(source_flags[i] & Options::SAMPLED) && (any_source_flags & Options::SAMPLED))
+	    sa << "samp" << i << " :: RandomSample(" << options.sample << ") -> ";
+	sa << "[" << i << "] collate;\n";
+    }
+
+    // output path
+    sa << "\ncollate\n";
+    if (options.filter && !(any_source_flags & Options::FILTERED))
+	sa << "  -> IPFilter(0 " << options.filter << ")\n";
+    if (options.do_sample && !(any_source_flags & Options::SAMPLED))
+	sa << "  -> samp0 :: RandomSample(" << options.sample << ")\n";
+    if (options.anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
     if (action != INTERFACE_OPT && interval) {
 	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL stop cold)\n";
@@ -719,7 +764,7 @@ particular purpose.\n");
 	}
     }
     if (limit_packets)
-	sa << "  -> switch :: { input -> s :: Switch -> output; s[1] -> Discard }\n"
+	sa << "  -> switch :: Switch\n"
 	   << "  -> Counter(COUNT_CALL " << limit_packets << " stop switch)\n";
 
     // elements to write tcpdump file
@@ -727,7 +772,7 @@ particular purpose.\n");
 	sa << "  -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
 	for (int i = 0; i < files.size(); i++)
 	    sa << " src" << i;
-	sa << ", SNAPLEN " << snaplen << ")\n";
+	sa << ", SNAPLEN " << options.snaplen << ")\n";
     }
     
     // elements to dump summary log
@@ -755,6 +800,7 @@ particular purpose.\n");
     }
 
     // record drops
+    sa << "\n";
     if (record_drops)
 	sa << "PokeHandlers(" << record_drops << ", record_counts '', loop);\n";
 
@@ -819,8 +865,10 @@ particular purpose.\n");
 	exit(1);
     
     // output sample probability if appropriate
-    if (do_sample)
+    if (options.do_sample) {
+	String sample_elt = (source_flags[0] & Options::SAMPLED ? "src0" : "samp0");
 	write_sampling_prob_message(router, sample_elt);
+    }
     
     // run driver
     router->activate(errh);
@@ -831,7 +879,7 @@ particular purpose.\n");
     if (map_prefixes.size()) {
 	// collect results
 	Vector<uint32_t> results;
-	if (anonymize) {
+	if (options.anonymize) {
 	    Element *anon = router->find("anon");
 	    assert(anon);
 	    for (int i = 0; i < map_prefixes.size(); i += 2) {
