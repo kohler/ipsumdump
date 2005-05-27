@@ -174,8 +174,8 @@ void
 usage()
 {
   printf("\
-'Ipaggcreate' reads IP packets from tcpdump(1) files, or other related\n\
-files, and aggregates their contents into a simple file.\n\
+'Ipaggcreate' reads IP packets from tcpdump(1) or other packet traces and\n\
+aggregates their contents into a simple file.\n\
 \n\
 Usage: %s [OPTIONS] [FILES] > AGGFILE\n\
 \n\
@@ -187,7 +187,7 @@ Aggregate options (give exactly one):\n\
       --flows                Aggregate by flow ID (agg. number meaningless).\n\
       --unidirectional-flows Aggregate by unidirectional flow ID.\n\
       --address-pairs        Aggregate by IP address pairs.\n\
-      --unidirectional-address-pairs\n\
+      --unidirectional-address-pairs  Aggregate by ordered IP address pairs.\n\
 \n\
 Other aggregate options:\n\
   -p, --packets              Count number of packets (default).\n\

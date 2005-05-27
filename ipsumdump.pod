@@ -1,6 +1,6 @@
 =head1 NAME
 
-ipsumdump - produce ASCII summary of network traffic or tcpdump(1) file
+ipsumdump - produce ASCII summary of network traffic or tcpdump(1) trace
 
 =head1 SYNOPSIS
 

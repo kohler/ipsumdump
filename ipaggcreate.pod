@@ -8,7 +8,7 @@ ipaggcreate [B<-r> | B<-i> | B<--netflow-summary>] [B<--src>, B<--dst>, B<--spor
 
 =head1 DESCRIPTION
 
-The B<ipsumdump> program reads IP packets from one or more data sources,
+The B<ipaggcreate> program reads IP packets from one or more data sources,
 then summarizes those packets into a line-based ASCII file. The resulting
 summary dump is easy to process with text-based tools. (But see the
 B<--binary> option, which generates a smaller binary file.)
