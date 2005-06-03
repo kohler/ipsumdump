@@ -124,7 +124,7 @@ static Clp_Option options[] = {
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
     { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
     { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
-    { "dag", 0, READ_DAG_DUMP_OPT, 0, 0 },
+    { "dag", 0, READ_DAG_DUMP_OPT, Clp_ArgString, Clp_Optional },
     { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     
@@ -239,8 +239,7 @@ Data source options (give exactly one):\n\
       --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
       --tcpdump-text         Read packets from tcpdump(1) text output FILES.\n\
       --nlanr                Read packets from NLANR-format FILES (fr/fr+/tsh).\n\
-      --dag                  Read packets from DAG-format FILES.\n\
-      --dag-ppp              Read packets from DAG-format FILES with PPP encap.\n\
+      --dag[=ENCAP]          Read packets from DAG-format FILES.\n\
   -i, --interface            Read packets from network devices DEVNAMES until\n\
                              interrupted.\n\
 \n");
@@ -393,6 +392,7 @@ struct Options {
     String filter;
     String filename;
     String ipsumdump_format;
+    String dag_encap;
 
     enum { SAMPLED = 1, FILTERED = 2 };
 };
@@ -428,6 +428,8 @@ add_source(StringAccum &sa, int num, int action, const Options &opt)
 
       case READ_DAG_DUMP_OPT:
 	sa << "FromDAGDump(" << cp_quote(opt.filename);
+	if (opt.dag_encap)
+	    sa << ", ENCAP " << opt.dag_encap;
 	goto dump_common;
 
       case READ_DAG_PPP_DUMP_OPT:
@@ -528,9 +530,8 @@ main(int argc, char *argv[])
 	    
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
-	  case READ_IPSUMDUMP_OPT:
 	  case READ_ASCII_TCPDUMP_OPT:
-	  case READ_DAG_DUMP_OPT:
+	  case READ_IPSUMDUMP_OPT:
 	  case READ_DAG_PPP_DUMP_OPT:
 	  case READ_NLANR_DUMP_OPT:
 	  do_action:
@@ -539,9 +540,17 @@ main(int argc, char *argv[])
 	    action = opt;
 	    break;
 	    
+	  case READ_DAG_DUMP_OPT:
+	    if (action)
+		die_usage("data source option already specified");
+	    action = opt;
+	    if (clp->have_arg)
+		options.dag_encap = clp->arg;
+	    break;
+	    
 	  case IPSUMDUMP_FORMAT_OPT:
 	    if (options.ipsumdump_format)
-		die_usage("'--format' already specified");
+		die_usage("IP summary dump format already specified");
 	    else if (action && action != READ_IPSUMDUMP_OPT)
 		die_usage("'--format' only useful with '--ipsumdump'");
 	    action = READ_IPSUMDUMP_OPT;

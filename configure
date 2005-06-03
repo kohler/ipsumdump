@@ -1246,7 +1246,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-IPSUMDUMP_VERSION=1.54
+IPSUMDUMP_VERSION=1.55
 cat >>confdefs.h <<_ACEOF
 #define IPSUMDUMP_VERSION "$IPSUMDUMP_VERSION"
 _ACEOF

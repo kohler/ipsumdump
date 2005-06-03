@@ -50,9 +50,9 @@ IPSUMDUMP_ELEMENT_OBJS = \
 	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o \
 	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_ip.o ipsumdump_tcp.o \
 	toipsumdump.o todump.o \
-	anonipaddr.o classifier.o counter.o discard.o fakepcap.o ipfilter.o \
-	ipnameinfo.o pokehandlers.o progressbar.o randomsample.o \
-	switch.o tee.o timefilter.o timesortedsched.o unqueue.o
+	anonipaddr.o classifier.o counter.o discard.o fakepcap.o \
+	ipfilter.o ipnameinfo.o pokehandlers.o progressbar.o \
+	randomsample.o switch.o tee.o timefilter.o timesortedsched.o unqueue.o
 
 IPSUMDUMP_OBJS = \
 	$(IPSUMDUMP_ELEMENT_OBJS) ipsumdump.o sd_elements.o
@@ -63,8 +63,8 @@ IPAGGCREATE_ELEMENT_OBJS = \
 	ipsumdumpinfo.o \
 	aggcounter.o aggregateip.o aggregateipflows.o aggregatelen.o \
 	anonipaddr.o classifier.o counter.o discard.o fakepcap.o \
-	ipfilter.o ipmirror.o progressbar.o randomsample.o tee.o \
-	timefilter.o timerange.o todump.o
+	ipfieldinfo.o ipfilter.o ipmirror.o ipnameinfo.o progressbar.o \
+	randomsample.o tee.o timefilter.o timerange.o todump.o
 
 IPAGGCREATE_OBJS = \
 	$(IPAGGCREATE_ELEMENT_OBJS) ipaggcreate.o ac_elements.o

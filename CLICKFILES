@@ -12,8 +12,8 @@ elements/userlevel/progressbar.cc
 elements/userlevel/progressbar.hh
 elements/analysis/aggcounter.cc
 elements/analysis/aggcounter.hh
-elements/analysis/aggregateip.cc
-elements/analysis/aggregateip.hh
+elements/analysis/aggregateip.cc:s{"elements/ip/}{"}
+elements/analysis/aggregateip.hh:s{"elements/ip/}{"}
 elements/analysis/aggregateipflows.cc
 elements/analysis/aggregateipflows.hh
 elements/analysis/aggregatelen.cc
@@ -45,6 +45,8 @@ elements/analysis/timerange.cc
 elements/analysis/timerange.hh
 elements/analysis/toipsumdump.cc
 elements/analysis/toipsumdump.hh
+elements/ip/ipfieldinfo.cc
+elements/ip/ipfieldinfo.hh
 elements/ip/ipfilter.cc
 elements/ip/ipfilter.hh:s{"elements/standard/}{"}
 elements/ip/ipmirror.cc

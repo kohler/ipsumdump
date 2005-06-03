@@ -1,5 +1,13 @@
 Ipsumdump NEWS
 
+Version 1.55   3.Jun.2005
+
+* Better support for old-style DAG dumps via the --dag=ENCAP option
+  variant.  Bug reported by Harshit Nayyar.
+
+* Include initial version of ipaggcreate (but it doesn't fully work yet).
+
+
 Version 1.54   10.Apr.2005
 
 * Bug fix: Mac OS X defines pcap_setnonblock, but does not declare it.

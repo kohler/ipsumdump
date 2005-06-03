@@ -11,3 +11,4 @@ ipsumdump.1
 src
 src/Makefile.in
 src/ipsumdump.cc
+src/ipaggcreate.cc

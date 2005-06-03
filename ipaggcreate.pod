@@ -8,6 +8,8 @@ ipaggcreate [B<-r> | B<-i> | B<--netflow-summary>] [B<--src>, B<--dst>, B<--spor
 
 =head1 DESCRIPTION
 
+B<THIS MANUAL PAGE IS WRONG WRONG WRONG>
+
 The B<ipaggcreate> program reads IP packets from one or more data sources,
 then summarizes those packets into a line-based ASCII file. The resulting
 summary dump is easy to process with text-based tools. (But see the

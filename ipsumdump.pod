@@ -102,25 +102,22 @@ see L<ToIPSummaryDump(n)> for a list.
 
 Read from one or more files containing L<tcpdump(1)> textual output.  It's
 much better to use the binary files produced by 'tcpdump B<-w>', but if
-someone threw those file away and all you have is the ASCII output, you can
+someone threw those away and all you have is the ASCII output, you can
 still make do.  Only works with tcpdump versions 3.7 and earlier.
+
+=item B<--dag>[=I<encap>]
+
+Read from one or more DAG-formatted trace files.  For new-style ERF dumps,
+which contain encapsulation type information, just say B<--dag>.  For
+old-style dumps, you must supply the right I<encap> argument: C<ATM> for
+ATM RFC-1483 encapsulation (the most common), C<ETHER> for Ethernet, C<PPP>
+for PPP, C<IP> for raw IP, C<HDLC> for Cisco HDLC, C<PPP_HDLC> for PPP
+HDLC, or C<SUNATM> for Sun ATM.  See L<http://dag.cs.waikato.ac.nz/>.
 
 =item B<--nlanr>
 
 Read from one or more NLANR-formatted trace files (fr, fr+, or tsh
 format).  See L<http://pma.nlanr.net/Traces/>.
-
-=item B<--dag>
-
-Read from one or more DAG-formatted trace files.  Use this option for
-new-style ERF dumps (which contain encapsulation type information), or for
-old-style dumps with ATM encapsulation.  See
-L<http://dag.cs.waikato.ac.nz/>.
-
-=item B<--dag-ppp>
-
-Read from one or more DAG-formatted trace files with old-style PPP
-encapsulation.  See L<http://dag.cs.waikato.ac.nz/>.
 
 =back
 
