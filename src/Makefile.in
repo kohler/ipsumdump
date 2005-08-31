@@ -50,7 +50,7 @@ IPSUMDUMP_ELEMENT_OBJS = \
 	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o \
 	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_ip.o ipsumdump_tcp.o \
 	toipsumdump.o todump.o \
-	anonipaddr.o classifier.o counter.o discard.o fakepcap.o \
+	anonipaddr.o changeuid.o classifier.o counter.o discard.o fakepcap.o \
 	ipfilter.o ipnameinfo.o pokehandlers.o progressbar.o \
 	randomsample.o switch.o tee.o timefilter.o timesortedsched.o unqueue.o
 

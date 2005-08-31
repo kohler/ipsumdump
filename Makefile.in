@@ -86,6 +86,7 @@ distclean:
 clicksrcdir = @clicksrcdir@
 clickbuilddir = @clickbuilddir@
 fetch-click:
+	@[ $(clickbuilddir) != NONE ] || (echo "Reconfigure with --with-click-build!"; exit 1)
 	cd $(clickbuilddir)/etc/libclick; $(MAKE) dist
 	cd $(top_srcdir); tar xzf $(clickbuilddir)/etc/libclick/$(libclick).tar.gz
 	@for fgroup in `cat $(top_srcdir)/CLICKFILES`; do \

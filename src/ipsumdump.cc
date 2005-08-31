@@ -831,6 +831,10 @@ particular purpose.\n");
 	sa << ");\n";
     }
 
+    // set-uid-root privilege
+    if (geteuid() != getuid() || getegid() != getgid())
+	sa << "ChangeUID();\n";
+    
     sa << "DriverManager(";
     stop_driver_count = 1;
     if (action != INTERFACE_OPT)

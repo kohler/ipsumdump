@@ -13,6 +13,8 @@ aggregatelen.cc
 aggregatelen.hh
 aggregatenotifier.cc
 aggregatenotifier.hh
+changeuid.cc
+changeuid.hh
 classifier.cc
 classifier.hh
 counter.cc
@@ -33,6 +35,8 @@ fromnlanrdump.cc
 fromnlanrdump.hh
 fromtcpdump.cc
 fromtcpdump.hh
+ipfieldinfo.cc
+ipfieldinfo.hh
 ipfilter.cc
 ipfilter.hh
 ipmirror.cc

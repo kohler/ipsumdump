@@ -10,6 +10,8 @@ elements/userlevel/fromdevice.cc
 elements/userlevel/fromdevice.hh
 elements/userlevel/progressbar.cc
 elements/userlevel/progressbar.hh
+elements/userlevel/changeuid.cc
+elements/userlevel/changeuid.hh
 elements/analysis/aggcounter.cc
 elements/analysis/aggcounter.hh
 elements/analysis/aggregateip.cc:s{"elements/ip/}{"}

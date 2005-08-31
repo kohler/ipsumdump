@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.56   31.Aug.2005
+
+* Drop any set-uid-root privileges after initializing device reading
+  elements.  Requested by Mark Allman.
+
+
 Version 1.55   3.Jun.2005
 
 * Better support for old-style DAG dumps via the --dag=ENCAP option
