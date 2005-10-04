@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.57   3.Oct.2005
+
+* More verbose error messages on USE_ENCAP_FROM conflict (combining
+  multiple traces with different encapsulations).  Reported by Vern Paxson.
+
+
 Version 1.56   31.Aug.2005
 
 * Drop any set-uid-root privileges after initializing device reading

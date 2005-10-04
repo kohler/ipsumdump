@@ -297,7 +297,7 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     if (multi_output >= 0) {
 	StringAccum sa;
 	if (char *x = sa.reserve(output.length() + 30)) {
-	    int len = sprintf(x, output.cc(), multi_output);
+	    int len = sprintf(x, output.c_str(), multi_output);
 	    sa.forward(len);
 	} else
 	    return errh->error("out of memory!");
@@ -921,7 +921,7 @@ particular purpose.\n");
 
     // output config if required
     if (config) {
-	printf("%s", sa.cc());
+	printf("%s", sa.c_str());
 	exit(0);
     }
 

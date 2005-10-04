@@ -857,7 +857,7 @@ particular purpose.\n");
 
     // output config if required
     if (config) {
-	printf("%s", sa.cc());
+	printf("%s", sa.c_str());
 	exit(0);
     }
 
@@ -911,9 +911,9 @@ particular purpose.\n");
 	    addr &= mask;
 	    new_addr &= mask;
 	    if (mask == 0xFFFFFFFFU)
-		fprintf(stderr, "%s -> %s\n", addr.unparse().cc(), new_addr.unparse().cc());
+		fprintf(stderr, "%s -> %s\n", addr.unparse().c_str(), new_addr.unparse().c_str());
 	    else
-		fprintf(stderr, "%s -> %s\n", addr.unparse_with_mask(mask).cc(), new_addr.unparse_with_mask(mask).cc());
+		fprintf(stderr, "%s -> %s\n", addr.unparse_with_mask(mask).c_str(), new_addr.unparse_with_mask(mask).c_str());
 	}
     }
     

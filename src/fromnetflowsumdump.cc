@@ -36,7 +36,7 @@
 CLICK_DECLS
 
 FromNetFlowSummaryDump::FromNetFlowSummaryDump()
-    : Element(0, 1), _work_packet(0), _task(this)
+    : _work_packet(0), _task(this)
 {
     _ff.set_landmark_pattern("%f:%l");
 }
@@ -340,12 +340,12 @@ Packet *
 FromNetFlowSummaryDump::pull(int)
 {
     if (!_active) {
-	_notifier.sleep_listeners();
+	_notifier.sleep();
 	return 0;
     }
 
     Packet *p = (_work_packet ? _work_packet : read_packet(0));
-    _notifier.set_listeners(p != 0);
+    _notifier.set_active(p != 0, true);
     if (!p && _stop)
 	router()->please_stop_driver();
     if (_multipacket)
@@ -384,7 +384,7 @@ FromNetFlowSummaryDump::write_handler(const String &s_in, Element *e, void *thun
 		  if (active && !fd->_task.scheduled())
 		      fd->_task.reschedule();
 	      } else
-		  fd->_notifier.set_listeners(active);
+		  fd->_notifier.set_active(active, true);
 	      return 0;
 	  } else
 	      return errh->error("`active' should be Boolean");
