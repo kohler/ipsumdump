@@ -338,7 +338,9 @@ Write the summary dump to I<file> instead of to the standard output.
 
 Write processed packets to a tcpdump(1) I<file> -- or to the standard
 output, if I<file> is a single dash C<-> -- in addition to the usual
-summary output.
+summary output.  If you include any options that require IP, such as
+B<--filter> or a dump content option, then the result will contain only IP
+packets (no ARP packets, for example).
 
 =item B<--binary>, B<-b>
 

@@ -387,6 +387,7 @@ struct Options {
     bool do_sample;
     bool promisc;
     bool bad_packets;
+    bool force_ip;
     int mmap;
     int snaplen;
     String filter;
@@ -401,13 +402,14 @@ static uint32_t
 add_source(StringAccum &sa, int num, int action, const Options &opt)
 {
     uint32_t result = 0;
+    const char *force_ip = (opt.force_ip ? ", FORCE_IP true" : "");
     sa << "src" << num << " :: ";
     
     switch (action) {
 	
       case INTERFACE_OPT:
 	sa << "FromDevice(" << cp_quote(opt.filename)
-	   << ", SNIFFER true, SNAPLEN " << opt.snaplen << ", FORCE_IP true";
+	   << ", SNIFFER true, SNAPLEN " << opt.snaplen << force_ip;
 	if (opt.promisc)
 	    sa << ", PROMISC true";
 #if FROMDEVICE_PCAP
@@ -437,7 +439,7 @@ add_source(StringAccum &sa, int num, int action, const Options &opt)
 	goto dump_common;
 
       dump_common:
-	sa << ", FORCE_IP true, STOP true";
+	sa << force_ip << ", STOP true";
 	if (opt.do_sample)
 	    sa << ", SAMPLE " << opt.sample;
 	if (opt.mmap >= 0)
@@ -510,7 +512,8 @@ main(int argc, char *argv[])
     Timestamp interval;
 
     Options options;
-    options.anonymize = options.multipacket = options.do_sample = false;
+    options.anonymize = options.multipacket = options.do_sample =
+	options.force_ip = false;
     options.promisc = true;
     options.mmap = options.snaplen = -1;
     
@@ -567,10 +570,12 @@ main(int argc, char *argv[])
 	    if (options.filter)
 		die_usage("'--filter' already specified");
 	    options.filter = clp->arg;
+	    options.force_ip = true;
 	    break;
 
 	  case ANONYMIZE_OPT:
 	    options.anonymize = !clp->negated;
+	    options.force_ip = true;
 	    break;
 
 	  case MULTIPACKET_OPT:
@@ -611,6 +616,8 @@ main(int argc, char *argv[])
 		  map_prefixes.push_back(addr.addr());
 		  map_prefixes.push_back(mask.addr());
 	      }
+
+	      options.force_ip = true;
 	      break;
 	  }
 
@@ -690,6 +697,7 @@ particular purpose.\n");
 	    log_contents.push_back(opt - FIRST_LOG_OPT);
 	    if (opt == PAYLOAD_OPT)
 		options.snaplen = 2000;
+	    options.force_ip = true;
 	    break;
 	    
 	}
