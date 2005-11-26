@@ -261,6 +261,12 @@ Flag characters are C<F> for FIN, C<S> for SYN, C<R> for RST, C<P> for PSH,
 C<A> for ACK, C<U> for URG, C<E> for ECE (flag bit 6), C<C> for CWR (flag
 bit 7), and C<N> for Nonce Sum (flag bit 8).
 
+=item B<--tcp-window>, B<-W>
+
+Include TCP receive window in the dump.  This value is not scaled by the
+connection's window scale, if any.  Example: C<480>.  For non-TCP packets,
+and for fragments after the first, this field is a single dash C<->.
+
 =item B<--tcp-opt>, B<-O>
 
 Include TCP options in the dump. Single TCP option fields have the

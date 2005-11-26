@@ -80,7 +80,7 @@ static const char* const field_names[] = {
     "ip_proto", "tcp_seq", "tcp_ack", "tcp_flags",	// 8-11
     "tcp_opt", "tcp_sack", "payload_len", "count",	// 12-15
     "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
-    "link", "udp_len", "ip_opt", "ip_sum"		// 20-23
+    "link", "udp_len", "ip_opt", "ip_sum", "tcp_window"	// 20-24
 };
 
 // options for logging
@@ -109,6 +109,7 @@ static const char* const field_names[] = {
 #define UDP_LEN_OPT		1021
 #define IP_OPT_OPT		1022
 #define IP_SUM_OPT		1023
+#define TCP_WINDOW_OPT		1024
 
 #define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
 
@@ -149,30 +150,31 @@ static Clp_Option options[] = {
     { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
 
-    { "timestamp", 't', TIMESTAMP_OPT, 0, 0 },
-    { "first-timestamp", 'T', FIRST_TIMESTAMP_OPT, 0, 0 },
-    { "src", 's', SRC_OPT, 0, 0 },
-    { "dst", 'd', DST_OPT, 0, 0 },
-    { "sport", 'S', SPORT_OPT, 0, 0 },
+    { "capture-length", 0, IPCAPLEN_OPT, 0, 0 },
     { "dport", 'D', DPORT_OPT, 0, 0 },
-    { "length", 'l', LENGTH_OPT, 0, 0 },
+    { "dst", 'd', DST_OPT, 0, 0 },
+    { "first-timestamp", 'T', FIRST_TIMESTAMP_OPT, 0, 0 },
+    { "fragment", 'g', FRAG_OPT, 0, 0 },
+    { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
+    { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
     { "id", 0, IPID_OPT, 0, 0 },
-    { "protocol", 'p', PROTO_OPT, 0, 0 },
     { "ip-opt", 0, IP_OPT_OPT, 0, 0 },
     { "ip-sum", 0, IP_SUM_OPT, 0, 0 },
-    { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, 0 },
+    { "length", 'l', LENGTH_OPT, 0, 0 },
+    { "link", 0, LINK_OPT, 0, 0 },
+    { "packet-count", 'c', COUNT_OPT, 0, 0 },
+    { "payload", 0, PAYLOAD_OPT, 0, 0 },
+    { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
+    { "protocol", 'p', PROTO_OPT, 0, 0 },
+    { "src", 's', SRC_OPT, 0, 0 },
+    { "sport", 'S', SPORT_OPT, 0, 0 },
     { "tcp-ack", 'K', TCP_ACK_OPT, 0, 0 },
     { "tcp-flags", 'F', TCP_FLAGS_OPT, 0, 0 },
     { "tcp-opt", 'O', TCP_OPT_OPT, 0, 0 },
     { "tcp-sack", 0, TCP_SACK_OPT, 0, 0 },
-    { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
-    { "packet-count", 'c', COUNT_OPT, 0, 0 },
-    { "fragment", 'g', FRAG_OPT, 0, 0 },
-    { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
-    { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
-    { "payload", 0, PAYLOAD_OPT, 0, 0 },
-    { "capture-length", 0, IPCAPLEN_OPT, 0, 0 },
-    { "link", 0, LINK_OPT, 0, 0 },
+    { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, 0 },
+    { "tcp-window", 'W', TCP_WINDOW_OPT, 0, 0 },
+    { "timestamp", 't', TIMESTAMP_OPT, 0, 0 },
     { "udp-length", 0, UDP_LEN_OPT, 0, 0 }
 
 };
@@ -222,6 +224,7 @@ Options that determine summary dump contents (can give multiple options):\n\
   -F, --tcp-flags            Include TCP flags word.\n\
   -Q, --tcp-seq              Include TCP sequence numbers.\n\
   -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
+  -W, --tcp-window           Include TCP receive window (unscaled).\n\
   -O, --tcp-opt              Include TCP options.\n\
       --tcp-sack             Include TCP selective acknowledgement options.\n\
       --udp-length           Include UDP lengths.\n\

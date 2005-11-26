@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.59
+
+* Add '--tcp-window' option.  Requested by Vern Paxson.
+
+
 Version 1.58   21.Nov.2005
 
 * Do not FORCE_IP unless you have to.  Requested by Vern Paxson.
