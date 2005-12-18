@@ -61,10 +61,12 @@ elements/standard/counter.cc
 elements/standard/counter.hh
 elements/standard/discard.cc
 elements/standard/discard.hh
-elements/standard/pokehandlers.cc
-elements/standard/pokehandlers.hh
+elements/standard/drivermanager.cc
+elements/standard/drivermanager.hh
 elements/standard/randomsample.cc
 elements/standard/randomsample.hh
+elements/standard/script.cc
+elements/standard/script.hh
 elements/standard/switch.cc
 elements/standard/switch.hh
 elements/standard/tee.cc

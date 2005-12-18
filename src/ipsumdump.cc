@@ -276,35 +276,6 @@ Other options:\n\
 Report bugs to <kohler@cs.ucla.edu>.\n");
 }
 
-// Stop the driver this many aggregate times to end the program.
-static int stop_driver_count = 1;
-
-static void
-catch_signal(int sig)
-{
-    signal(sig, SIG_DFL);
-    if (!started)
-	kill(getpid(), sig);
-    else {
-	DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
-	router->set_runcount(dm->stopped_count() - stop_driver_count);
-    }
-}
-
-static void
-catch_sighup(int sig)
-{
-    if (!started) {
-	signal(sig, SIG_DFL);
-	kill(getpid(), sig);
-    } else {
-	signal(sig, catch_sighup);
-	ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(router->find("to_dump"));
-	if (td)
-	    td->flush_buffer();
-    }
-}
-
 static void
 write_sampling_prob_message(Router *r, const String &sample_elt)
 {
@@ -349,24 +320,6 @@ record_drops_hook(const String &, Element *, void *, ErrorHandler *)
 	    td->write_line(head + String(max_drops) + "\n");
     }
 
-    return 0;
-}
-
-static int
-stop_hook(const String &s_in, Element *, void *, ErrorHandler *errh)
-{
-    int n = 1;
-    String s = cp_uncomment(s_in);
-    DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
-    if (!s || cp_integer(s, &n))
-	router->adjust_runcount(-n);
-    else if (s == "cold")
-	router->set_runcount(dm->stopped_count() - stop_driver_count);
-    else if (s == "switch") {
-	HandlerCall::call_write(router->find("switch"), "switch", "-1", errh);
-	router->set_runcount(dm->stopped_count() - stop_driver_count);
-    } else
-	return errh->error("bad argument to 'stop'");
     return 0;
 }
 
@@ -719,6 +672,7 @@ particular purpose.\n");
 
     // setup
     StringAccum sa;
+    StringAccum script_sa;
 
     // clean up options
     if (action == 0)
@@ -777,15 +731,17 @@ particular purpose.\n");
     if (options.anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
     if (action != INTERFACE_OPT && interval) {
-	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL stop cold)\n";
+	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL manager.goto stop)\n";
 	if (files.size() > 1 && !collate) {
 	    p_errh->warning("'--collate' missing");
 	    p_errh->message("('--interval' works best with '--collate' when you have\nmultiple data sources.)");
 	}
     }
-    if (limit_packets)
+    if (limit_packets) {
 	sa << "  -> switch :: Switch\n"
-	   << "  -> Counter(COUNT_CALL " << limit_packets << " stop switch)\n";
+	   << "  -> Counter(COUNT_CALL " << limit_packets << " switch_stop.run)\n";
+	script_sa << "switch_stop :: Script(TYPE PASSIVE, write switch.switch -1, write manager.goto stop);\n";
+    }
 
     // elements to write tcpdump file
     if (write_dump) {
@@ -817,12 +773,13 @@ particular purpose.\n");
 	    banner << argv[i] << ' ';
 	banner.pop_back();
 	sa << cp_quote(banner.take_string()) << ");\n";
+	script_sa << "Script(TYPE SIGNAL HUP, write to_dump.flush);\n";
     }
 
     // record drops
     sa << "\n";
     if (record_drops)
-	sa << "PokeHandlers(" << record_drops << ", record_counts '', loop);\n";
+	sa << "Script(wait " << record_drops << ", write record_counts, loop);\n";
 
     // progress bar
     if (!quiet) {
@@ -846,25 +803,28 @@ particular purpose.\n");
     if (geteuid() != getuid() || getegid() != getgid())
 	sa << "ChangeUID();\n";
     
-    sa << "DriverManager(";
-    stop_driver_count = 1;
+    sa << "manager :: DriverManager(";
+    int stop_driver_count = 1;
     if (action != INTERFACE_OPT)
 	stop_driver_count += files.size() + (collate ? 1 : 0);
     else {
 	if (interval)
-	    sa << ", wait_for " << interval;
+	    sa << ", wait " << interval;
 	if (!interval || collate)
 	    stop_driver_count++;
     }
     if (stop_driver_count > 1)
-	sa << ", wait_stop " << stop_driver_count - 1;
+	sa << ", pause " << stop_driver_count - 1;
     // complete progress bar
     if (!quiet)
-	sa << ", write_skip progress.mark_done";
+	sa << ", write progress.mark_done";
+    sa << ", label stop";
     // print '!counts' message if appropriate
     if (action == INTERFACE_OPT)
-	sa << ", write record_counts ''";
+	sa << ", write record_counts";
     sa << ");\n";
+
+    sa << script_sa << "Script(TYPE SIGNAL INT TERM, write manager.goto stop, exit);\n";
 
     // output config if required
     if (config) {
@@ -872,14 +832,9 @@ particular purpose.\n");
 	exit(0);
     }
 
-    // catch control-C
-    signal(SIGINT, catch_signal);
-    signal(SIGTERM, catch_signal);
-    signal(SIGHUP, catch_sighup);
     // do NOT catch SIGPIPE; it kills us immediately
 
     Router::add_write_handler(0, "record_counts", record_drops_hook, 0);
-    Router::add_write_handler(0, "stop", stop_hook, 0);
 
     // lex configuration
     BailErrorHandler berrh(errh);

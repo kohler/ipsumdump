@@ -285,13 +285,13 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
     if (multi_output >= 0)
 	multi_output++;		// files start from 1
     
-    String tr_range = HandlerCall::call_read("tr.range", router);
-    String tr_interval = HandlerCall::call_read("tr.interval", router);
+    String tr_range = HandlerCall::call_read("tr.range", router->root_element());
+    String tr_interval = HandlerCall::call_read("tr.interval", router->root_element());
     StringAccum bsa;
     bsa << banner_sa << "!times " << cp_uncomment(tr_range) << " " << cp_uncomment(tr_interval) << "\n";
     if (multi_output >= 0)
 	bsa << "!section " << multi_output << "\n";
-    (void) HandlerCall::call_write("ac.banner " + cp_quote(bsa.take_string()), router);
+    (void) HandlerCall::call_write("ac.banner " + cp_quote(bsa.take_string()), router->root_element());
 
     String cur_output = output;
     if (multi_output >= 0) {
@@ -313,10 +313,10 @@ output_handler(const String &, Element *, void *, ErrorHandler *errh)
 	multi_output--;
 
     (void) HandlerCall::call_write(ac, "clear");
-    (void) HandlerCall::call_write("tr.reset", router);
+    (void) HandlerCall::call_write("tr.reset", router->root_element());
 
     for (int i = 0; i < output_calls.size(); i++)
-	(void) HandlerCall::call_write(output_calls[i], router, errh);
+	(void) HandlerCall::call_write(output_calls[i], router->root_element(), errh);
     
     return result;
 }
