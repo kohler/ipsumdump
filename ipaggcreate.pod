@@ -200,6 +200,88 @@ address match.
 
 =back
 
+=head2 Measurement Options
+
+These options specify whether B<ipaggcreate> should count packets or bytes.
+
+=over 4
+
+=item B<--packets>
+
+Count packets: the output file will report the number of packets in each
+aggregate.  This is the default.
+
+=item B<--bytes>, B<-B>
+
+Count bytes: the output file will report the number of bytes in each
+aggregate.  This number includes IP and transport headers, but not any link
+headers.
+
+=back
+
+=head2 Limit and Split Options
+
+These options select portions of the trace file, and allow the user to
+split trace data into multiple aggregate files.
+
+=over 4
+
+=item B<--time-offset>=I<time>, B<-T> I<time>
+
+Ignore the first I<time> worth of packets in the input trace.  If the first
+packet has timestamp T, then all packets (including the first) with
+timestamp less than T+I<time> are ignored.  The I<time> argument can be an
+absolute number of seconds (C<938.42>), or use suffixes such as C<100s>,
+C<12ms>, C<1.5min>, C<2hr>, and so forth.
+
+=item B<--start-time>=I<time>
+
+Ignore packets with timestamps less than I<time>.
+
+=item B<--interval>=I<time>, B<-t> I<time>
+
+Stop after recording aggregate information for I<time> worth of packets.
+That is, if the first recorded packet has timestamp T, then B<ipaggcreate>
+will exit just before the first packet with timestamp T+I<time>, or the end
+of the trace, whichever comes first.
+
+=item B<--limit-aggregates>=B<count>
+
+Stop after recording information for B<count> aggregates.  That is, exit
+just before encountering a packet with the B<count>+1 different aggregate,
+or at the end of the trace, whichever comes first.
+
+=back
+
+The four B<--split> options generate multiple aggregate output files based
+on characteristics of the input.  To use B<--split>, you must supply an
+explicit B<--output> filename containing a "C<%d>"-style template; a file
+number is plugged in to that template.  For example, the template
+"C<file%03.txt>" will generate files "C<file001.txt>", "C<file002.txt>",
+and so forth.
+
+=over 4
+
+=item B<--split-time>=B<time>
+
+Start a new output file every B<time> period.  That is, each file will
+contain data for at most B<time> worth of packets.
+
+=item B<--split-aggregates>=B<count>
+
+Start a new output file every B<count> aggregates.  That is, each file will
+contain at most B<count> different aggregates.
+
+=item B<--split-packets>=B<count>
+
+Start a new output file every B<count> packets.
+
+=item B<--split-bytes>=B<count>
+
+Start a new output file every B<count> bytes.
+
+=back
+
 =head2 Other Options
 
 =over 4
@@ -208,15 +290,15 @@ address match.
 
 Write the summary dump to I<file> instead of to the standard output.
 
+=item B<--binary>, B<-b>
+
+Write the summary dump in binary format. See below for more information.
+
 =item B<--write-tcpdump>=I<file>, B<-w> I<file>
 
 Write processed packets to a tcpdump(1) I<file> -- or to the standard
 output, if I<file> is a single dash C<-> -- in addition to the usual
 summary output.
-
-=item B<--binary>, B<-b>
-
-Write the summary dump in binary format. See below for more information.
 
 =item B<--filter>=I<filter>, B<-f> I<filter>
 
@@ -224,14 +306,6 @@ Only include packets and flows matching a tcpdump(1) filter. For example,
 `ipsumdump B<-f> "tcp && src net 18/8"' will summarize data only for TCP
 packets from net 18. (The syntax for I<filter> is currently a subset of
 tcpdump's syntax.)
-
-=item B<--bad-packets>
-
-Print lines like `C<!bad IP header length 4>' for packets with no IP
-headers, bad IP headers, or bad TCP/UDP headers. (A bad header has an
-incorrect length or unexpected version, or is spread across multiple
-fragments.) Default is to print a normal line, but with a dash `C<->' for
-any piece of information that came from a bad header.
 
 =item B<--anonymize>, B<-A>
 
@@ -257,7 +331,7 @@ Sample packets with probability I<p>. That is, I<p> is the chance that a
 packet will cause output to be generated. The actual probability may differ
 from the specified probability, due to fixed point arithmetic; check the
 output for a `C<!sampling_prob>' comment to see the real probability.
-Strictly speaking, this option samples records, not packets; so for NetFlow
+Strictly speaking, this option samples records, not packets, so for NetFlow
 summaries without B<--multipacket>, it will sample flows.
 
 =item B<--multipacket>
@@ -273,38 +347,6 @@ Sort output packets by increasing timestamp. Use this option when reading
 from multiple tcpdump(1) files to ensure that the output has sorted
 timestamps. Combine B<--collate> with B<--write-tcpdump> to collate
 overlapping tcpdump(1) files into a single, sorted tcpdump(1) file.
-
-=item B<--interval>=I<time>
-
-Process packets for I<time>, an interval length in seconds (or give a
-suffix like `C<2m>' or `C<1hr>'). For B<--interface>, B<ipsumdump> will
-quit after it has run for I<time>. For other options, B<ipsumdump> will
-quit before writing a packet whose timestamp is more than I<time> seconds
-later than the timestamp on the first packet it sees.
-
-=item B<--limit-packets>=I<count>
-
-Output at most I<count> packets, then quit.
-
-=item B<--map-address>=I<addrs>
-
-I<addrs> is a space- or comma-separated list of IP addresses and/or
-prefixes. When the summary dump completes, B<ipsumdump> will write those
-addresses to the standard error, paired with their anonymized counterparts.
-
-=item B<--record-counts>=I<time>
-
-Useful when reading from interfaces. This option causes B<ipsumdump> to
-write a comment recording the cumulative number of packets output, and the
-number of packets dropped by the kernel before B<ipsumdump> could process
-them, every I<time> seconds. (Or you can say, for example, `2m' for 2
-minutes.) A sample comment:
-
-  !counts out 0 kdrop 0
-
-This says that B<ipsumdump> has output 0 records, and the kernel reported 0
-packet drops since B<ipsumdump> began. `C<!bad>' lines are counted as
-records.
 
 =item B<--random-seed>=I<seed>
 
@@ -341,132 +383,51 @@ exit.
 
 =head1 SIGNALS
 
-When killed with SIGTERM or SIGINT, B<ipsumdump> will exit cleanly by
-flushing its buffers. If you want it to flush its buffers without exiting,
-kill it with SIGHUP.
-
-=head1 EXAMPLES
-
-The `B<-tsSdDp>' option set covers the most commonly useful information
-about each packet: timestamp, source address, source port, destination
-address, destination port, and protocol. Invoking `ipsumdump B<-i> eth1
-B<-tsSdDp>' might produce output like this:
-
-  !IPSummaryDump 1.1
-  !creator "ipsumdump -i eth1 -tsSdDp"
-  !host max.lcdf.org
-  !starttime 1000967293.569808 (Wed Sep 19 23:28:13 2001)
-  !data timestamp ip_src sport ip_dst dport ip_proto
-  1000967303.641581 64.71.165.130 80 192.168.1.101 4450 T
-  1000967303.670506 64.71.165.130 80 192.168.1.101 4450 T
-  1000967303.882621 18.26.4.44 - 192.168.1.101 - I
-  1000967304.253874 64.71.165.130 80 192.168.1.101 4442 T
-  1000967304.390016 192.150.187.11 53 192.168.1.101 1299 U
-  1000967304.425992 207.171.182.16 80 192.168.1.101 4451 T
-
-Here is the same data, anonymized with B<-A>:
-
-  !IPSummaryDump 1.1
-  !creator "ipsumdump --ipsumdump -A -tsSdDp"
-  !host max.lcdf.org
-  !starttime 1000968019.67508 (Wed Sep 19 23:40:19 2001)
-  !data timestamp ip_src sport ip_dst dport ip_proto
-  1000967303.641581 29.50.142.215 80 204.196.101.50 4450 T
-  1000967303.670506 29.50.142.215 80 204.196.101.50 4450 T
-  1000967303.882621 89.142.236.79 - 204.196.101.50 - I
-  1000967304.253874 29.50.142.215 80 204.196.101.50 4442 T
-  1000967304.390016 204.224.59.219 53 204.196.101.50 1299 U
-  1000967304.425992 192.230.64.231 80 204.196.101.50 4451 T
+When killed with SIGTERM or SIGINT, B<ipaggcreate> will exit cleanly (and
+generate an output file).  If you want it to flush its buffers without
+exiting, kill it with SIGHUP.
 
 =head1 BINARY FORMAT
 
-Binary ipsumdump files begin with several ASCII lines, just like regular
-ipsumdump files. The line `C<!binary>' indicates that the rest of the file,
-starting immediately after the newline, consists of binary records. Each
-record looks like this:
+Binary ipaggcreate files begin with several ASCII lines, just like regular
+ipaggcreate files.  A line `C<!packed_be>' or `C<!packed_le>' indicates
+that the rest of the file, starting immediately after the newline, consists
+of binary records (in big-endian or little-endian order, respectively).
+Each record is 8 bytes long, and looks like this:
 
-   +---------------+------------...
-   |X|record length|    data
-   +---------------+------------...
-    <---4 bytes--->
+   +---------------+---------------+
+   | aggregate num |     count     |
+   +---------------+---------------+
+    <---4 bytes---> <---4 bytes--->
 
-The initial word of data contains the record length in bytes. (All numbers
-in the file are stored in network byte order.) The record length includes
-the initial word itself, so the minimum valid record length is 4. The
-high-order bit `C<X>' is the metadata indicator. It is zero for regular
-packets and one for metadata lines.
-
-Regular packet records have binary fields stored in the order indicated by
-the `C<!data>' line, as follows:
-
-   Field Name  Length  Description
-   timestamp      8    timestamp sec, usec
-   ip_src         4    source IP address
-   ip_dst         4    destination IP address
-   sport          2    source port
-   dport          2    destination port
-   ip_len         4    IP length field
-   ip_proto       1    IP protocol
-   ip_id          2    IP ID
-   ip_frag        1    fragment descriptor
-                       ('F', 'f', or '.')
-   ip_fragoff     2    IP fragment offset field
-   tcp_seq        4    TCP seqnece number
-   tcp_ack        4    TCP ack number
-   tcp_flags      1    TCP flags
-   tcp_opt        ?    TCP options
-   tcp_sack       ?    TCP SACK options
-   payload_len    4    payload length
-   count          4    packet count
-
-Each field is Length bytes long. Variable-length fields have Length `C<?>' in
-the table; in a packet record, these fields consist of a single length byte,
-followed by that many bytes of data.
-
-The data stored in a metadata record is just an ASCII string, ending with
-newline, same as in a regular ASCII IPSummaryDump file. `C<!bad>' records, for
-example, are stored this way.
+The initial word of data contains the aggregate number, the second the
+count.
 
 =head1 CLICK
 
-The B<ipsumdump> program uses the Click modular router, an extensible
-system for processing packets. Click routers consist of C++ components
-called elements. While some elements run only in a Linux kernel, most can
+The B<ipaggcreate> program uses the Click modular router, an extensible
+system for processing packets.  Click routers consist of C++ components
+called elements.  While some elements run only in a Linux kernel, most can
 run either in the kernel or in user space, and there are user-level
 elements for reading packets from libpcap or from tcpdump files.
 
-B<Ipsumdump> creates and runs a simple user-level Click configuration.
-However, you don't need to install Click to run B<ipsumdump>; the
-F<libclick> directory contains all the relevant parts of Click, bundled
-into a library.
+B<Ipaggcreate> creates and runs a user-level Click configuration.  However,
+you don't need to install Click to run B<ipsumdump>; the F<libclick>
+directory contains all the relevant parts of Click, bundled into a library.
 
-If you're curious, try running `ipsumdump B<--config>' with some other
+If you're curious, try running `ipaggcreate B<--config>' with some other
 options to see the Click configuration B<ipsumdump> would run.
 
 This is, I think, a pleasant way to write a packet processor!
 
-=head1 COMPATIBILITY
-
-Version 1.0 of the IPSummaryDump file format expressed 'ip fragoff' fields
-in units of 8 bytes. In version 1.1 and later, these fields are expressed
-in bytes.
-
-The names of `C<!data>' fields were formerly printed in quotes, and could
-contain spaces, like the following:
-
-  !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'
-
-B<ipsumdump> still understands files with the old format.
-
 =head1 SEE ALSO
 
-tcpdump(1), tcpdpriv(1), click(1)
+tcpdump(1), tcpdpriv(1), click(1), ipsumdump(1)
 
-See http://www.pdos.lcs.mit.edu/click/ for more on Click.
+See http://www.pdos.csail.mit.edu/click/ for more on Click.
 
 =head1 AUTHOR
 
-Eddie Kohler <kohler@icir.org>, based on the Click modular router.
+Eddie Kohler <kohler@cs.ucla.edu>, based on the Click modular router.
 
-Extensive feedback and suggestions from Vern Paxson <vern@icir.org>.
 Anonymization algorithm from tcpdpriv(1) by Greg Minshall.

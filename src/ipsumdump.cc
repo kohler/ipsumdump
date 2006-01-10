@@ -39,7 +39,6 @@
 #include "fromipsumdump.hh"
 #include "toipsumdump.hh"
 #include "fromdevice.hh"
-#include <click/standard/drivermanager.hh>
 
 #define HELP_OPT		300
 #define VERSION_OPT		301
@@ -248,8 +247,8 @@ Data source options (give exactly one):\n\
   printf("\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
-  -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -b, --binary               Create binary output file.\n\
+  -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
       --no-promiscuous       Do not put interfaces into promiscuous mode.\n\

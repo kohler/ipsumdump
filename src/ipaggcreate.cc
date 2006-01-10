@@ -38,8 +38,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <click/standard/drivermanager.hh>
-
 #define HELP_OPT		300
 #define VERSION_OPT		301
 #define OUTPUT_OPT		302
@@ -56,9 +54,8 @@
 #define INTERVAL_OPT		315
 #define TIME_OFFSET_OPT		316
 #define BINARY_OPT		317
-#define TEXT_OPT		318
-#define START_TIME_OPT		319
-#define QUIET_OPT		320
+#define START_TIME_OPT		318
+#define QUIET_OPT		319
 
 // data sources
 #define INTERFACE_OPT		400
@@ -116,8 +113,7 @@ static Clp_Option options[] = {
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
-    { "binary", 'B', BINARY_OPT, 0, 0 },
-    { "text", 0, TEXT_OPT, 0, 0 },
+    { "binary", 'b', BINARY_OPT, 0, Clp_Negate },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
     { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
@@ -139,8 +135,8 @@ static Clp_Option options[] = {
     { "unidirectional-address-pairs", 0, AGG_UNI_ADDRPAIR_OPT, 0, 0 },
     { "uni-address-pairs", 0, AGG_UNI_ADDRPAIR_OPT, 0, 0 },
     
-    { "packets", 'p', AGG_PACKETS_OPT, 0, 0 },
-    { "bytes", 'b', AGG_BYTES_OPT, 0, 0 },
+    { "packets", 0, AGG_PACKETS_OPT, 0, 0 },
+    { "bytes", 'B', AGG_BYTES_OPT, 0, 0 },
     { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "interval", 't', INTERVAL_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "start-time", 0, START_TIME_OPT, CLP_TIMESTAMP_TYPE, 0 },
@@ -189,17 +185,9 @@ Aggregate categorization options (give exactly one):\n\
       --unidirectional-address-pairs  Aggregate by ordered IP address pairs.\n\
 \n", program_name);
     printf("\
-Aggregate options:\n\
-  -p, --packets              Count number of packets (default).\n\
-  -b, --bytes                Count number of bytes.\n\
-  -T, --time-offset TIME     Ignore first TIME in input.\n\
-      --start-time TIME      Ignore packets with timestamps before TIME.\n\
-  -t, --interval TIME        Output TIME worth of packets. Example: '1hr'.\n\
-      --limit-aggregates K   Stop once K aggregates are encountered.\n\
-      --split-aggregates K   Output new file every K aggregates.\n\
-      --split-time TIME      Output new file every TIME worth of packets.\n\
-      --split-packets N      Output new file every N packets.\n\
-      --split-bytes N        Output new file every N bytes.\n\
+Measurement options:\n\
+      --packets              Count packets (default).\n\
+  -B, --bytes                Count bytes.\n\
 \n");
     printf("\
 Data source options (give exactly one):\n\
@@ -216,8 +204,20 @@ Data source options (give exactly one):\n\
       --tcpdump-text         Read tcpdump(1) text output FILES.\n\
 \n");
     printf("\
+Limit and split options:\n\
+  -T, --time-offset TIME     Ignore first TIME in input.\n\
+      --start-time TIME      Ignore packets with timestamps before TIME.\n\
+  -t, --interval TIME        Output TIME worth of packets. Example: '1hr'.\n\
+      --limit-aggregates K   Stop once K aggregates are encountered.\n\
+      --split-time TIME      Output new file every TIME worth of packets.\n\
+      --split-aggregates K   Output new file every K aggregates.\n\
+      --split-packets N      Output new file every N packets.\n\
+      --split-bytes N        Output new file every N bytes.\n\
+\n");
+    printf("\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
+  -b, --binary               Output aggregate file in binary.\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
@@ -227,8 +227,6 @@ Other options:\n\
                              representing multiple packets (NetFlow only).\n\
       --collate              Collate packets from data sources by timestamp.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
-  -B, --binary               Output aggregate file in binary.\n\
-      --text                 Output aggregate file in ASCII text (default).\n\
   -q, --quiet                Do not print progress bar.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
@@ -505,11 +503,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case BINARY_OPT:
-	    binary = true;
-	    break;
-
-	  case TEXT_OPT:
-	    binary = false;
+	    binary = !clp->negated;
 	    break;
 
 	  case SAMPLE_OPT:

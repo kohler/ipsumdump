@@ -48,9 +48,10 @@ install: always @LIBCLICK_TARGET@ stamp-h
 	@$(MAKE) install-man
 install-libclick: always
 	@cd $(libclick) && $(MAKE) install
-install-man: $(srcdir)/ipsumdump.1
+install-man: $(srcdir)/ipsumdump.1 $(srcdir)/ipaggcreate.1
 	$(mkinstalldirs) $(mandir) $(mandir)/man1
 	$(INSTALL_DATA) $(srcdir)/ipsumdump.1 $(mandir)/man1/ipsumdump.1
+	$(INSTALL_DATA) $(srcdir)/ipaggcreate.1 $(mandir)/man1/ipaggcreate.1
 
 elemlist elemlists: always
 	@cd src && $(MAKE) elemlist
@@ -58,6 +59,9 @@ elemlist elemlists: always
 $(srcdir)/ipsumdump.1: $(srcdir)/ipsumdump.pod
 	pod2man --center ' ' --section 1 --release 'Version $(VERSION)' $(srcdir)/ipsumdump.pod > $(srcdir)/ipsumdump.1
 	perl -ni -e 'print unless /^\.if n \.na$$/;' $(srcdir)/ipsumdump.1
+$(srcdir)/ipaggcreate.1: $(srcdir)/ipaggcreate.pod
+	pod2man --center ' ' --section 1 --release 'Version $(VERSION)' $(srcdir)/ipaggcreate.pod > $(srcdir)/ipaggcreate.1
+	perl -ni -e 'print unless /^\.if n \.na$$/;' $(srcdir)/ipaggcreate.1
 always:
 	@:
 
@@ -112,7 +116,7 @@ distdir: $(srcdir)/configure
 	-rm -rf $(distdir)
 	mkdir $(distdir)
 	@-chmod 777 $(distdir)
-	$(MAKE) $(srcdir)/ipsumdump.1
+	$(MAKE) $(srcdir)/ipsumdump.1 $(srcdir)/ipaggcreate.1
 	@echo Copying files...
 	@for file in `cat $(srcdir)/DISTFILES`; do \
 	  d=$(srcdir); \

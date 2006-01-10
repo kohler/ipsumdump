@@ -338,6 +338,10 @@ C<2>.  For NetFlow summary logs, B<--link> uses the input interface number.
 
 Write the summary dump to I<file> instead of to the standard output.
 
+=item B<--binary>, B<-b>
+
+Write the summary dump in binary format. See below for more information.
+
 =item B<--write-tcpdump>=I<file>, B<-w> I<file>
 
 Write processed packets to a tcpdump(1) I<file> -- or to the standard
@@ -345,10 +349,6 @@ output, if I<file> is a single dash C<-> -- in addition to the usual
 summary output.  Options including B<--filter> and dump contents require
 IP; in the presence of these options, the output tcpdump(1) I<file> will
 contain only IP packets.  (ARP packets, for example, will not be written.)
-
-=item B<--binary>, B<-b>
-
-Write the summary dump in binary format. See below for more information.
 
 =item B<--filter>=I<filter>, B<-f> I<filter>
 
@@ -576,7 +576,7 @@ called elements. While some elements run only in a Linux kernel, most can
 run either in the kernel or in user space, and there are user-level
 elements for reading packets from libpcap or from tcpdump files.
 
-B<Ipsumdump> creates and runs a simple user-level Click configuration.
+B<Ipsumdump> creates and runs a user-level Click configuration.
 However, you don't need to install Click to run B<ipsumdump>; the
 F<libclick> directory contains all the relevant parts of Click, bundled
 into a library.
@@ -612,9 +612,9 @@ corrupt file, it may crash with a segmentation violation.
 
 =head1 SEE ALSO
 
-tcpdump(1), tcpdpriv(1), click(1)
+tcpdump(1), tcpdpriv(1), click(1), ipaggcreate(1)
 
-See http://www.pdos.lcs.mit.edu/click/ for more on Click.
+See http://www.pdos.csail.mit.edu/click/ for more on Click.
 
 =head1 AUTHOR
 

@@ -1,10 +1,11 @@
 Makefile.in
 NEWS
 README
-acclick.m4
 configure
 configure.in
 config.h.in
+ipaggcreate.pod
+ipaggcreate.1
 ipsumdump.pod
 ipsumdump.1
 
