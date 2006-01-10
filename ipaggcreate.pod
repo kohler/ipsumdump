@@ -8,56 +8,60 @@ ipaggcreate [B<-r> | B<-i> | B<--netflow-summary>] [B<--src>, B<--dst>, B<--spor
 
 =head1 DESCRIPTION
 
-B<THIS MANUAL PAGE IS WRONG WRONG WRONG>
-
 The B<ipaggcreate> program reads IP packets from one or more data sources,
-then summarizes those packets into a line-based ASCII file. The resulting
-summary dump is easy to process with text-based tools. (But see the
-B<--binary> option, which generates a smaller binary file.)
+categorizes the packets into aggregates (such as "all packets with source
+address 192.4.10.9" or "all packets with length 10"), and produces a file
+that reports the number of packets or bytes per aggregate.  The resulting
+file is easy to process with text-based tools.  (But see the B<--binary>
+option, which generates a compressed, quick-to-process binary file.)
 
-Here are a couple lines of B<ipsumdump> output, from `ipsumdump -sd
+Here are a couple lines of B<ipaggcreate> output, from `ipaggcreate -s
 /home/kohler/largedump.gz':
 
-  !IPSummaryDump 1.1
-  !creator "ipsumdump -sd /home/kohler/largedump.gz"
-  !host max.lcdf.org
-  !starttime 1000943858.353723 (Wed Sep 19 16:57:38 2001)
-  !data ip_src ip_dst
-  64.55.139.202 209.247.204.242
-  18.26.4.9 64.55.139.202
+  !IPAggregate 1.0
+  !creator "src/ipaggcreate -s /home/kohler/largedump.gz"
+  !counts packets
+  !times 976937726.638704 977337361.804592 399635.165888
+  !num_nonzero 1437
+  !ip
+  4.2.49.2 1
+  4.2.49.4 1
+  4.17.143.9 1
+  4.21.203.29 104
 
-The `B<-sd>' option, which is equivalent to `B<--src --dst>', tells
-B<ipsumdump> to log I<s>ource and I<d>estination IP addresses.
-`F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file. Each data
-line represents a packet; a space separates the two addresses. The
-`C<!data>' comment describes the contents of each data line.
+The `B<-s>' option, which is equivalent to `B<--src>', tells B<ipaggcreate>
+to categorize each packet by its I<s>ource IP address.
+`F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file.  Each data
+line represents an aggregate; the first field is the aggregate name (here,
+an IP source address), and the second field the number of packets in that
+aggregate.
 
 =head1 OPTIONS
 
 =head2 Data Sources
 
-Data source options tell B<ipsumdump> what kind of data source to use:
-tcpdump(1) files (B<--tcpdump>), live network interfaces (B<--interface>),
-NetFlow summary files (B<--netflow-summary>), or B<ipsumdump> output files
-(B<--ipsumdump>).
+Data source options tell B<ipaggcreate> what kind of data source to use:
+L<tcpdump(1)> raw-packet files (B<--tcpdump>), live network interfaces
+(B<--interface>), NetFlow summary files (B<--netflow-summary>),
+B<ipsumdump> output files (B<--ipsumdump>), DAG or NLANR-formatted files
+(B<--dag>, B<--nlanr>), or others.
 
 Non-option arguments specify the files, or interfaces, to read. For
-example, `ipsumdump B<-r> eth0 eth1' will read two tcpdump(1) files, named
-"eth0" and "eth1"; `ipsumdump B<-i> eth0 eth1' will read from two live
-network interfaces, "eth0" and "eth1".
+example, `ipaggcreate B<-r> eth0 eth1' will read two tcpdump(1) files,
+named "eth0" and "eth1"; `ipaggcreate B<-i> eth0 eth1' will read from two
+live network interfaces, "eth0" and "eth1".
 
-Options that read files -- B<--tcpdump>, B<--netflow-summary>, and
-B<--ipsumdump> -- read from the standard input when you supply a single
-dash C<-> as a filename, or when you give no filenames at all.
+Options that read files read from the standard input when you supply a
+single dash C<-> as a filename, or when you give no filenames at all.
 
 =over 4
 
 =item B<--tcpdump>, B<-r>
 
-Read from one or more tcpdump(1) files, and stop when all the files are
-exhausted. This is the default. Files (except for standard input) may be
-compressed by gzip(1) or bzip2(1); B<ipsumdump> will uncompress them on the
-fly.
+Read from one or more files produced by L<tcpdump(1)>'s B<-w> option (also
+known as "pcap files"). Stop when all the files are exhausted. This is the
+default. Files (except for standard input) may be compressed by gzip(1) or
+bzip2(1); B<ipsumdump> will uncompress them on the fly.
 
 =item B<--interface>, B<-i>
 
@@ -65,25 +69,6 @@ Read from live network interfaces. When run this way, B<ipsumdump> will
 continue until interrupted with SIGINT or SIGHUP. When stopped,
 B<ipsumdump> appends a comment to its output file, indicating how many
 packets were dropped by the kernel before output.
-
-=item B<--netflow-summary>
-
-Read from one or more NetFlow summary files. These are line-oriented ASCII
-files; blank lines, and lines starting with `!' or `#', are ignored. Other
-lines should contain 15 or more fields separated by vertical bars `|'.
-B<Ipsumdump> pays attention to some of these fields:
-
-  Field  Meaning                       Example
-  -----  ----------------------------  ----------
-  0      Source IP address             192.4.1.32
-  1      Destination IP address        18.26.4.44
-  5      Packet count in flow          5
-  6      Byte count in flow            10932
-  7      Flow timestamp (UNIX-style)   998006995
-  9      Source port                   3917
-  10     Destination port              80
-  13     IP protocol                   6
-  14     IP TOS bits                   0
 
 =item B<--ipsumdump>
 
@@ -93,145 +78,125 @@ specified by the input files are set to 0.
 =item B<--format>=I<format>
 
 Read from one or more B<ipsumdump> files, using the specified default
-format. The I<format> should be a space-separated list of content types;
+format.  The I<format> should be a space-separated list of content types;
 see L<ToIPSummaryDump(n)> for a list.
+
+=item B<--dag>[=I<encap>]
+
+Read from one or more DAG-formatted trace files.  For new-style ERF dumps,
+which contain encapsulation type information, just say B<--dag>.  For
+old-style dumps, you must supply the right I<encap> argument: C<ATM> for
+ATM RFC-1483 encapsulation (the most common), C<ETHER> for Ethernet, C<PPP>
+for PPP, C<IP> for raw IP, C<HDLC> for Cisco HDLC, C<PPP_HDLC> for PPP
+HDLC, or C<SUNATM> for Sun ATM.  See L<http://dag.cs.waikato.ac.nz/>.
+
+=item B<--nlanr>
+
+Read from one or more NLANR-formatted trace files (fr, fr+, or tsh
+format).  See L<http://pma.nlanr.net/Traces/>.
+
+=item B<--ip-addresses>
+
+Read files containing IP addresses, one address per line.  The aggregate
+categorization must be either an IP source or destination address.
+
+=item B<--tu-summary>
+
+Read TCP/UDP summary files.  Each line represents one packet, and carries
+the following information: timestamp, source address, source port,
+destination address, destination port, protocol, payload length.  For
+example:
+
+  976937735.345744 18.26.4.9 22 64.55.139.202 26876 T 0
+  976937770.197008 128.10.5.110 63749 64.55.139.202 113 T 5
+
+=item B<--bro-conn-summary>
+
+Read Bro connection summary files.  Each line represents one connection
+attempt, and carries the following information: timestamp, source address,
+destination address, direction (inbound/outbound).
+
+=item B<--netflow-summary>
+
+Read from one or more NetFlow summary files. These are line-oriented ASCII
+files; blank lines, and lines starting with '!' or '#', are ignored. Other
+lines should contain 15 or more fields separated by vertical bars '|'.
+B<Ipsumdump> pays attention to some of these fields:
+
+  Field  Meaning                       Example
+  -----  ----------------------------  ----------
+  0      Source IP address             192.4.1.32
+  1      Destination IP address        18.26.4.44
+  5      Packet count in flow          5
+  6      Byte count in flow            10932
+  7      Flow timestamp (UNIX-style)   998006995
+  8      Flow end timestamp            998006999
+  9      Source port                   3917
+  10     Destination port              80
+  12     TCP flags (OR of all pkts)    18
+  13     IP protocol                   6
+  14     IP TOS bits                   0
+
+=item B<--tcpdump-text>
+
+Read from one or more files containing L<tcpdump(1)> textual output.  It's
+much better to use the binary files produced by 'tcpdump B<-w>', but if
+someone threw those away and all you have is the ASCII output, you can
+still make do.  Only works with tcpdump versions 3.7 and earlier.
 
 =back
 
-=head2 Dump Contents
+=head2 Aggregate Category
 
-These options determine what actually goes in the dump; supply an arbitrary
-number of them. In the output, fields are separated by spaces. If you say
-`B<-sd>', for example -- or the equivalent `B<--src --dst>' -- the dump's
-data lines will contain an IP source address, a space, and an IP
-destination address:
-
-    192.168.1.101 18.26.4.44
-
-If you supply no dump content options, B<ipsumdump> will not create a
-summary dump. This may be useful if you're only interested in creating a
-tcpdump file with B<--write-tcpdump>.
+These options determine how packets are categorized into aggregates; you
+must supply at most one.
 
 =over 4
 
-=item B<--timestamp>, B<-t>
-
-Include packet timestamp in the dump. Example: C<1000212480.005813>.
-
 =item B<--src>, B<-s>
 
-Include IP source address in the dump. Example: C<192.168.1.101>.
+Aggregate by IP source address; all packets with the same source address
+form an aggregate.
 
 =item B<--dst>, B<-d>
 
-Include IP destination address in the dump. Example: C<18.26.4.44>.
-
-=item B<--sport>, B<-S>
-
-Include TCP or UDP source port in the dump. Example: C<8928>. For non-TCP
-or UDP packets, and for fragments after the first, this field is a single
-dash C<->.
-
-=item B<--dport>, B<-D>
-
-Include TCP or UDP destination port in the dump. Example: C<80>.
+Aggregate by IP destination address.  This is the default.
 
 =item B<--length>, B<-l>
 
-Include packet length in the dump, not including any link-level headers.
-Example: C<72>.
+Aggregate by IP length.
 
-=item B<--protocol>, B<-p>
+=item B<--ip> I<field>
 
-Include IP protocol in the dump. Can be C<T> for TCP, C<U> for UDP,
-C<I> for ICMP, or a number for some other protocol.
+Aggregate by the named IP field.  Examples include C<ip src> (equivalent to
+B<--src>), C<ip ttl>, C<ip off>, C<udp sport>, and so forth.  See
+L<AggregateIP(1)> for a full list.
 
-=item B<--id>
+=item B<--flows>
 
-Include IP ID field in the dump. Example: C<19371>.
+Aggregate by TCP or UDP flow, or, essentially, by end-to-end
+transport-level connection.  Two packets are part of the same aggregate if
+and only if they are part of the same TCP or UDP connection.  Each flow is
+assigned its own aggregate.  The aggregate number is not meaningful;
+non-TCP/UDP packets are ignored.
 
-=item B<--fragment>, B<-g>
+=item B<--unidirectional-flows>
 
-Include IP fragment test in the dump. The field value is C<F> for first
-fragments, C<f> for second and subsequent fragments, and C<.> (a single
-period) for nonfragments.
+Aggregate by unidirectional TCP or UDP flow.  Like B<--flows>, but packets
+from a single connection but heading in different directions are assigned
+different aggregates.
 
-=item B<--fragment-offset>, B<--fragoff>, B<-G>
+=item B<--address-pairs>
 
-Include IP fragment offset in the dump. The field value is the fragment
-offset in bytes, possibly followed by a C<+> suffix, indicating the MF
-(more fragments) flag. Examples: C<0+> (fragment offset 0, more fragments
-forthcoming), C<552> (fragment offset 552, this is the last fragment).
+Aggregate by address pair.  Two packets are part of the same aggregate if
+and only if they involve the same pair of IP addresses.  The aggregate
+number is not meaningful.
 
-=item B<--tcp-seq>, B<-Q>
+=item B<--unidirectional-address-pairs>
 
-Include TCP sequence number in the dump. Example: C<4009339012>. For
-non-TCP packets, and for fragments after the first, this field is a single
-dash C<->.
-
-=item B<--tcp-ack>, B<-K>
-
-Include TCP acknowledgement number in the dump. Example: C<4009339012>. For
-non-TCP packets, and for fragments after the first, this field is a single
-dash C<->.
-
-=item B<--tcp-flags>, B<-F>
-
-Include TCP flags byte in the dump. Each flag is represented by an
-uppercase letter. Example: C<PA> (PSH and ACK are on, everything else is
-off). If no flags are on, prints C<.> (a single period). For non-TCP
-packets, and for fragments after the first, this field is a single dash
-C<->.
-
-Flag characters are C<F> for FIN, C<S> for SYN, C<R> for RST, C<P> for PSH,
-C<A> for ACK, C<U> for URG, C<E> for ECE (flag bit 6), and C<W> for CWR
-(flag bit 7). Older versions printed a number between 0 and 255, or used
-characters C<X> and C<Y> for flag bits 6 and 7.
-
-=item B<--tcp-opt>, B<-O>
-
-Include TCP options in the dump. Single TCP option fields have the
-following representations:
-
-    EOL, NOP        No representation
-    MSS             `mss1400'
-    Window scale    `wscale10'
-    SACK permitted  `sackok'
-    SACK            `sack95:98'; each SACK block
-                    is listed separately
-    Timestamp       `ts669063908:38382731'
-    Other options   `98' (option 98, no data),
-                    `99=0:5:10' (option with data, data
-		    octets separated by colons)
-
-Multiple options are separated by commas. Any invalid option causes the entire
-field to be replaced by a single question mark `C<?>'. A period `C<.>' is used
-for packets with no options (except possibly EOL and NOP).
-
-=item B<--tcp-sack>
-
-Include SACK-related TCP options in the dump, using the format given under
-C<--tcp-opt>, above.
-
-=item B<--payload-length>, B<-L>
-
-Include length of packet payload in the dump. This is the length of the TCP
-or UDP payload, for TCP or UDP packets, or the length of the IP payload,
-for other IP packets. Example: C<1000>.
-
-=item B<--payload>
-
-Include the actual packet payload in the dump. This is the TCP or UDP
-payload, for TCP or UDP packets, or the IP payload, for other IP packets.
-Output as a double-quoted C string; non-ASCII characters, and double-quotes
-and backslashes, appear as C backslash escapes. Example: C<",25\r\n\000">.
-
-=item B<--packet-count>, B<-c>
-
-Include packet count in the dump. Some kinds of logs -- such as NetFlow
-summary logs -- record information about flows, not packets. A flow
-represents multiple packets; the packet count says exactly how many.
-Example: C<1>. See also B<--multipacket>, below.
+Aggregate by unidirectional address pair.  Two packets are part of the same
+aggregate if and only if their source addresses match and their destination
+address match.
 
 =back
 

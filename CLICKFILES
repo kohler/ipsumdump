@@ -16,12 +16,16 @@ elements/analysis/aggcounter.cc
 elements/analysis/aggcounter.hh
 elements/analysis/aggregateip.cc:s{"elements/ip/}{"}
 elements/analysis/aggregateip.hh:s{"elements/ip/}{"}
+elements/analysis/aggregateipaddrpair.cc
+elements/analysis/aggregateipaddrpair.hh
 elements/analysis/aggregateipflows.cc
 elements/analysis/aggregateipflows.hh
 elements/analysis/aggregatelen.cc
 elements/analysis/aggregatelen.hh
 elements/analysis/aggregatenotifier.cc
 elements/analysis/aggregatenotifier.hh
+elements/analysis/aggregatepaint.cc
+elements/analysis/aggregatepaint.hh
 elements/analysis/anonipaddr.cc
 elements/analysis/anonipaddr.hh
 elements/analysis/fromipsumdump.cc:s{"elements/userlevel/}{"}

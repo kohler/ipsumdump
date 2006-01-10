@@ -4,7 +4,7 @@
  * Eddie Kohler
  *
  * Copyright (c) 2001-4 International Computer Science Institute
- * Copyright (c) 2004-5 Regents of the University of California
+ * Copyright (c) 2004-6 Regents of the University of California
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -121,13 +121,13 @@ static Clp_Option options[] = {
 
     { "interface", 'i', INTERFACE_OPT, 0, 0 },
     { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
-    { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
-    { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
+    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
     { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
     { "dag", 0, READ_DAG_DUMP_OPT, Clp_ArgString, Clp_Optional },
     { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
-    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
+    { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+    { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
     
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -236,15 +236,14 @@ Options that determine summary dump contents (can give multiple options):\n\
 \n");
   printf("\
 Data source options (give exactly one):\n\
-  -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
-      --netflow-summary      Read summarized NetFlow FILES.\n\
-      --ipsumdump            Read from existing ipsumdump FILES.\n\
+  -r, --tcpdump              Read tcpdump(1) FILES (default).\n\
+  -i, --interface            Read network devices DEVNAMES until interrupted.\n\
+      --ipsumdump            Read existing ipsumdump FILES.\n\
       --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
-      --tcpdump-text         Read packets from tcpdump(1) text output FILES.\n\
-      --nlanr                Read packets from NLANR-format FILES (fr/fr+/tsh).\n\
-      --dag[=ENCAP]          Read packets from DAG-format FILES.\n\
-  -i, --interface            Read packets from network devices DEVNAMES until\n\
-                             interrupted.\n\
+      --dag[=ENCAP]          Read DAG-format FILES.\n\
+      --nlanr                Read NLANR-format FILES (fr/fr+/tsh).\n\
+      --netflow-summary      Read summarized NetFlow FILES.\n\
+      --tcpdump-text         Read tcpdump(1) text output FILES.\n\
 \n");
   printf("\
 Other options:\n\
@@ -626,7 +625,7 @@ main(int argc, char *argv[])
 	  case VERSION_OPT:
 	    printf("Ipsumdump %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
 	    printf("Copyright (c) 2001-2003 International Computer Science Institute\n\
-Copyright (c) 2004-2005 Regents of the University of California\n\
+Copyright (c) 2004-2006 Regents of the University of California\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

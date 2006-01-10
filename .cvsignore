@@ -3,4 +3,6 @@ stamp-h Makefile
 config.h config.log config.cache config.status
 conftest.*
 ipsumdump.1
+ipaggcreate.1
 autom4te*
+ipsumdump-*.tar.gz

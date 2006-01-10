@@ -7,12 +7,16 @@ aggcounter.cc
 aggcounter.hh
 aggregateip.cc
 aggregateip.hh
+aggregateipaddrpair.cc
+aggregateipaddrpair.hh
 aggregateipflows.cc
 aggregateipflows.hh
 aggregatelen.cc
 aggregatelen.hh
 aggregatenotifier.cc
 aggregatenotifier.hh
+aggregatepaint.cc
+aggregatepaint.hh
 changeuid.cc
 changeuid.hh
 classifier.cc
@@ -21,6 +25,8 @@ counter.cc
 counter.hh
 discard.cc
 discard.hh
+drivermanager.cc
+drivermanager.hh
 fakepcap.cc
 fakepcap.hh
 fromdagdump.cc
@@ -54,6 +60,8 @@ progressbar.cc
 progressbar.hh
 randomsample.cc
 randomsample.hh
+script.cc
+script.hh
 switch.cc
 switch.hh
 tee.cc

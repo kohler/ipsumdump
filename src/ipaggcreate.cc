@@ -3,8 +3,8 @@
  * ipsumdump.cc -- driver for the ipsumdump program
  * Eddie Kohler
  *
- * Copyright (c) 2001-4 International Computer Science Institute
- * Copyright (c) 2004-5 Regents of the University of California
+ * Copyright (c) 2001-2004 International Computer Science Institute
+ * Copyright (c) 2004-2006 Regents of the University of California
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,6 +28,7 @@
 #include <click/driver.hh>
 #include <click/straccum.hh>
 #include <click/handlercall.hh>
+#include <click/variableenv.hh>
 #include <click/master.hh>
 #include "aggcounter.hh"
 
@@ -101,16 +102,16 @@ static Clp_Option options[] = {
 
     { "interface", 'i', INTERFACE_OPT, 0, 0 },
     { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
-    { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
-    { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
-    { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
-    { "dag", 0, READ_DAG_DUMP_OPT, 0, 0 },
-    { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
+    { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
+    { "dag", 0, READ_DAG_DUMP_OPT, Clp_ArgString, Clp_Optional },
+    { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
     { "ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
     { "bro-conn-summary", 0, READ_BROCONN_OPT, 0, 0 },
+    { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
+    { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
     
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
@@ -153,9 +154,6 @@ static Clp_Option options[] = {
 };
 
 static const char *program_name;
-static Router *router = 0;
-static bool started = false;
-static bool agg_is_ip = false;
 
 void
 die_usage(String specific = String())
@@ -173,13 +171,14 @@ Try '%s --help' for more information.",
 void
 usage()
 {
-  printf("\
-'Ipaggcreate' reads IP packets from tcpdump(1) or other packet traces and\n\
-aggregates their contents into a simple file.\n\
+    printf("\
+'Ipaggcreate' reads IP packets from tcpdump(1) or other packet traces,\n\
+categorizes them into aggregates, and reports the count of packets or bytes per\n\
+aggregate into a simple file.\n\
 \n\
-Usage: %s [OPTIONS] [FILES] > AGGFILE\n\
+Usage: %s [OPTIONS] [-i DEVNAMES | FILES] > AGGFILE\n\
 \n\
-Aggregate options (give exactly one):\n\
+Aggregate categorization options (give exactly one):\n\
   -s, --src                  Aggregate by IP source address.\n\
   -d, --dst                  Aggregate by IP destination address (default).\n\
   -l, --length               Aggregate by IP length.\n\
@@ -188,37 +187,41 @@ Aggregate options (give exactly one):\n\
       --unidirectional-flows Aggregate by unidirectional flow ID.\n\
       --address-pairs        Aggregate by IP address pairs.\n\
       --unidirectional-address-pairs  Aggregate by ordered IP address pairs.\n\
-\n\
-Other aggregate options:\n\
+\n", program_name);
+    printf("\
+Aggregate options:\n\
   -p, --packets              Count number of packets (default).\n\
   -b, --bytes                Count number of bytes.\n\
   -T, --time-offset TIME     Ignore first TIME in input.\n\
+      --start-time TIME      Ignore packets with timestamps before TIME.\n\
   -t, --interval TIME        Output TIME worth of packets. Example: '1hr'.\n\
-      --start-time TIME\n\
       --limit-aggregates K   Stop once K aggregates are encountered.\n\
       --split-aggregates K   Output new file every K aggregates.\n\
       --split-time TIME      Output new file every TIME worth of packets.\n\
       --split-packets N      Output new file every N packets.\n\
       --split-bytes N        Output new file every N bytes.\n\
-\n\
+\n");
+    printf("\
 Data source options (give exactly one):\n\
-  -r, --tcpdump              Read packets from tcpdump(1) FILES (default).\n\
-      --netflow-summary      Read summarized NetFlow FILES.\n\
+  -r, --tcpdump              Read tcpdump(1) FILES (default).\n\
+  -i, --interface            Read network devices DEVNAMES until interrupted.\n\
       --ipsumdump            Read ipsumdump FILES.\n\
       --format FORMAT        Read ipsumdump FILES with format FORMAT.\n\
-      --tcpdump-text         Read packets from tcpdump(1) text output FILES.\n\
-      --nlanr                Read packets from NLANR-format FILES (fr/fr+/tsh).\n\
-      --dag                  Read packets from DAG-format FILES.\n\
-      --dag-ppp              Read packets from DAG-format FILES with PPP encap.\n\
-      --tu-summary           Read TU summary dump FILES.\n\
+      --dag[=ENCAP]          Read DAG-format FILES.\n\
+      --nlanr                Read NLANR-format FILES (fr/fr+/tsh).\n\
       --ip-addresses         Read a list of IP addresses, one per line.\n\
+      --tu-summary           Read TU summary dump FILES.\n\
       --bro-conn-summary     Read Bro connection summary FILES.\n\
-\n\
+      --netflow-summary      Read summarized NetFlow FILES.\n\
+      --tcpdump-text         Read tcpdump(1) text output FILES.\n\
+\n");
+    printf("\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
+      --no-promiscuous       Do not put interfaces into promiscuous mode.\n\
       --sample PROB          Sample packets with PROB probability.\n\
       --multipacket          Produce multiple entries for a flow identifier\n\
                              representing multiple packets (NetFlow only).\n\
@@ -232,22 +235,7 @@ Other options:\n\
   -h, --help                 Print this message and exit.\n\
   -v, --version              Print version number and exit.\n\
 \n\
-Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
-}
-
-// Stop the driver this many aggregate times to end the program.
-static int stop_driver_count = 1;
-
-static void
-catch_signal(int sig)
-{
-    signal(sig, SIG_DFL);
-    if (!started)
-	kill(getpid(), sig);
-    else {
-	DriverManager *dm = (DriverManager *)(router->attachment("DriverManager"));
-	router->set_runcount(dm->stopped_count() - stop_driver_count);
-    }
+Report bugs to <kohler@cs.ucla.edu>.\n");
 }
 
 static int
@@ -269,57 +257,6 @@ static int multi_output = -1;
 static Vector<String> output_calls;
 static bool binary = false;
 static bool collate = false;
-
-static int
-stop_handler(const String &s, Element *, void *, ErrorHandler *)
-{
-    int n = 1;
-    (void) cp_integer(cp_uncomment(s), &n);
-    router->adjust_runcount(-n);
-    return 0;
-}
-
-static int
-output_handler(const String &, Element *, void *, ErrorHandler *errh)
-{
-    if (multi_output >= 0)
-	multi_output++;		// files start from 1
-    
-    String tr_range = HandlerCall::call_read("tr.range", router->root_element());
-    String tr_interval = HandlerCall::call_read("tr.interval", router->root_element());
-    StringAccum bsa;
-    bsa << banner_sa << "!times " << cp_uncomment(tr_range) << " " << cp_uncomment(tr_interval) << "\n";
-    if (multi_output >= 0)
-	bsa << "!section " << multi_output << "\n";
-    (void) HandlerCall::call_write("ac.banner " + cp_quote(bsa.take_string()), router->root_element());
-
-    String cur_output = output;
-    if (multi_output >= 0) {
-	StringAccum sa;
-	if (char *x = sa.reserve(output.length() + 30)) {
-	    int len = sprintf(x, output.c_str(), multi_output);
-	    sa.forward(len);
-	} else
-	    return errh->error("out of memory!");
-	cur_output = sa.take_string();
-    }
-    AggregateCounter *ac = (AggregateCounter *)(router->find("ac"));
-    int result = 0;
-    if (multi_output < 0 || !ac->empty()) {
-	result = HandlerCall::call_write(ac, (binary ? "write_file" : (agg_is_ip ? "write_ip_file" : "write_text_file")), cp_quote(cur_output), errh);
-	if (result < 0)		// file errors are fatal
-	    catch_signal(SIGINT);
-    } else if (multi_output >= 0) // skip empty files
-	multi_output--;
-
-    (void) HandlerCall::call_write(ac, "clear");
-    (void) HandlerCall::call_write("tr.reset", router->root_element());
-
-    for (int i = 0; i < output_calls.size(); i++)
-	(void) HandlerCall::call_write(output_calls[i], router->root_element(), errh);
-    
-    return result;
-}
 
 static bool
 check_multi_output(const String &s)
@@ -358,11 +295,12 @@ struct Options {
     String filter;
     String filename;
     String ipsumdump_format;
+    String dag_encap;
     String time_config;
     Timestamp split_time;
     int nfiles;
 
-    enum { SAMPLED = 1, FILTERED = 2, TIMED = 4, SPLIT_TIMED = 8, MIRRORED = 16 };
+    enum { SAMPLED = 1, FILTERED = 2, TIMED = 4, MIRRORED = 8 };
 };
 
 static uint32_t
@@ -396,6 +334,8 @@ add_source(StringAccum &sa, int num, int action, const Options &opt)
 
       case READ_DAG_DUMP_OPT:
 	sa << "FromDAGDump(" << cp_quote(opt.filename);
+	if (opt.dag_encap)
+	    sa << ", ENCAP " << opt.dag_encap;
 	goto dump_common;
 
       case READ_DAG_PPP_DUMP_OPT:
@@ -411,11 +351,6 @@ add_source(StringAccum &sa, int num, int action, const Options &opt)
 	if (opt.time_config && opt.nfiles == 1) {
 	    sa << ", " << opt.time_config;
 	    result |= Options::TIMED;
-	}
-	if (opt.split_time && opt.nfiles == 1) {
-	    sa << ", END_CALL output";
-	    output_calls.push_back("src" + String(num) + ".extend_interval " + opt.split_time.unparse());
-	    result |= Options::SPLIT_TIMED;
 	}
 	if (opt.mmap >= 0)
 	    sa << ", MMAP " << opt.mmap;
@@ -474,7 +409,10 @@ main(int argc, char *argv[])
 
     String write_dump;
     //String output;
-    String agg, agg_flows;
+    String agg;
+    bool agg_flows = false;
+    bool agg_flows_addrpair = false;
+    bool agg_bidi = true;
     String aggctr_pb;
     uint32_t aggctr_limit_nnz = 0;
     uint32_t aggctr_limit_count = 0;
@@ -514,7 +452,6 @@ main(int argc, char *argv[])
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
 	  case READ_ASCII_TCPDUMP_OPT:
-	  case READ_DAG_DUMP_OPT:
 	  case READ_DAG_PPP_DUMP_OPT:
 	  case READ_NLANR_DUMP_OPT:
 	  case READ_TUDUMP_OPT:
@@ -526,6 +463,14 @@ main(int argc, char *argv[])
 	    action = opt;
 	    break;
 
+	case READ_DAG_DUMP_OPT:
+	    if (action)
+		die_usage("data source option already specified");
+	    action = opt;
+	    if (clp->have_arg)
+		options.dag_encap = clp->arg;
+	    break;
+	    
 	  case IPSUMDUMP_FORMAT_OPT:
 	    if (options.ipsumdump_format)
 		die_usage("'--format' already specified");
@@ -633,8 +578,9 @@ main(int argc, char *argv[])
 	  case AGG_UNI_ADDRPAIR_OPT:
 	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
-	    agg_flows = (opt == AGG_FLOWS_OPT || opt == AGG_UNI_FLOWS_OPT ? "PORTS true, " : "PORTS false, ");
-	    agg_flows += (opt == AGG_UNI_FLOWS_OPT || opt == AGG_UNI_ADDRPAIR_OPT ? "BIDI false" : "BIDI true");
+	    agg_flows = true;
+	    agg_flows_addrpair = (opt == AGG_ADDRPAIR_OPT || opt == AGG_UNI_ADDRPAIR_OPT);
+	    agg_bidi = (opt == AGG_FLOWS_OPT || opt == AGG_ADDRPAIR_OPT);
 	    break;
 
 	  case AGG_BYTES_OPT:
@@ -682,7 +628,7 @@ main(int argc, char *argv[])
 	  case VERSION_OPT:
 	    printf("Ipaggcreate %s (libclick-%s)\n", "0", CLICK_VERSION);
 	    printf("Copyright (c) 2001-2002 International Computer Science Institute\n\
-Copyright (c) 2005 Regents of the University of California\n\
+Copyright (c) 2004-2006 Regents of the University of California\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -834,12 +780,12 @@ particular purpose.\n");
     if (options.anonymize)
 	sa << "  -> anon :: AnonymizeIPAddr(CLASS 4, SEED false)\n";
     if ((options.time_config && !(all_source_flags & Options::TIMED))
-	|| (options.split_time && !(all_source_flags & Options::SPLIT_TIMED))) {
+	|| options.split_time) {
 	sa << "  -> time :: TimeFilter(";
 	if (options.time_config && !(all_source_flags & Options::TIMED))
 	    sa << options.time_config << ", ";
-	if (options.split_time && !(all_source_flags & Options::SPLIT_TIMED)) {
-	    sa << "END_CALL output";
+	if (options.split_time) {
+	    sa << "END_CALL trigger.run";
 	    output_calls.push_back("time.extend_interval " + options.split_time.unparse());
 	} else
 	    sa << "STOP true";
@@ -855,9 +801,15 @@ particular purpose.\n");
     }
     
     // elements to aggregate
-    if (agg_flows)
-	sa << "  -> AggregateIPFlows(" << agg_flows << ")\n";
-    else {
+    bool agg_is_ip = false;
+    if (agg_flows) {
+	if (agg_flows_addrpair)
+	    sa << "  -> AggregateIPAddrPair\n";
+	else
+	    sa << "  -> agg :: AggregateIPFlows\n";
+	if (!agg_bidi)
+	    sa << "  -> AggregatePaint(1, INCREMENTAL true)\n";
+    } else {
 	if (agg.substring(0, 6) == "ip src" || agg.substring(0, 6) == "ip dst")
 	    agg_is_ip = true;
 	sa << "  -> AggregateIP(" << agg;
@@ -867,21 +819,22 @@ particular purpose.\n");
     }
 
     // elements to count aggregates
-    sa << "  -> ac :: AggregateCounter(";
-    sa << (aggctr_pb ? aggctr_pb : String("BYTES false")) << ", IP_BYTES true";
+    if (!aggctr_pb)
+	aggctr_pb = "BYTES false";
+    sa << "  -> ac :: AggregateCounter(" << aggctr_pb << ", IP_BYTES true";
     if (aggctr_limit_nnz && multi_output >= 0) {
-	sa << ", AGGREGATE_CALL " << aggctr_limit_nnz << " output";
-	output_calls.push_back("ac.aggregate_call '" + String(aggctr_limit_nnz) + " output'");
+	sa << ", AGGREGATE_CALL " << aggctr_limit_nnz << " trigger.run";
+	output_calls.push_back("ac.aggregate_call '" + String(aggctr_limit_nnz) + " trigger.run'");
     } else if (aggctr_limit_nnz)
 	sa << ", AGGREGATE_STOP " << aggctr_limit_nnz;
     sa << ")\n";
 
     // remains
     if (aggctr_limit_count) {
-	sa << "  -> counter :: Counter(COUNT_CALL " << aggctr_limit_count << " output)\n";
+	sa << "  -> counter :: Counter(COUNT_CALL " << aggctr_limit_count << " trigger.run)\n";
 	output_calls.push_back("counter.reset");
     } else if (aggctr_limit_bytes) {
-	sa << "  -> counter :: Counter(BYTE_COUNT_CALL " << aggctr_limit_bytes << " output)\n";
+	sa << "  -> counter :: Counter(BYTE_COUNT_CALL " << aggctr_limit_bytes << " trigger.run)\n";
 	output_calls.push_back("counter.reset");
     }
     sa << "  -> tr :: TimeRange\n";
@@ -911,13 +864,52 @@ particular purpose.\n");
     // DriverManager
     if (!output)
 	output = "-";
-    stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
-    sa << "DriverManager(wait_stop " << (stop_driver_count - 1);
+    int stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
+    sa << "manager :: DriverManager(pause " << (stop_driver_count - 1);
     // manipulate progress bar
     if (!quiet)
-	sa << ", write_skip progress.mark_done";
-    sa << ", write_skip output);\n";
-    sa << "// Outside of ipaggcreate, try a handler like\n// 'write " << (binary ? "ac.write_file" : "ac.write_text_file") << " " << cp_quote(output) << "' instead of 'write_skip output'.\n";
+	sa << ", write progress.mark_done";
+    if (agg_flows && !agg_flows_addrpair)
+	sa << ", write agg.clear";
+    sa << ", write trigger.run, label stop);\n";
+
+    // Signals.  Do not catch SIGPIPE; it kills us immediately
+    sa << "Script(TYPE SIGNAL INT TERM, write manager.goto stop, exit);\n";
+
+    // write script
+    sa << "\ntrigger :: Script(TYPE PASSIVE";
+    if (multi_output >= 0)
+	sa << ",\n\tinit onum 0, goto done $(eq $(ac.nagg) 0),\n\tset onum $(add $onum 1)";
+
+    // banner
+    {
+	StringAccum bsa, argsa;
+	for (int i = 0; i < argc; i++)
+	    argsa << argv[i] << ' ';
+	argsa.pop_back();
+	bsa << "!creator " << cp_quote(argsa.take_string()) << "\n";
+	bsa << "!counts " << (aggctr_pb == "BYTES false" ? "packets\n" : "bytes\n");
+	sa << ",\n\twrite ac.banner \""
+	   << cp_expand_in_quotes(bsa.take_string(), '\"')
+	   << "!times $(tr.range) $(tr.interval)\\n";
+	if (multi_output >= 0)
+	    sa << "!section $onum\\n";
+	sa << "\"";
+    }
+
+    // write file
+    sa << ",\n\twrite ac.write_" << (binary ? "" : (agg_is_ip ? "ip_" : "text_")) << "file ";
+    if (multi_output < 0)
+	sa << cp_quote(output);
+    else
+	sa << "\"$(sprintf " << cp_quote(output) << " $onum)\"";
+    sa << ",\n\tgoto ok $(ge $? 0), write manager.goto stop, goto done";
+
+    sa << ",\n\tlabel ok, write ac.clear, write tr.reset";
+    for (int i = 0; i < output_calls.size(); i++)
+	sa << ",\n\twrite " << output_calls[i];
+    sa << ",\n\tlabel done";
+    sa << ");\n";
 
     // output config if required
     if (config) {
@@ -925,34 +917,15 @@ particular purpose.\n");
 	exit(0);
     }
 
-    // catch control-C
-    signal(SIGINT, catch_signal);
-    signal(SIGTERM, catch_signal);
-    // do NOT catch SIGPIPE; it kills us immediately
-
-    // initialize banner
-    {
-	StringAccum bsa;
-	for (int i = 0; i < argc; i++)
-	    bsa << argv[i] << ' ';
-	bsa.pop_back();
-	banner_sa << "!creator " << cp_quote(bsa.take_string()) << "\n";
-	banner_sa << "!counts " << (aggctr_pb == "BYTES false" ? "packets\n" : "bytes\n");
-    }
-
-    router->add_write_handler(0, "stop", stop_handler, 0);
-    router->add_write_handler(0, "output", output_handler, 0);
-    
     // lex configuration
     BailErrorHandler berrh(errh);
     VerboseFilterErrorHandler verrh(&berrh, ErrorHandler::ERRVERBOSITY_CONTEXT + 1);
-    router = click_read_router(sa.take_string(), true, (verbose ? errh : &verrh));
+    Router *router = click_read_router(sa.take_string(), true, (verbose ? errh : &verrh));
     if (!router)
 	exit(1);
     
     // run driver
     router->activate(errh);
-    started = true;
     router->master()->thread(0)->driver();
 
     // exit

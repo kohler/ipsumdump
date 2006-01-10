@@ -37,18 +37,16 @@ line represents a packet; a space separates the two addresses. The
 Data source options tell B<ipsumdump> what kind of data source to use:
 L<tcpdump(1)> raw-packet files (B<--tcpdump>), live network interfaces
 (B<--interface>), NetFlow summary files (B<--netflow-summary>),
-B<ipsumdump> output files (B<--ipsumdump>), or files containing
-B<tcpdump>'s textual output (B<--tcpdump-text>).
+B<ipsumdump> output files (B<--ipsumdump>), DAG or NLANR-formatted files
+(B<--dag>, B<--nlanr>), or others.
 
 Non-option arguments specify the files, or interfaces, to read. For
 example, 'ipsumdump B<-r> eth0 eth1' will read two tcpdump(1) files, named
 "eth0" and "eth1"; 'ipsumdump B<-i> eth0 eth1' will read from two live
 network interfaces, "eth0" and "eth1".
 
-Options that read files -- B<--tcpdump>, B<--netflow-summary>,
-B<--ipsumdump>, and B<--tcpdump-text> -- read from the standard input when
-you supply a single dash C<-> as a filename, or when you give no filenames
-at all.
+Options that read files read from the standard input when you supply a
+single dash C<-> as a filename, or when you give no filenames at all.
 
 =over 4
 
@@ -65,6 +63,31 @@ Read from live network interfaces. When run this way, B<ipsumdump> will
 continue until interrupted with SIGINT or SIGHUP. When stopped,
 B<ipsumdump> appends a comment to its output file, indicating how many
 packets were dropped by the kernel before output.
+
+=item B<--ipsumdump>
+
+Read from one or more B<ipsumdump> files. Any packet characteristics not
+specified by the input files are set to 0.
+
+=item B<--format>=I<format>
+
+Read from one or more B<ipsumdump> files, using the specified default
+format.  The I<format> should be a space-separated list of content types;
+see L<ToIPSummaryDump(n)> for a list.
+
+=item B<--dag>[=I<encap>]
+
+Read from one or more DAG-formatted trace files.  For new-style ERF dumps,
+which contain encapsulation type information, just say B<--dag>.  For
+old-style dumps, you must supply the right I<encap> argument: C<ATM> for
+ATM RFC-1483 encapsulation (the most common), C<ETHER> for Ethernet, C<PPP>
+for PPP, C<IP> for raw IP, C<HDLC> for Cisco HDLC, C<PPP_HDLC> for PPP
+HDLC, or C<SUNATM> for Sun ATM.  See L<http://dag.cs.waikato.ac.nz/>.
+
+=item B<--nlanr>
+
+Read from one or more NLANR-formatted trace files (fr, fr+, or tsh
+format).  See L<http://pma.nlanr.net/Traces/>.
 
 =item B<--netflow-summary>
 
@@ -87,37 +110,12 @@ B<Ipsumdump> pays attention to some of these fields:
   13     IP protocol                   6
   14     IP TOS bits                   0
 
-=item B<--ipsumdump>
-
-Read from one or more B<ipsumdump> files. Any packet characteristics not
-specified by the input files are set to 0.
-
-=item B<--format>=I<format>
-
-Read from one or more B<ipsumdump> files, using the specified default
-format.  The I<format> should be a space-separated list of content types;
-see L<ToIPSummaryDump(n)> for a list.
-
 =item B<--tcpdump-text>
 
 Read from one or more files containing L<tcpdump(1)> textual output.  It's
 much better to use the binary files produced by 'tcpdump B<-w>', but if
 someone threw those away and all you have is the ASCII output, you can
 still make do.  Only works with tcpdump versions 3.7 and earlier.
-
-=item B<--dag>[=I<encap>]
-
-Read from one or more DAG-formatted trace files.  For new-style ERF dumps,
-which contain encapsulation type information, just say B<--dag>.  For
-old-style dumps, you must supply the right I<encap> argument: C<ATM> for
-ATM RFC-1483 encapsulation (the most common), C<ETHER> for Ethernet, C<PPP>
-for PPP, C<IP> for raw IP, C<HDLC> for Cisco HDLC, C<PPP_HDLC> for PPP
-HDLC, or C<SUNATM> for Sun ATM.  See L<http://dag.cs.waikato.ac.nz/>.
-
-=item B<--nlanr>
-
-Read from one or more NLANR-formatted trace files (fr, fr+, or tsh
-format).  See L<http://pma.nlanr.net/Traces/>.
 
 =back
 

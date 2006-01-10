@@ -59,10 +59,11 @@ IPSUMDUMP_OBJS = \
 	$(IPSUMDUMP_ELEMENT_OBJS) ipsumdump.o sd_elements.o
 
 IPAGGCREATE_ELEMENT_OBJS = \
-	fromdagdump.o fromdump.o fromfile.o fromipsumdump.o \
+	fromdagdump.o fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
 	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o \
 	ipsumdumpinfo.o \
-	aggcounter.o aggregateip.o aggregateipflows.o aggregatelen.o \
+	aggcounter.o aggregateip.o aggregateipaddrpair.o aggregateipflows.o \
+	aggregatelen.o aggregatenotifier.o aggregatepaint.o \
 	anonipaddr.o classifier.o counter.o discard.o drivermanager.o \
 	fakepcap.o ipfieldinfo.o ipfilter.o ipmirror.o ipnameinfo.o \
 	progressbar.o randomsample.o script.o tee.o timefilter.o timerange.o \
