@@ -855,9 +855,10 @@ particular purpose.\n");
 	sa << ");\n";
     }
     
-    // DriverManager
-    if (!output)
-	output = "-";
+    // set-uid-root privilege
+    if (geteuid() != getuid() || getegid() != getgid())
+	sa << "ChangeUID();\n";
+    
     int stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
     sa << "manager :: DriverManager(pause " << (stop_driver_count - 1);
     // manipulate progress bar

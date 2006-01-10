@@ -1,6 +1,14 @@
 Ipsumdump NEWS
 
-Version 1.59
+Version 1.60   9.Jan.2006
+
+* Ipaggcreate works and is documented!
+
+* Extensive update of ipsumdump's internals to use new Click features,
+  including the Script element.  Please report any bugs you find.
+
+
+Version 1.59   26.Nov.2005
 
 * Add '--tcp-window' option.  Requested by Vern Paxson.
 
