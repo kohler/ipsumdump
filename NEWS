@@ -1,5 +1,13 @@
 Ipsumdump NEWS
 
+Version 1.61   17.Jan.2006
+
+* The '--payload-len' option will correctly report a 0 payload length when
+  the TCP header is broken.  Reported by Vern Paxson.
+
+* Include initial, undocumented version of ipaggmanip.
+
+
 Version 1.60   9.Jan.2006
 
 * Ipaggcreate works and is documented!
