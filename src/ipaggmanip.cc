@@ -84,7 +84,7 @@ static Clp_Option options[] = {
   { "read-file", 'r', READ_FILE_OPT, Clp_ArgString, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
   { "binary", 'B', BINARY_OPT, 0, 0 },
-  { "ascii", 'A', ASCII_OPT, 0, 0 },
+  { "text", 'A', ASCII_OPT, 0, 0 },
   { "ip", 0, ASCII_IP_OPT, 0, 0 },
   { "and", '&', AND_OPT, 0, 0 },
   { "or", '|', OR_OPT, 0, 0 },
@@ -159,7 +159,7 @@ die_usage(String specific = String())
     if (specific)
 	errh->error("%s: %s", program_name, specific.c_str());
     errh->fatal("Usage: %s ACTION [FILE]\n\
-Try `%s --help' for more information.",
+Try '%s --help' for more information.",
 		program_name, program_name);
     // should not get here, but just in case...
     exit(1);
@@ -169,48 +169,48 @@ static void
 usage()
 {
   printf("\
-'Aciri-aggmanip' reads a summary of aggregated IP data from a file, transforms\n\
+'Ipaggmanip' reads a summary of aggregated IP data from a file, transforms\n\
 that summary or calculates one of its statistics, and writes the result to\n\
 standard output.\n\
 \n\
 Usage: %s ACTION [ACTIONS...] [FILES] > OUTPUT\n\
 \n\
 Actions: (Results of final action sent to output.)\n\
-  -|, --or                   Combine all packets from FILES.\n\
-  -&, --and                  Combine FILES, but drop any address not present\n\
+  -|, --or                   Combine all packets from FILES.\n		\
+  -&, --and                  Combine FILES, but drop any aggregate not present\n\
                              in every file.\n\
       --and-list             Output results for FILE1, then FILE1 & FILE2,\n\
                              then FILE1 & FILE2 & FILE3, and so on.\n\
-      --minus                Drop any address in FILE1 present in any other\n\
+      --minus                Drop any aggregates in FILE1 present in any other\n\
                              FILE.\n\
-  -^, --xor                  Combine FILES, but drop any address present in\n\
+  -^, --xor                  Combine FILES, but drop any aggregate present in\n\
                              more than one FILE.\n\
   -e, --each                 Output result for each FILE separately.\n\
-      --assign-counts        Two FILEs with same -N. Assign address counts from\n\
-                             FILE1 randomly to addresses in FILE2.\n\
+      --assign-counts        Two FILEs with same -N. Assign counts from FILE1\n\
+                             to random aggregates in FILE2.\n\
   Also say \"'(+' FILE FILE ... ')'\" to --or particular files, or\n\
   \"'(&' FILE ... ')'\" for --and, \"'(-' FILE ... ')'\" for --minus,\n\
   \"'(^' FILE ... ')'\" for --xor.\n\
 \n\
-  -N, --num-active           Number of active addresses.\n\
+  -N, --num-active           Number of active aggregates.\n\
       --num-in-prefixes      Number of active p-aggregates for all p.\n\
       --num-in-left-prefixes Number of active left-hand p-aggregates for all p.\n\
-      --discriminating-prefix-counts   Number of active addresses with\n\
+      --discriminating-prefix-counts   Number of active aggregates with\n\
                              discriminating prefix p for all p.\n\
       --all-discriminating-prefix-counts   Number of active p-aggregates with\n\
                              p-discriminating prefix q for all p, q.\n\
-      --sizes                All active address sizes in address order.\n\
-      --sorted-sizes         All active address sizes in reverse size order.\n\
+      --sizes                All active aggregate sizes in address order.\n\
+      --sorted-sizes         All active aggregate sizes in reverse size order.\n\
       --size-counts          Counts of active aggregates with each size,\n\
                              in return-separated size-count pairs.\n\
-      --container-sizes P    Sizes of P-aggregates containing each address, in\n\
-                             address order.\n\
+      --container-sizes P    Sizes of P-aggregates containing each aggregate, in\n\
+                             aggregate order.\n\
       --balance P            Print left-right balance at prefix level P.\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
       --sample N             Reduce counts by randomly sampling 1 in N.\n\
       --cull-addresses N     Reduce --num-active to at most N by removing\n\
-                             randomly selected addresses.\n\
+                             randomly selected aggregates.\n\
       --cull-addresses-by-packets N   Reduce --num-active to at most N by\n\
                              removing randomly selected packets.\n\
       --cull-packets N       Reduce total number of packets to at most N by\n\
@@ -246,13 +246,13 @@ Actions: (Results of final action sent to output.)\n\
 Other options:\n\
   -r, --read FILE            Read summary from FILE (default stdin).\n\
   -o, --output FILE          Write output to FILE (default stdout).\n\
-  -B, --binary               Output binary (default).\n\
-  -A, --ascii                Output ASCII.\n\
-      --ip                   Output ASCII with IP addresses.\n\
+  -B, --binary               Output aggregate files in binary (default).\n\
+      --text                 Output aggregate files in ASCII.\n\
+      --ip                   Output aggregate files in ASCII with IP addresses.\n\
   -h, --help                 Print this message and exit.\n\
   -v, --version              Print version number and exit.\n\
 \n\
-Report bugs to <kohler@icir.org>.\n", program_name);
+Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
 }
 
 static void
@@ -317,7 +317,7 @@ parse_two_uints(Clp_Parser *clp, const char *arg, int complain, void *)
 		       0) >= 0)
 	return 1;
     else if (complain)
-	return Clp_OptionError(clp, "`%O' expects two unsigned integers separated by a comma, not `%s'", arg);
+	return Clp_OptionError(clp, "'%O' expects two unsigned integers separated by a comma, not '%s'", arg);
     else
 	return 0;
 }
@@ -634,7 +634,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 		      uint32_t v1 = (x1[i] << pdiff) | k;
 		      uint32_t v2 = (x2[i] << pdiff) | k;
 		      if (map_used[v1])
-			  errh->error("prefix `%s/%d' mapped twice in --remap-prefixes", IPAddress(htonl(v1 << (32 - max_p))).s().cc(), max_p);
+			  errh->error("prefix '%s/%d' mapped twice in --remap-prefixes", IPAddress(htonl(v1 << (32 - max_p))).s().cc(), max_p);
 		      map_used[v1]++;
 		      map[v1] = v2;
 		  }
@@ -644,7 +644,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      map_used.assign(1 << max_p, 0);
 	      for (uint32_t i = 0; i < (1U << max_p); i++) {
 		  if (map_used[i] == 1)
-		      errh->warning("prefix `%s/%d' repeatedly mapped to in --remap-prefixes", IPAddress(htonl(i << (32 - max_p))).s().cc(), max_p);
+		      errh->warning("prefix '%s/%d' repeatedly mapped to in --remap-prefixes", IPAddress(htonl(i << (32 - max_p))).s().cc(), max_p);
 		  map_used[i]++;
 	      }
 
@@ -892,7 +892,7 @@ main(int argc, char *argv[])
 
 	  case OUTPUT_OPT:
 	    if (output)
-		die_usage("`--output' already specified");
+		die_usage("'--output' already specified");
 	    output = clp->arg;
 	    break;
 
@@ -930,8 +930,9 @@ main(int argc, char *argv[])
 	    break;
 
 	  case VERSION_OPT:
-	    printf("aciri-aggmanip %s (libclick-%s)\n", "0.0", CLICK_VERSION);
-	    printf("Copyright (C) 2001 International Computer Science Institute\n\
+	    printf("ipaggmanip %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
+	    printf("Copyright (c) 2001-2003 International Computer Science Institute\n\
+Copyright (c) 2004-2006 Regents of the University of California\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -959,26 +960,26 @@ particular purpose.\n");
 	  case AGG_ADDRS_ACT:
 	  case CORR_SIZE_AGG_ADDR_ACT:
 	    if (clp->val.u > 32)
-		die_usage("`" + optname + "' must be between 0 and 32");
+		die_usage("'" + optname + "' must be between 0 and 32");
 	    add_action(opt, clp->val.u);
 	    break;
 
 	  case BALANCE_ACT:
 	  case ALL_BRANCHING_ACT:
 	    if (clp->val.u > 31)
-		die_usage("`" + optname + "' must be between 0 and 31");
+		die_usage("'" + optname + "' must be between 0 and 31");
 	    add_action(opt, clp->val.u);
 	    break;
 
 	  case FAKE_BY_BRANCHING_ACT:
 	    if (clp->val.u == 0 || clp->val.u > 4)
-		die_usage("`" + optname + "' must be between 1 and 4");
+		die_usage("'" + optname + "' must be between 1 and 4");
 	    add_action(opt, clp->val.u);
 	    break;
 
 	  case COND_SPLIT_ACT:
 	    if (clp->val.u < 1 || clp->val.u > 31)
-		die_usage("`--conditional-split-counts' arg must be between 1 and 31");
+		die_usage("'--conditional-split-counts' arg must be between 1 and 31");
 	    add_action(opt, clp->val.u);
 	    break;
 
@@ -988,19 +989,19 @@ particular purpose.\n");
 	  case CUT_LARGER_ADDR_AGG_ACT:
 	  case BALANCE_HISTOGRAM_ACT:
 	    if (clp->val.us[0] > 31)
-		die_usage("`" + optname + "' prefix must be between 0 and 31");
+		die_usage("'" + optname + "' prefix must be between 0 and 31");
 	    add_action(opt, clp->val.us[0], clp->val.us[1]);
 	    break;
 
 	  case BRANCHING_ACT:
 	    if (clp->val.us[1] < 1 || clp->val.us[0] + clp->val.us[1] > 32)
-		die_usage("bad `" + optname + "' args");
+		die_usage("bad '" + optname + "' args");
 	    add_action(opt, clp->val.us[0], clp->val.us[1]);
 	    break;
 
 	  case SAMPLE_ACT:
 	    if (clp->val.d < 0 || clp->val.d > 1)
-		die_usage("`" + optname + "' prob should be between 0 and 1");
+		die_usage("'" + optname + "' prob should be between 0 and 1");
 	    add_action(opt, (uint32_t) (clp->val.d * DOUBLE_FACTOR));
 	    break;
 	    
@@ -1016,7 +1017,7 @@ particular purpose.\n");
 	    if (!clp->have_arg)
 		clp->val.d = 1;	// random
 	    else if (clp->val.d < 0 || clp->val.d > 1)
-		die_usage("`" + optname + "' arg should be between 0 and 1");
+		die_usage("'" + optname + "' arg should be between 0 and 1");
 	    add_action(opt, (uint32_t) (clp->val.d * DOUBLE_FACTOR));
 	    break;
 
@@ -1075,7 +1076,7 @@ particular purpose.\n");
 
       case AND_LIST_OPT: {
 	  if (actions.back() < FIRST_END_ACT)
-	      errh->fatal("last action must not produce a tree with `--and-list'");
+	      errh->fatal("last action must not produce a tree with '--and-list'");
 	  AggregateTree tree;
 	  read_next_file(tree, errh);
 	  process_actions(tree, errh);
@@ -1125,7 +1126,7 @@ particular purpose.\n");
 
       case EACH_OPT: {
 	  if (actions.back() < FIRST_END_ACT)
-	      errh->fatal("last action must not produce a tree with `--each'");
+	      errh->fatal("last action must not produce a tree with '--each'");
 	  int ndone = 0;
 	  while (more_files()) {
 	      AggregateTree tree;
@@ -1140,7 +1141,7 @@ particular purpose.\n");
 
       case ASSIGN_COUNTS_OPT: {
 	  if (actions.back() >= FIRST_END_ACT)
-	      errh->fatal("last action must produce a tree with `--assign-counts'");
+	      errh->fatal("last action must produce a tree with '--assign-counts'");
 	  AggregateTree tree1, tree2;
 	  read_next_file(tree1, errh);
 	  process_tree_actions(tree1, errh);
@@ -1151,9 +1152,9 @@ particular purpose.\n");
 	      process_tree_actions(tree2, errh);
 	  }
 	  if (more_files())
-	      errh->fatal("`--assign-counts' takes exactly two trees");
+	      errh->fatal("'--assign-counts' takes exactly two trees");
 	  if (tree1.nnz() != tree2.nnz())
-	      errh->fatal("`--assign-counts' trees have different -N (%u vs. %u)", tree1.nnz(), tree2.nnz());
+	      errh->fatal("'--assign-counts' trees have different -N (%u vs. %u)", tree1.nnz(), tree2.nnz());
 
 	  Vector<uint32_t> sizes;
 	  tree1.active_counts(sizes);
@@ -1166,7 +1167,7 @@ particular purpose.\n");
 	  AggregateTree tree;
 	  read_next_file(tree, errh);
 	  if (more_files())
-	      errh->fatal("supply `--and', `--or', or `--each' with multiple files");
+	      errh->fatal("supply '--and', '--or', or '--each' with multiple files");
 	  process_actions(tree, errh);
 	  break;
       }

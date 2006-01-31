@@ -620,7 +620,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case VERSION_OPT:
-	    printf("Ipaggcreate %s (libclick-%s)\n", "0", CLICK_VERSION);
+	    printf("Ipaggcreate %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
 	    printf("Copyright (c) 2001-2002 International Computer Science Institute\n\
 Copyright (c) 2004-2006 Regents of the University of California\n\
 This is free software; see the source for copying conditions.\n\

@@ -72,6 +72,8 @@ IPAGGCREATE_ELEMENT_OBJS = \
 IPAGGCREATE_OBJS = \
 	$(IPAGGCREATE_ELEMENT_OBJS) ipaggcreate.o ac_elements.o
 
+IPAGGMANIP_OBJS = aggtree.o aggwtree.o ipaggmanip.o
+
 
 CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL
 CFLAGS = @CFLAGS@
@@ -87,7 +89,7 @@ CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(CXXFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) $(DEPCFLAGS)
 
-all: ipsumdump ipaggcreate
+all: ipsumdump ipaggcreate ipaggmanip
 all-local: ipsumdump ipaggcreate
 
 ipsumdump: $(IPSUMDUMP_OBJS) @CLICKLIBFILE@
@@ -95,6 +97,9 @@ ipsumdump: $(IPSUMDUMP_OBJS) @CLICKLIBFILE@
 
 ipaggcreate: $(IPAGGCREATE_OBJS) @CLICKLIBFILE@
 	$(CXXLINK) -rdynamic $(IPAGGCREATE_OBJS) $(LIBS)
+
+ipaggmanip: $(IPAGGMANIP_OBJS) @CLICKLIBFILE@
+	$(CXXLINK) -rdynamic $(IPAGGMANIP_OBJS) $(LIBS)
 
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	cd $(top_builddir) && \
