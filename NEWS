@@ -1,5 +1,9 @@
 Ipsumdump NEWS
 
+Version 1.62
+
+
+
 Version 1.61   17.Jan.2006
 
 * The '--payload-len' option will correctly report a 0 payload length when

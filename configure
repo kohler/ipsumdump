@@ -272,8 +272,8 @@ PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
 ac_unique_file="config.h.in"
-ac_subdirs_all="$ac_subdirs_all libclick-1.5pre"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ac_configure_args IPSUMDUMP_VERSION LIBCLICK_VERSION conf_auxdir subdirs LIBCLICK_TARGET CLICK_BUILDTOOL CLICK_COMPILE CLICKINCLUDES CLICKLIB CLICKLIBFILE clicksrcdir clickbuilddir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPCFLAGS CFLAGS_NDEBUG CPP CXX CXXFLAGS ac_ct_CXX CXXFLAGS_NDEBUG CXXCPP AR LD RANLIB STRIP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA INSTALL_IF_CHANGED AUTOCONF SUBMAKE LIBOBJS LTLIBOBJS'
+ac_subdirs_all="$ac_subdirs_all libclick-1.5.0"
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ac_configure_args IPSUMDUMP_VERSION LIBCLICK_VERSION conf_auxdir subdirs LIBCLICK_TARGET CLICK_BUILDTOOL CLICK_COMPILE CLICKINCLUDES CLICKLIB CLICKLIBFILE clicksrcdir clickbuilddir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPCFLAGS CFLAGS_NDEBUG CPP CXX CXXFLAGS ac_ct_CXX CXXFLAGS_NDEBUG CXXCPP AR LD RANLIB STRIP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA INSTALL_IF_CHANGED CLICKINSTALL AUTOCONF SUBMAKE GMAKE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1279,7 +1279,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-IPSUMDUMP_VERSION=1.61
+IPSUMDUMP_VERSION=1.62
 cat >>confdefs.h <<_ACEOF
 #define IPSUMDUMP_VERSION "$IPSUMDUMP_VERSION"
 _ACEOF
@@ -1287,10 +1287,10 @@ _ACEOF
 
 
 
-LIBCLICK_VERSION=1.5pre
+LIBCLICK_VERSION=1.5.0
 
 ac_aux_dir=
-for ac_dir in libclick-1.5pre $srcdir/libclick-1.5pre; do
+for ac_dir in libclick-1.5.0 $srcdir/libclick-1.5.0; do
   if test -f $ac_dir/install-sh; then
     ac_aux_dir=$ac_dir
     ac_install_sh="$ac_aux_dir/install-sh -c"
@@ -1306,8 +1306,8 @@ for ac_dir in libclick-1.5pre $srcdir/libclick-1.5pre; do
   fi
 done
 if test -z "$ac_aux_dir"; then
-  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in libclick-1.5pre $srcdir/libclick-1.5pre" >&5
-echo "$as_me: error: cannot find install-sh or install.sh in libclick-1.5pre $srcdir/libclick-1.5pre" >&2;}
+  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in libclick-1.5.0 $srcdir/libclick-1.5.0" >&5
+echo "$as_me: error: cannot find install-sh or install.sh in libclick-1.5.0 $srcdir/libclick-1.5.0" >&2;}
    { (exit 1); exit 1; }; }
 fi
 ac_config_guess="$SHELL $ac_aux_dir/config.guess"
@@ -1324,7 +1324,9 @@ ac_configure="$SHELL $ac_aux_dir/configure" # This should be Cygnus configure.
     ac_user_depcflags=; test -n "$DEPCFLAGS" && ac_user_depcflags=y
     ac_compile_with_warnings=y
 
-    conf_auxdir='$(top_srcdir)/libclick-'1.5pre
+    conf_auxdir='$(top_srcdir)/libclick-'1.5.0
+
+
 
 
 
@@ -1358,7 +1360,7 @@ test "x$prefix" = xNONE && prefix=$ac_default_prefix
 test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
 
 if test "$clickprefix" = NONE; then
-    LIBCLICK_TARGET=libclick-1.5pre
+    LIBCLICK_TARGET=libclick-1.5.0
     CLICK_BUILDTOOL='$(top_builddir)/'"$LIBCLICK_TARGET"'/click-buildtool'
     CLICK_COMPILE='$(top_builddir)/'"$LIBCLICK_TARGET"'/click-compile'
     CLICKINCLUDES='-I$(top_builddir)/'"$LIBCLICK_TARGET"'/include -I$(top_srcdir)/'"$LIBCLICK_TARGET"'/include'
@@ -1366,7 +1368,7 @@ if test "$clickprefix" = NONE; then
     CLICKLIBFILE=$CLICKLIB
 
 
-subdirs="$subdirs libclick-1.5pre"
+subdirs="$subdirs libclick-1.5.0"
 
 else
     LIBCLICK_TARGET=
@@ -2984,7 +2986,7 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
     if test -n "$GXX"; then
-	GXX_VERSION=`$CXX --version | head -1 | sed 's/^[^0-9]*\([0-9.]*\).*/\1/'`
+	GXX_VERSION=`$CXX --version | head -n 1 | sed 's/^[^0-9]*\([0-9.]*\).*/\1/'`
 	GXX_MAJOR=`echo $GXX_VERSION | sed 's/\..*//'`
 	GXX_MINOR=`echo $GXX_VERSION | sed 's/^[^.]*\.\([^.]*\).*/\1/'`
 
@@ -3155,7 +3157,7 @@ _ACEOF
 
     ac_base_cxx="$CXX"
     test -z "$ac_user_cxx" -a -n "$GXX" -a -n "$ac_compile_with_warnings" && \
-	CXX="$CXX $CXX_WARNINGS -fno-exceptions -fno-rtti $VTABLE_THUNKS"
+	CXX="$CXX $CXX_WARNINGS $VTABLE_THUNKS"
 
     CXXFLAGS_NDEBUG=`echo "$CXXFLAGS" | sed 's/-g//'`
 
@@ -3639,11 +3641,13 @@ echo $ECHO_N "checking whether install accepts -C... $ECHO_C" >&6
 	echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
     else
-	INSTALL_IF_CHANGED='$(INSTALL)'
+	INSTALL_IF_CHANGED='$(top_builddir)/installch'
 	echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
     fi
     rm -f conftest.1 conftest.2
+
+    CLICKINSTALL=`echo "$INSTALL" | sed 's|^\$(.*)/|\$(clickdatadir)/|'`
 
 
 
@@ -3651,7 +3655,7 @@ echo "${ECHO_T}no" >&6
 echo $ECHO_N "checking for working autoconf... $ECHO_C" >&6
     AUTOCONF="${AUTOCONF-autoconf}"
     if ($AUTOCONF --version) < /dev/null > conftest.out 2>&1; then
-	if test `head -1 conftest.out | sed 's/.*2\.\([0-9]*\).*/\1/'` -ge 13 2>/dev/null; then
+	if test `head -n 1 conftest.out | sed 's/.*2\.\([0-9]*\).*/\1/'` -ge 13 2>/dev/null; then
 	    echo "$as_me:$LINENO: result: found" >&5
 echo "${ECHO_T}found" >&6
 	else
@@ -3690,6 +3694,7 @@ echo "${ECHO_T}$ac_cv_gnu_make" >&6
 
     SUBMAKE=''
     test -n "$GMAKE" -a "$GMAKE" != make && SUBMAKE="MAKE = $GMAKE"
+
 
 
 
@@ -4227,7 +4232,7 @@ cat >>$CONFIG_STATUS <<_ACEOF
 # INIT-COMMANDS section.
 #
 
-GMAKE="$GMAKE"; LIBCLICK_VERSION="1.5pre"
+GMAKE="$GMAKE"; LIBCLICK_VERSION="1.5.0"
 
 _ACEOF
 
@@ -4363,8 +4368,10 @@ s,@INSTALL_PROGRAM@,$INSTALL_PROGRAM,;t t
 s,@INSTALL_SCRIPT@,$INSTALL_SCRIPT,;t t
 s,@INSTALL_DATA@,$INSTALL_DATA,;t t
 s,@INSTALL_IF_CHANGED@,$INSTALL_IF_CHANGED,;t t
+s,@CLICKINSTALL@,$CLICKINSTALL,;t t
 s,@AUTOCONF@,$AUTOCONF,;t t
 s,@SUBMAKE@,$SUBMAKE,;t t
+s,@GMAKE@,$GMAKE,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF
@@ -4943,7 +4950,7 @@ esac
 echo "$as_me: executing $ac_dest commands" >&6;}
   case $ac_dest in
     default-1 ) for ac_file in $CONFIG_FILES; do
-  test -z "$GMAKE" && echo $ac_file | grep Makefile >/dev/null && $ac_given_srcdir/libclick-1.5pre/missing gmake $ac_file
+  test -z "$GMAKE" && echo $ac_file | grep Makefile >/dev/null && $ac_given_srcdir/libclick-1.5.0/missing gmake $ac_file
 done ;;
   esac
 done
