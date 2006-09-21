@@ -4,6 +4,7 @@
 #include <click/error.hh>
 #include <cstdio>
 class AggregateWTree;
+struct AggregateWTree_WNode;
 
 class AggregateTree { public:
 
@@ -71,7 +72,10 @@ class AggregateTree { public:
     struct Node {
 	uint32_t aggregate;
 	uint32_t count;
-	Node *child[2];
+	union {
+	    Node *child[2];
+	    AggregateWTree_WNode *wchild[2];
+	};
     };
 
   private:

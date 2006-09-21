@@ -330,9 +330,9 @@ read_aggregates(AggregateTree &tree, String &name, ErrorHandler *errh)
 	f = stdin;
 	name = "<stdin>";
     } else
-	f = fopen(name.cc(), "rb");
+	f = fopen(name.c_str(), "rb");
     if (!f)
-	errh->fatal("%s: %s", name.cc(), strerror(errno));
+	errh->fatal("%s: %s", name.c_str(), strerror(errno));
     tree.read_file(f, errh);
     if (f != stdin)
 	fclose(f);
@@ -634,7 +634,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 		      uint32_t v1 = (x1[i] << pdiff) | k;
 		      uint32_t v2 = (x2[i] << pdiff) | k;
 		      if (map_used[v1])
-			  errh->error("prefix '%s/%d' mapped twice in --remap-prefixes", IPAddress(htonl(v1 << (32 - max_p))).s().cc(), max_p);
+			  errh->error("prefix '%s/%d' mapped twice in --remap-prefixes", IPAddress(htonl(v1 << (32 - max_p))).s().c_str(), max_p);
 		      map_used[v1]++;
 		      map[v1] = v2;
 		  }
@@ -644,7 +644,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      map_used.assign(1 << max_p, 0);
 	      for (uint32_t i = 0; i < (1U << max_p); i++) {
 		  if (map_used[i] == 1)
-		      errh->warning("prefix '%s/%d' repeatedly mapped to in --remap-prefixes", IPAddress(htonl(i << (32 - max_p))).s().cc(), max_p);
+		      errh->warning("prefix '%s/%d' repeatedly mapped to in --remap-prefixes", IPAddress(htonl(i << (32 - max_p))).s().c_str(), max_p);
 		  map_used[i]++;
 	      }
 
@@ -1132,7 +1132,7 @@ particular purpose.\n");
 	      AggregateTree tree;
 	      read_next_file(tree, errh);
 	      if (ndone > 0 || more_files())
-		  fprintf(out, "# %s\n", last_filename.cc());
+		  fprintf(out, "# %s\n", last_filename.c_str());
 	      process_actions(tree, errh);
 	      ndone++;
 	  }

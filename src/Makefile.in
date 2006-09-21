@@ -90,7 +90,7 @@ CXXLINK = $(CXXLD) $(CXXFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) $(DEPCFLAGS)
 
 all: ipsumdump ipaggcreate ipaggmanip
-all-local: ipsumdump ipaggcreate
+all-local: ipsumdump ipaggcreate ipaggmanip
 
 ipsumdump: $(IPSUMDUMP_OBJS) @CLICKLIBFILE@
 	$(CXXLINK) -rdynamic $(IPSUMDUMP_OBJS) $(LIBS)
@@ -119,10 +119,11 @@ ac_elements.cc: ac_elements.conf $(CLICK_BUILDTOOL)
 	$(CLICK_BUILDTOOL) elem2export -S < ac_elements.conf > ac_elements.cc
 	@rm -f ac_elements.d
 
-install: ipsumdump ipaggcreate
+install: ipsumdump ipaggcreate ipaggmanip
 	$(mkinstalldirs) $(bindir)
 	$(INSTALL) ipsumdump $(bindir)/ipsumdump
 	$(INSTALL) ipaggcreate $(bindir)/ipaggcreate
+	$(INSTALL) ipaggmanip $(bindir)/ipaggmanip
 
 always:
 	@:

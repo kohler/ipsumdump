@@ -2,13 +2,19 @@
 #define AGGWTREE_HH
 #include "aggtree.hh"
 
+struct AggregateWTree_WNode : public AggregateTree::Node {
+    uint32_t full_count;
+    int depth;
+};
+
 class AggregateWTree { public:
 
-    static const int COUNT_ADDRS = 0;
-    static const int COUNT_PACKETS = 1;
-    static const int LEAF = 16;
-    static const int COUNT_ADDRS_LEAF = COUNT_ADDRS | LEAF;
-    struct WNode;
+    enum {
+	COUNT_ADDRS = 0, COUNT_PACKETS = 1, LEAF = 16,
+	COUNT_ADDRS_LEAF = COUNT_ADDRS | LEAF
+    };
+    typedef AggregateTree::Node Node;
+    typedef AggregateWTree_WNode WNode;
 
     AggregateWTree(int count_what);
     AggregateWTree(const AggregateWTree &);
@@ -48,14 +54,6 @@ class AggregateWTree { public:
     int write_hex_file(FILE *, ErrorHandler *) const;
 
     AggregateWTree &operator=(const AggregateWTree &);
-
-    typedef AggregateTree::Node Node;
-    struct WNode : public Node {
-	uint32_t full_count;
-	int depth;
-	inline WNode *child(int w) const;
-	inline WNode *&child(int w);
-    };
 
   public:
     
@@ -97,25 +95,11 @@ class AggregateWTree { public:
 };
 
 inline AggregateWTree::WNode *
-AggregateWTree::WNode::child(int w) const
-{
-    assert(w == 0 || w == 1);
-    return (WNode *) Node::child[w];
-}
-
-inline AggregateWTree::WNode *&
-AggregateWTree::WNode::child(int w)
-{
-    assert(w == 0 || w == 1);
-    return (WNode *&) Node::child[w];
-}
-
-inline AggregateWTree::WNode *
 AggregateWTree::new_node()
 {
     if (_free) {
 	WNode *n = _free;
-	_free = n->child(0);
+	_free = n->wchild[0];
 	return n;
     } else
 	return new_node_block();
@@ -124,7 +108,7 @@ AggregateWTree::new_node()
 inline void
 AggregateWTree::free_node(WNode *n)
 {
-    n->child(0) = _free;
+    n->wchild[0] = _free;
     _free = n;
 }
 
