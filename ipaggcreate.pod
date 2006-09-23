@@ -9,11 +9,11 @@ ipaggcreate [B<-r> | B<-i> | B<--netflow-summary>] [B<--src>, B<--dst>, B<--spor
 =head1 DESCRIPTION
 
 The B<ipaggcreate> program reads IP packets from one or more data sources,
-categorizes the packets into aggregates (such as "all packets with source
-address 192.4.10.9" or "all packets with length 10"), and produces a file
-that reports the number of packets or bytes per aggregate.  The resulting
-file is easy to process with text-based tools.  (But see the B<--binary>
-option, which generates a compressed, quick-to-process binary file.)
+maps each packet to a label (such as "source address 192.4.10.9" or "length
+10"), and outputs a simply-formatted "aggregate" file reporting the number
+of packets or bytes observed per label.  The resulting file is easy to
+process with text-based tools.  (But see the B<--binary> option, which
+generates a compressed, quick-to-process binary file.)
 
 Here are a couple lines of B<ipaggcreate> output, from `ipaggcreate -s
 /home/kohler/largedump.gz':
@@ -32,9 +32,9 @@ Here are a couple lines of B<ipaggcreate> output, from `ipaggcreate -s
 The `B<-s>' option, which is equivalent to `B<--src>', tells B<ipaggcreate>
 to categorize each packet by its I<s>ource IP address.
 `F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file.  Each data
-line represents an aggregate; the first field is the aggregate name (here,
-an IP source address), and the second field the number of packets in that
-aggregate.
+line represents a label; the first field is the label number (here, an IP
+source address), and the second field the number of packets that had that
+label.  Labels with 0 counts are not reported.
 
 =head1 OPTIONS
 
@@ -97,8 +97,8 @@ format).  See L<http://pma.nlanr.net/Traces/>.
 
 =item B<--ip-addresses>
 
-Read files containing IP addresses, one address per line.  The aggregate
-categorization must be either an IP source or destination address.
+Read files containing IP addresses, one address per line.  The label
+must be either --src or --dst.
 
 =item B<--tu-summary>
 
@@ -146,56 +146,56 @@ still make do.  Only works with tcpdump versions 3.7 and earlier.
 
 =back
 
-=head2 Aggregate Category
+=head2 Label
 
-These options determine how packets are categorized into aggregates; you
-must supply at most one.
+These options determine how packets are labeled; you can supply at most
+one.
 
 =over 4
 
 =item B<--src>, B<-s>
 
-Aggregate by IP source address; all packets with the same source address
+Label by IP source address; all packets with the same source address
 form an aggregate.
 
 =item B<--dst>, B<-d>
 
-Aggregate by IP destination address.  This is the default.
+Label by IP destination address.  This is the default.
 
 =item B<--length>, B<-l>
 
-Aggregate by IP length.
+Label by IP length.
 
 =item B<--ip> I<field>
 
-Aggregate by the named IP field.  Examples include C<ip src> (equivalent to
+Label by the named IP field.  Examples include C<ip src> (equivalent to
 B<--src>), C<ip ttl>, C<ip off>, C<udp sport>, and so forth.  See
 L<AggregateIP(1)> for a full list.
 
 =item B<--flows>
 
-Aggregate by TCP or UDP flow, or, essentially, by end-to-end
-transport-level connection.  Two packets are part of the same aggregate if
+Label by TCP or UDP flow, or, essentially, by end-to-end
+transport-level connection.  Two packets have the same label if
 and only if they are part of the same TCP or UDP connection.  Each flow is
-assigned its own aggregate.  The aggregate number is not meaningful;
+assigned its own label.  The label number is not meaningful;
 non-TCP/UDP packets are ignored.
 
 =item B<--unidirectional-flows>
 
-Aggregate by unidirectional TCP or UDP flow.  Like B<--flows>, but packets
+Label by unidirectional TCP or UDP flow.  Like B<--flows>, but packets
 from a single connection but heading in different directions are assigned
-different aggregates.
+different labels.
 
 =item B<--address-pairs>
 
-Aggregate by address pair.  Two packets are part of the same aggregate if
-and only if they involve the same pair of IP addresses.  The aggregate
+Label by address pair.  Two packets have the same label if
+and only if they involve the same pair of IP addresses.  The label
 number is not meaningful.
 
 =item B<--unidirectional-address-pairs>
 
-Aggregate by unidirectional address pair.  Two packets are part of the same
-aggregate if and only if their source addresses match and their destination
+Label by unidirectional address pair.  Two packets have the same
+label if and only if their source addresses match and their destination
 address match.
 
 =back
@@ -208,14 +208,13 @@ These options specify whether B<ipaggcreate> should count packets or bytes.
 
 =item B<--packets>
 
-Count packets: the output file will report the number of packets in each
-aggregate.  This is the default.
+Count packets: the output file will report the number of packets per label.
+This is the default.
 
 =item B<--bytes>, B<-B>
 
-Count bytes: the output file will report the number of bytes in each
-aggregate.  This number includes IP and transport headers, but not any link
-headers.
+Count bytes: the output file will report the number of bytes per label.
+This number includes IP and transport headers, but not any link headers.
 
 =back
 
@@ -245,11 +244,11 @@ That is, if the first recorded packet has timestamp T, then B<ipaggcreate>
 will exit just before the first packet with timestamp T+I<time>, or the end
 of the trace, whichever comes first.
 
-=item B<--limit-aggregates>=B<count>
+=item B<--limit-labels>=B<count>
 
-Stop after recording information for B<count> aggregates.  That is, exit
-just before encountering a packet with the B<count>+1 different aggregate,
-or at the end of the trace, whichever comes first.
+Stop after recording information for B<count> distinct labels.  That is,
+exit just before encountering a packet with the B<count>+1 different
+label, or at the end of the trace, whichever comes first.
 
 =back
 
@@ -267,10 +266,10 @@ and so forth.
 Start a new output file every B<time> period.  That is, each file will
 contain data for at most B<time> worth of packets.
 
-=item B<--split-aggregates>=B<count>
+=item B<--split-labels>=B<count>
 
-Start a new output file every B<count> aggregates.  That is, each file will
-contain at most B<count> different aggregates.
+Start a new output file every B<count> distinct labels.  That is, each file
+will contain at most B<count> different labels.
 
 =item B<--split-packets>=B<count>
 
@@ -396,12 +395,11 @@ of binary records (in big-endian or little-endian order, respectively).
 Each record is 8 bytes long, and looks like this:
 
    +---------------+---------------+
-   | aggregate num |     count     |
+   |     label     |     count     |
    +---------------+---------------+
     <---4 bytes---> <---4 bytes--->
 
-The initial word of data contains the aggregate number, the second the
-count.
+The initial word of data contains the label number, the second the count.
 
 =head1 CLICK
 

@@ -21,7 +21,7 @@ typedef AggregateWTree::WNode WNode;
 // AggregateTree methods
 
 AggregateTree::AggregateTree(const AggregateWTree &o)
-    : _free(0)
+    : _free(0), _read_format(o._read_format)
 {
     initialize_root();
     copy_nodes(o._root);
@@ -33,6 +33,7 @@ AggregateTree::operator=(const AggregateWTree &o)
     kill_all_nodes();
     initialize_root();
     copy_nodes(o._root);
+    _read_format = o._read_format;
     return *this;
 }
 
@@ -72,14 +73,14 @@ AggregateWTree::set_count_type(int count_what)
 }
 
 AggregateWTree::AggregateWTree(int count_what)
-    : _free(0)
+    : _free(0), _read_format(AggregateTree::WR_UNKNOWN)
 {
     set_count_type(count_what);
     initialize_root();
 }
 
 AggregateWTree::AggregateWTree(const AggregateTree &o, int count_what)
-    : _free(0)
+    : _free(0), _read_format(o._read_format)
 {
     set_count_type(count_what);
     initialize_root();
@@ -87,7 +88,8 @@ AggregateWTree::AggregateWTree(const AggregateTree &o, int count_what)
 }
 
 AggregateWTree::AggregateWTree(const AggregateWTree &o)
-    : _free(0), _count_type(o._count_type), _topheavy(o._topheavy)
+    : _free(0), _count_type(o._count_type), _topheavy(o._topheavy),
+      _read_format(o._read_format)
 {
     initialize_root();
     copy_nodes(o._root);
@@ -106,6 +108,7 @@ AggregateWTree::operator=(const AggregateWTree &o)
 	initialize_root();
 	_count_type = o._count_type;
 	copy_nodes(o._root);
+	_read_format = o._read_format;
     }
     return *this;
 }
@@ -842,21 +845,22 @@ AggregateWTree::fake_by_dirichlet(uint32_t nnz)
 // READING AND WRITING
 //
 
-static void
-read_packed_file(FILE *f, AggregateWTree *tree, int file_byte_order)
+void
+AggregateWTree::read_packed_file(FILE *f, int file_byte_order)
 {
     uint32_t ubuf[BUFSIZ];
+    _read_format = AggregateTree::WR_BINARY;
     if (file_byte_order == CLICK_BYTE_ORDER) {
 	while (!feof(f) && !ferror(f)) {
 	    size_t howmany = fread(ubuf, 8, BUFSIZ / 2, f);
 	    for (size_t i = 0; i < howmany; i++)
-		tree->add(ubuf[2*i], ubuf[2*i + 1]);
+		add(ubuf[2*i], ubuf[2*i + 1]);
 	}
     } else {
 	while (!feof(f) && !ferror(f)) {
 	    size_t howmany = fread(ubuf, 8, BUFSIZ / 2, f);
 	    for (size_t i = 0; i < howmany; i++)
-		tree->add(bswap_32(ubuf[2*i]), bswap_32(ubuf[2*i + 1]));
+		add(bswap_32(ubuf[2*i]), bswap_32(ubuf[2*i + 1]));
 	}
     }
 }
@@ -866,21 +870,24 @@ AggregateWTree::read_file(FILE *f, ErrorHandler *errh)
 {
     char s[BUFSIZ];
     uint32_t agg, value, b[4];
+    _read_format = AggregateTree::WR_ASCII;
     while (fgets(s, BUFSIZ, f)) {
 	if (strlen(s) == BUFSIZ - 1 && s[BUFSIZ - 2] != '\n')
 	    return errh->error("line too long");
 	if (s[0] == '$' || s[0] == '!') {
 	    if (strcmp(s + 1, "packed\n") == 0)
-		read_packed_file(f, this, CLICK_BYTE_ORDER);
+		read_packed_file(f, CLICK_BYTE_ORDER);
 	    else if (strcmp(s + 1, "packed_le\n") == 0)
-		read_packed_file(f, this, CLICK_LITTLE_ENDIAN);
+		read_packed_file(f, CLICK_LITTLE_ENDIAN);
 	    else if (strcmp(s + 1, "packed_be\n") == 0)
-		read_packed_file(f, this, CLICK_BIG_ENDIAN);
+		read_packed_file(f, CLICK_BIG_ENDIAN);
 	} else if (sscanf(s, "%u %u", &agg, &value) == 2)
 	    add(agg, value);
 	else if (sscanf(s, "%u.%u.%u.%u %u", &b[0], &b[1], &b[2], &b[3], &value) == 5
-		 && b[0] < 256 && b[1] < 256 && b[2] < 256 && b[3] < 256)
+		 && b[0] < 256 && b[1] < 256 && b[2] < 256 && b[3] < 256) {
 	    add((b[0]<<24) | (b[1]<<16) | (b[2]<<8) | b[3], value);
+	    _read_format = AggregateTree::WR_ASCII_IP;
+	}
     }
     if (ferror(f))
 	return errh->error("file error");

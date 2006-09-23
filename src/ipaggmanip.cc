@@ -83,7 +83,7 @@ static Clp_Option options[] = {
 
   { "read-file", 'r', READ_FILE_OPT, Clp_ArgString, 0 },
   { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
-  { "binary", 'B', BINARY_OPT, 0, 0 },
+  { "binary", 'b', BINARY_OPT, 0, 0 },
   { "text", 'A', ASCII_OPT, 0, 0 },
   { "ip", 0, ASCII_IP_OPT, 0, 0 },
   { "and", '&', AND_OPT, 0, 0 },
@@ -97,6 +97,7 @@ static Clp_Option options[] = {
   { "num", 'n', NNZ_ACT, 0, 0 },
   { "num-nonzero", 'n', NNZ_ACT, 0, 0 },
   { "num-active", 'n', NNZ_ACT, 0, 0 },
+  { "num-labels", 'n', NNZ_ACT, 0, 0 },
   { "nnz", 'N', NNZ_ACT, 0, 0 },
   { "num-in-prefixes", 0, NNZ_PREFIX_ACT, 0, 0 },
   { "nnz-in-prefixes", 0, NNZ_PREFIX_ACT, 0, 0 },
@@ -117,28 +118,42 @@ static Clp_Option options[] = {
   { "average-and-variance-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   { "avg-var-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   { "sample", 0, SAMPLE_ACT, Clp_ArgDouble, 0 },
+
   { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
   { "cut-smaller-aggregates", 0, CUT_SMALLER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-smaller-host-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "cut-smaller-label-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-smaller-address-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger", 0, CUT_LARGER_ACT, Clp_ArgUnsigned, 0 },
   { "cut-larger-aggregates", 0, CUT_LARGER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger-host-aggregates", 0, CUT_LARGER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+  { "cut-larger-label-aggregates", 0, CUT_LARGER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger-address-aggregates", 0, CUT_LARGER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
+
+  { "cull", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-labels", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-labels-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-addresses", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-addrs", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-hosts", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-addresses-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull-addrs", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-addrs-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-hosts-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
   { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+
   { "haar-wavelet-energy", 0, HAAR_WAVELET_ENERGY_ACT, 0, 0 },
+
   { "sizes", 0, SIZES_ACT, 0, 0 },
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   { "size-counts", 0, SIZE_COUNTS_ACT, 0, 0 },
   { "container-sizes", 0, AGG_SIZES_ACT, Clp_ArgUnsigned, 0 },
   { "container-addresses", 0, AGG_ADDRS_ACT, Clp_ArgUnsigned, 0 },
   { "container-addrs", 0, AGG_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  
+  { "counts", 0, SIZES_ACT, 0, 0 },
+  { "sorted-counts", 0, SORTED_SIZES_ACT, 0, 0 },
+  { "count-counts", 0, SIZE_COUNTS_ACT, 0, 0 },
+  { "container-counts", 0, AGG_SIZES_ACT, Clp_ArgUnsigned, 0 },
+  { "container-labels", 0, AGG_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  
   { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
@@ -169,67 +184,51 @@ static void
 usage()
 {
   printf("\
-'Ipaggmanip' reads a summary of aggregated IP data from a file, transforms\n\
-that summary or calculates one of its statistics, and writes the result to\n\
-standard output.\n\
+'Ipaggmanip' reads an aggregate file summarizing IP trace data, transforms that\n\
+file or calculates one of its statistics, and writes the result to standard\n\
+output.  Aggregate files use ipaggcreate(1) format, and consist of pairs of\n\
+\"labels\" and \"packet counts\".\n\
 \n\
-Usage: %s ACTION [ACTIONS...] [FILES] > OUTPUT\n\
+Usage: %s [TRANSFORMATION...] [ACTION] [FILES] > OUTPUT\n\
 \n\
-Actions: (Results of final action sent to output.)\n\
-  -|, --or                   Combine all packets from FILES.\n		\
-  -&, --and                  Combine FILES, but drop any aggregate not present\n\
-                             in every file.\n\
-      --and-list             Output results for FILE1, then FILE1 & FILE2,\n\
-                             then FILE1 & FILE2 & FILE3, and so on.\n\
-      --minus                Drop any aggregates in FILE1 present in any other\n\
-                             FILE.\n\
-  -^, --xor                  Combine FILES, but drop any aggregate present in\n\
-                             more than one FILE.\n\
-  -e, --each                 Output result for each FILE separately.\n\
-      --assign-counts        Two FILEs with same -N. Assign counts from FILE1\n\
-                             to random aggregates in FILE2.\n\
-  Also say \"'(+' FILE FILE ... ')'\" to --or particular files, or\n\
-  \"'(&' FILE ... ')'\" for --and, \"'(-' FILE ... ')'\" for --minus,\n\
-  \"'(^' FILE ... ')'\" for --xor.\n\
-\n\
-  -N, --num-active           Number of active aggregates.\n\
-      --num-in-prefixes      Number of active p-aggregates for all p.\n\
-      --num-in-left-prefixes Number of active left-hand p-aggregates for all p.\n\
-      --discriminating-prefix-counts   Number of active aggregates with\n\
-                             discriminating prefix p for all p.\n\
-      --all-discriminating-prefix-counts   Number of active p-aggregates with\n\
-                             p-discriminating prefix q for all p, q.\n\
-      --sizes                All active aggregate sizes in address order.\n\
-      --sorted-sizes         All active aggregate sizes in reverse size order.\n\
-      --size-counts          Counts of active aggregates with each size,\n\
-                             in return-separated size-count pairs.\n\
-      --container-sizes P    Sizes of P-aggregates containing each aggregate, in\n\
-                             aggregate order.\n\
-      --balance P            Print left-right balance at prefix level P.\n\
+Transformations: (Input aggregate file, output aggregate file.)\n\
   -p, --prefix P             Aggregate to prefix level P.\n\
   -P, --posterize            Replace all nonzero counts with 1.\n\
-      --sample N             Reduce counts by randomly sampling 1 in N.\n\
-      --cull-addresses N     Reduce --num-active to at most N by removing\n\
-                             randomly selected aggregates.\n\
-      --cull-addresses-by-packets N   Reduce --num-active to at most N by\n\
-                             removing randomly selected packets.\n\
-      --cull-packets N       Reduce total number of packets to at most N by\n\
-                             removing randomly selected packets.\n\
-      --cut-smaller N        Zero counts less than N.\n\
-      --cut-larger N         Zero counts greater than or equal to N.\n\
-      --cut-smaller-aggregates P,N    Zero counts for P-aggregates with size\n\
-                             less than N.\n\
-      --cut-larger-aggregates P,N     Zero counts for P-aggregates with size\n\
-                             greater than or equal to N.\n\
-      --cut-smaller-address-aggregates P,N   Zero counts for P-aggregates with\n\
-                             less than N active addresses.\n\
-      --cut-larger-address-aggregates P,N    Zero counts for P-aggregates with\n\
-                             greater than or equal to N active addresses.\n\
-      --fake-by-discriminating-prefixes[=TYP]   Create fake posterized data\n\
-                             sharing this data's --all-discriminating-prefix.\n\
-                             TYP is a randomness factor between 0 and 1.\n\
+      --sample N             Randomly sample packets with probability 1/N.\n\
+      --cull N               Reduce to at most N packets by sampling packets.\n\
+      --cull-labels N        Reduce to at most N labels by sampling labels.\n\
+      --cull-labels-by-packets N\n\
+                             Reduce to at most N labels by sampling packets.\n\
+      --cut-{smaller,larger} N\n\
+                             Drop labels with {<N,>=N} packets.\n\
+      --cut-{smaller,larger}-aggregates P,N\n\
+                             Drop P-aggregates that contain {<N,>=N} packets.\n\
+      --cut-{smaller,larger}-label-aggregates P,N\n\
+                             Drop P-aggregates that contain {<N,>=N} labels.\n\
+      --fake-by-discriminating-prefixes[=TYP]\n\
+                             Create fake posterized data sharing this data's\n\
+                             --all-discriminating-prefix. TYP is a randomness\n\
+                             factor between 0 and 1.\n\
+      --fake-by-branching-counts\n\
       --fake-by-dirichlet\n\
       --remap-prefixes FOO\n\
+\n", program_name);
+  printf("Actions: (Input aggregate file, output other information.)\n\
+  -n, --num-labels           Number of active labels (labels with >0 count).\n\
+      --num-in-prefixes      Number of active p-aggregates for all p.\n\
+      --num-in-left-prefixes Number of active left-hand p-aggregates for all p.\n\
+      --discriminating-prefix-counts\n\
+                             Number of active aggregates with discriminating\n\
+                             prefix p for all p.\n\
+      --all-discriminating-prefix-counts\n\
+                             Number of active p-aggregates with\n\
+                             p-discriminating prefix q for all p, q.\n\
+      --counts               Counts in label order.\n\
+      --sorted-counts        Counts in reverse count order.\n\
+      --count-counts         For each unique count, print count and the number\n\
+                             of labels that had that count.\n\
+      --container-counts P   Count of each label's containing P-aggregate.\n\
+      --balance P            Left-right balance at prefix level P.\n\
       --average-and-variance, --avg-var\n\
                              Average and variance of active addresses.\n\
       --average-and-variance-by-prefix, --avg-var-by-prefix\n\
@@ -242,17 +241,33 @@ Actions: (Results of final action sent to output.)\n\
       --all-branching-counts STEP\n\
       --conditional-split-counts P\n\
       --correlation-size-container-addresses P\n\
-\n\
+\n");
+  printf("Multiple files:\n\
+  Ipaggcreate normally performs an action on a single aggregate file.\n\
+  -e, --each             Perform action on each FILE; output multiple results.\n\
+  -|, --or               Combine by adding aggregates together.\n\
+  -&, --and              Combine, but drop labels not present in every file.\n\
+      --minus            Use FILE1, but drop labels present in any other FILE.\n\
+  -^, --xor              Combine, but drop labels present in >1 FILE.\n\
+      --and-list         Output results for FILE1, then FILE1 & FILE2,\n\
+                         then FILE1 & FILE2 & FILE3, and so on.\n\
+      --assign-counts    Input is two FILEs with same --num-labels; randomly\n\
+                         assign counts from FILE1 to labels from FILE2.\n\
+  Or say  '(+' FILE FILE ... ')'  to --or particular files,\n\
+  '(&' FILE ... ')'  to --and,  '(-' FILE ... ')'  to --minus,\n\
+  '(^' FILE ... ')'  to --xor.\n\
+\n");
+  printf("\
 Other options:\n\
-  -r, --read FILE            Read summary from FILE (default stdin).\n\
-  -o, --output FILE          Write output to FILE (default stdout).\n\
-  -B, --binary               Output aggregate files in binary (default).\n\
-      --text                 Output aggregate files in ASCII.\n\
-      --ip                   Output aggregate files in ASCII with IP addresses.\n\
-  -h, --help                 Print this message and exit.\n\
-  -v, --version              Print version number and exit.\n\
+  -r, --read FILE        Read summary from FILE (default stdin).\n\
+  -o, --output FILE      Write output to FILE (default stdout).\n\
+  -b, --binary           Output aggregate files in binary.\n\
+      --text             Output aggregate files in ASCII.\n\
+      --ip               Output aggregate files in ASCII with IP addresses.\n\
+  -h, --help             Print this message and exit.\n\
+  -v, --version          Print version number and exit.\n\
 \n\
-Report bugs to <kohler@cs.ucla.edu>.\n", program_name);
+Report bugs to <kohler@cs.ucla.edu>.\n");
 }
 
 static void
@@ -274,7 +289,7 @@ static Vector<uint32_t> extras;
 static Vector<uint32_t> extras2;
 static Vector<String> str_extras;
 static FILE *out;
-static AggregateTree::WriteFormat output_format = AggregateTree::WR_BINARY;
+static AggregateTree::WriteFormat output_format = AggregateTree::WR_UNKNOWN;
 static Vector<String> files;
 static int files_pos = 0;
 
@@ -334,6 +349,8 @@ read_aggregates(AggregateTree &tree, String &name, ErrorHandler *errh)
     if (!f)
 	errh->fatal("%s: %s", name.c_str(), strerror(errno));
     tree.read_file(f, errh);
+    if (output_format == AggregateTree::WR_UNKNOWN)
+	output_format = tree.read_format();
     if (f != stdin)
 	fclose(f);
 }
@@ -652,8 +669,9 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      AggregateTree new_tree;
 	      tree.make_mapped(max_p, map, new_tree);
 	      tree = new_tree;
+	      break;
 	  }
-	    
+	      
 	}
     }
 }

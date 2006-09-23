@@ -42,13 +42,13 @@ AggregateTree::copy_nodes(const Node *n, uint32_t mask)
 }
 
 AggregateTree::AggregateTree()
-    : _free(0)
+    : _free(0), _read_format(WR_UNKNOWN)
 {
     initialize_root();
 }
 
 AggregateTree::AggregateTree(const AggregateTree &o)
-    : _free(0)
+    : _free(0), _read_format(o._read_format)
 {
     initialize_root();
     copy_nodes(o._root);
@@ -66,6 +66,7 @@ AggregateTree::operator=(const AggregateTree &o)
 	kill_all_nodes();
 	initialize_root();
 	copy_nodes(o._root);
+	_read_format = o._read_format;
     }
     return *this;
 }
@@ -1124,21 +1125,22 @@ AggregateTree::take_nonzero_sizes(const AggregateTree &other, uint32_t mask)
 // READING AND WRITING
 //
 
-static void
-read_packed_file(FILE *f, AggregateTree *tree, int file_byte_order)
+void
+AggregateTree::read_packed_file(FILE *f, int file_byte_order)
 {
     uint32_t ubuf[BUFSIZ];
+    _read_format = WR_BINARY;
     if (file_byte_order == CLICK_BYTE_ORDER) {
 	while (!feof(f) && !ferror(f)) {
 	    size_t howmany = fread(ubuf, 8, BUFSIZ / 2, f);
 	    for (size_t i = 0; i < howmany; i++)
-		tree->add(ubuf[2*i], ubuf[2*i + 1]);
+		add(ubuf[2*i], ubuf[2*i + 1]);
 	}
     } else {
 	while (!feof(f) && !ferror(f)) {
 	    size_t howmany = fread(ubuf, 8, BUFSIZ / 2, f);
 	    for (size_t i = 0; i < howmany; i++)
-		tree->add(bswap_32(ubuf[2*i]), bswap_32(ubuf[2*i + 1]));
+		add(bswap_32(ubuf[2*i]), bswap_32(ubuf[2*i + 1]));
 	}
     }
 }
@@ -1148,22 +1150,25 @@ AggregateTree::read_file(FILE *f, ErrorHandler *errh)
 {
     char s[BUFSIZ];
     uint32_t agg, value, b[4];
+    _read_format = WR_ASCII;
     while (fgets(s, BUFSIZ, f)) {
 	if (strlen(s) == BUFSIZ - 1 && s[BUFSIZ - 2] != '\n')
 	    return errh->error("line too long");
 	if (s[0] == '$' || s[0] == '!') {
 	    if (strcmp(s + 1, "packed\n") == 0) {
 		errh->warning("file marked '$packed'; change to refer to true byte order");
-		read_packed_file(f, this, CLICK_LITTLE_ENDIAN);
+		read_packed_file(f, CLICK_LITTLE_ENDIAN);
 	    } else if (strcmp(s + 1, "packed_le\n") == 0)
-		read_packed_file(f, this, CLICK_LITTLE_ENDIAN);
+		read_packed_file(f, CLICK_LITTLE_ENDIAN);
 	    else if (strcmp(s + 1, "packed_be\n") == 0)
-		read_packed_file(f, this, CLICK_BIG_ENDIAN);
+		read_packed_file(f, CLICK_BIG_ENDIAN);
 	} else if (sscanf(s, "%u %u", &agg, &value) == 2)
 	    add(agg, value);
 	else if (sscanf(s, "%u.%u.%u.%u %u", &b[0], &b[1], &b[2], &b[3], &value) == 5
-		 && b[0] < 256 && b[1] < 256 && b[2] < 256 && b[3] < 256)
+		 && b[0] < 256 && b[1] < 256 && b[2] < 256 && b[3] < 256) {
 	    add((b[0]<<24) | (b[1]<<16) | (b[2]<<8) | b[3], value);
+	    _read_format = WR_ASCII_IP;
+	}
     }
     if (ferror(f))
 	return errh->error("file error");

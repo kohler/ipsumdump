@@ -141,7 +141,9 @@ static Clp_Option options[] = {
     { "interval", 't', INTERVAL_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "start-time", 0, START_TIME_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "limit-aggregates", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
+    { "limit-labels", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
     { "split-aggregates", 0, SPLIT_AGG_OPT, Clp_ArgUnsigned, 0 },
+    { "split-labels", 0, SPLIT_AGG_OPT, Clp_ArgUnsigned, 0 },
     { "split-time", 0, SPLIT_TIME_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "split-packets", 0, SPLIT_PACKETS_OPT, Clp_ArgUnsigned, 0 },
     { "split-count", 0, SPLIT_PACKETS_OPT, Clp_ArgUnsigned, 0 },
@@ -168,21 +170,21 @@ void
 usage()
 {
     printf("\
-'Ipaggcreate' reads IP packets from tcpdump(1) or other packet traces,\n\
-categorizes them into aggregates, and reports the count of packets or bytes per\n\
-aggregate into a simple file.\n\
+'Ipaggcreate' reads IP packets from tcpdump(1) or other packet traces, labels\n\
+each packet, and outputs a simply-formatted \"aggregate\" file that reports the\n\
+number of packets or bytes observed per label.\n\
 \n\
 Usage: %s [OPTIONS] [-i DEVNAMES | FILES] > AGGFILE\n\
 \n\
-Aggregate categorization options (give exactly one):\n\
-  -s, --src                  Aggregate by IP source address.\n\
-  -d, --dst                  Aggregate by IP destination address (default).\n\
-  -l, --length               Aggregate by IP length.\n\
-      --ip FIELD             Aggregate by IP FIELD (ex: 'ip src/8', 'ip ttl').\n\
-      --flows                Aggregate by flow ID (agg. number meaningless).\n\
-      --unidirectional-flows Aggregate by unidirectional flow ID.\n\
-      --address-pairs        Aggregate by IP address pairs.\n\
-      --unidirectional-address-pairs  Aggregate by ordered IP address pairs.\n\
+Label options (give exactly one):\n\
+  -s, --src                  Label by IP source address.\n\
+  -d, --dst                  Label by IP destination address (default).\n\
+  -l, --length               Label by IP length.\n\
+      --ip FIELD             Label by IP FIELD (ex: 'ip src/8', 'ip ttl').\n\
+      --flows                Label by flow ID (label number meaningless).\n\
+      --unidirectional-flows Label by unidirectional flow ID.\n\
+      --address-pairs        Label by IP address pair.\n\
+      --unidirectional-address-pairs  Label by ordered IP address pair.\n\
 \n", program_name);
     printf("\
 Measurement options:\n\
@@ -208,9 +210,9 @@ Limit and split options:\n\
   -T, --time-offset TIME     Ignore first TIME in input.\n\
       --start-time TIME      Ignore packets with timestamps before TIME.\n\
   -t, --interval TIME        Output TIME worth of packets. Example: '1hr'.\n\
-      --limit-aggregates K   Stop once K aggregates are encountered.\n\
+      --limit-labels K       Stop once K distinct labels are encountered.\n\
       --split-time TIME      Output new file every TIME worth of packets.\n\
-      --split-aggregates K   Output new file every K aggregates.\n\
+      --split-labels K       Output new file every K distinct labels.\n\
       --split-packets N      Output new file every N packets.\n\
       --split-bytes N        Output new file every N bytes.\n\
 \n");

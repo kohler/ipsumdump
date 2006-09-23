@@ -8,6 +8,8 @@ struct AggregateWTree_WNode;
 
 class AggregateTree { public:
 
+    enum WriteFormat { WR_UNKNOWN = -1, WR_ASCII = 0, WR_BINARY = 1, WR_ASCII_IP = 2 };
+    
     AggregateTree();
     AggregateTree(const AggregateTree &);
     AggregateTree(const AggregateWTree &);
@@ -19,7 +21,7 @@ class AggregateTree { public:
     uint32_t nnz() const			{ return _num_nonzero; }
     uint32_t nnz_match(uint32_t mask, uint32_t value) const;
     
-    void add(uint32_t aggregate, int32_t count = 1);
+    inline void add(uint32_t aggregate, int32_t count = 1);
     void zero_aggregate(int, uint32_t);
     void zero_masked_aggregate(uint32_t, uint32_t);
 
@@ -62,7 +64,7 @@ class AggregateTree { public:
     void take_nonzero_sizes(const AggregateTree &, uint32_t mask =0xFFFFFFFFU);
     
     int read_file(FILE *, ErrorHandler *);
-    enum WriteFormat { WR_ASCII = 0, WR_BINARY = 1, WR_ASCII_IP = 2 };
+    WriteFormat read_format() const		{ return _read_format; }
     int write_file(FILE *, WriteFormat, ErrorHandler *) const;
 
     AggregateTree &operator=(const AggregateTree &);
@@ -86,10 +88,11 @@ class AggregateTree { public:
     Vector<Node *> _blocks;
 
     uint32_t _num_nonzero;
+    WriteFormat _read_format;
 
-    Node *new_node();
+    inline Node *new_node();
     Node *new_node_block();
-    void free_node(Node *);
+    inline void free_node(Node *);
     void initialize_root();
     void copy_nodes(const Node *, uint32_t = 0xFFFFFFFFU);
     void kill_all_nodes();
@@ -113,6 +116,7 @@ class AggregateTree { public:
     void node_take_nonzero_sizes(Node *, const Node *[], int &, uint32_t);
     void node_randomly_assign_counts(Node *, Vector<uint32_t> &);
 
+    void read_packed_file(FILE *, int file_byte_order);
     static void write_batch(FILE *, WriteFormat, uint32_t *, int, ErrorHandler *);
     static void write_nodes(Node *, FILE *, WriteFormat, uint32_t *, int &, int, ErrorHandler *);
     static void write_hex_nodes(Node *, FILE *, ErrorHandler *);

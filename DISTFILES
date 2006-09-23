@@ -6,6 +6,8 @@ configure.in
 config.h.in
 ipaggcreate.pod
 ipaggcreate.1
+ipaggmanip.pod
+ipaggmanip.1
 ipsumdump.pod
 ipsumdump.1
 
@@ -13,3 +15,8 @@ src
 src/Makefile.in
 src/ipsumdump.cc
 src/ipaggcreate.cc
+src/aggtree.hh
+src/aggtree.cc
+src/aggwtree.hh
+src/aggwtree.cc
+src/ipaggmanip.cc

@@ -51,6 +51,7 @@ class AggregateWTree { public:
     
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, AggregateTree::WriteFormat, ErrorHandler *) const;
+    AggregateTree::WriteFormat read_format() const { return _read_format; }
     int write_hex_file(FILE *, ErrorHandler *) const;
 
     AggregateWTree &operator=(const AggregateWTree &);
@@ -64,10 +65,11 @@ class AggregateWTree { public:
     uint32_t _num_nonzero;
     int _count_type;
     bool _topheavy;
+    AggregateTree::WriteFormat _read_format;
 
-    WNode *new_node();
+    inline WNode *new_node();
     WNode *new_node_block();
-    void free_node(WNode *);
+    inline void free_node(WNode *);
     void initialize_root();
     void copy_nodes(const Node *, uint32_t = 0xFFFFFFFFU);
     void kill_all_nodes();
@@ -83,12 +85,14 @@ class AggregateWTree { public:
     uint32_t node_ok(WNode *, int, uint32_t *, ErrorHandler *) const;
     WNode *pick_random_active_node(WNode *stack[], int *) const;
 
-    uint32_t node_local_count(WNode *) const;
+    inline uint32_t node_local_count(WNode *) const;
     static inline uint32_t node_full_count(WNode *);
 
     void node_prefixize(WNode *, int, WNode *stack[], int);
 
     void node_fake_dirichlet(WNode *, WNode *stack[], int, uint32_t);
+
+    void read_packed_file(FILE *, int file_byte_order);
     
     friend class AggregateTree;
     
