@@ -79,7 +79,8 @@ static const char* const field_names[] = {
     "ip_proto", "tcp_seq", "tcp_ack", "tcp_flags",	// 8-11
     "tcp_opt", "tcp_sack", "payload_len", "count",	// 12-15
     "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
-    "link", "udp_len", "ip_opt", "ip_sum", "tcp_window"	// 20-24
+    "link", "udp_len", "ip_opt", "ip_sum", "tcp_window", // 20-24
+    "payload_md5"					// 25
 };
 
 // options for logging
@@ -109,6 +110,7 @@ static const char* const field_names[] = {
 #define IP_OPT_OPT		1022
 #define IP_SUM_OPT		1023
 #define TCP_WINDOW_OPT		1024
+#define PAYLOAD_MD5_OPT		1025
 
 #define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
 
@@ -164,6 +166,7 @@ static Clp_Option options[] = {
     { "packet-count", 'c', COUNT_OPT, 0, 0 },
     { "payload", 0, PAYLOAD_OPT, 0, 0 },
     { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
+    { "payload-md5", 0, PAYLOAD_MD5_OPT, 0, 0 },
     { "protocol", 'p', PROTO_OPT, 0, 0 },
     { "src", 's', SRC_OPT, 0, 0 },
     { "sport", 'S', SPORT_OPT, 0, 0 },
@@ -229,6 +232,7 @@ Options that determine summary dump contents (can give multiple options):\n\
       --udp-length           Include UDP lengths.\n\
   -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
       --payload              Include packet payloads as quoted strings.\n\
+      --payload-md5          Include MD5 checksum of packet payloads.\n\
       --capture-length       Include lengths of captured IP data.\n\
   -c, --packet-count         Include packet counts (usually 1).\n\
       --link                 Include link numbers (NLANR/NetFlow).\n\
@@ -649,7 +653,7 @@ particular purpose.\n");
 	  default:
 	    assert(opt >= FIRST_LOG_OPT);
 	    log_contents.push_back(opt - FIRST_LOG_OPT);
-	    if (opt == PAYLOAD_OPT)
+	    if (opt == PAYLOAD_OPT || opt == PAYLOAD_MD5_OPT)
 		options.snaplen = 2000;
 	    options.force_ip = true;
 	    break;

@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.63   19.Jan.2007
+
+* Add '--payload-md5' option.  Requested by Vern Paxson.
+
+
 Version 1.62   17.Sep.2006
 
 * Update Click to 1.5.0.  This also solves Solaris compiling problems

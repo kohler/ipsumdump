@@ -309,6 +309,13 @@ payload, for TCP or UDP packets, or the IP payload, for other IP packets.
 Output as a double-quoted C string; non-ASCII characters, and double-quotes
 and backslashes, appear as C backslash escapes. Example: C<",25\r\n\000">.
 
+=item B<--payload-md5>
+
+Include an MD5 checksum of the packet payload in the dump. The payload is
+as defined above. In ASCII output, the output is a 22-character string
+consisting of characters [a-zA-Z0-9_@]; in binary output, it's a
+16-character binary digest. Example: C<sQy@IjqXnFPwZtgtwaC5Hb>.
+
 =item B<--capture-length>
 
 Include the length of captured IP data in the dump. This can be less than
