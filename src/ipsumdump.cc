@@ -296,7 +296,7 @@ write_sampling_prob_message(Router *r, const String &sample_elt)
 	String s = h->call_read(sample);
 	ToIPSummaryDump* td = static_cast<ToIPSummaryDump*>(r->find("to_dump"));
 	if (td)
-	    td->write_line("!sampling_prob " + s);
+	    td->write_line("!sampling_prob " + s + "\n");
     }
 }
 
