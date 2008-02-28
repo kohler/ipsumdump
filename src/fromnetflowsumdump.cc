@@ -36,7 +36,7 @@
 CLICK_DECLS
 
 FromNetFlowSummaryDump::FromNetFlowSummaryDump()
-    : _work_packet(0), _task(this)
+    : _packet(0), _work_packet(0), _timer(this), _task(this)
 {
     _ff.set_landmark_pattern("%f:%l");
 }
@@ -58,24 +58,23 @@ FromNetFlowSummaryDump::cast(const char *n)
 int
 FromNetFlowSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
 {
-    bool stop = false, active = true, zero = true, multipacket = false;
+    bool stop = false;
+    _active = _zero = true;
+    _multipacket = _timing = false;
     String link = "input";
     
-    if (cp_va_parse(conf, this, errh,
-		    cpFilename, "dump file name", &_ff.filename(),
-		    cpKeywords,
-		    "STOP", cpBool, "stop driver when done?", &stop,
-		    "ACTIVE", cpBool, "start active?", &active,
-		    "ZERO", cpBool, "zero packet data?", &zero,
-		    "MULTIPACKET", cpBool, "generate multiple packets per flow?", &multipacket,
-		    "LINK", cpWord, "link annotation", &link,
-		    cpEnd) < 0)
+    if (cp_va_kparse(conf, this, errh,
+		     "FILENAME", cpkP+cpkM, cpFilename, &_ff.filename(),
+		     "STOP", 0, cpBool, &stop,
+		     "ACTIVE", 0, cpBool, &_active,
+		     "ZERO", 0, cpBool, &_zero,
+		     "MULTIPACKET", 0, cpBool, &_multipacket,
+		     "LINK", 0, cpWord, &link,
+		     "TIMING", 0, cpBool, &_timing,
+		     cpEnd) < 0)
 	return -1;
 
     _stop = stop;
-    _active = active;
-    _zero = zero;
-    _multipacket = multipacket;
     link = link.lower();
     if (link == "input")
 	_link = 0;
@@ -98,12 +97,13 @@ FromNetFlowSummaryDump::initialize(ErrorHandler *errh)
 	return -1;
 
     String line;
-    if (_ff.peek_line(line, errh) < 0)
+    if (_ff.peek_line(line, errh, true) < 0)
 	return -1;
     
     _format_complaint = false;
     if (output_is_push(0))
 	ScheduleInfo::initialize_task(this, &_task, _active, errh);
+    _timer.initialize(this);
     return 0;
 }
 
@@ -111,9 +111,11 @@ void
 FromNetFlowSummaryDump::cleanup(CleanupStage)
 {
     _ff.cleanup();
+    if (_packet)
+	_packet->kill();
     if (_work_packet)
 	_work_packet->kill();
-    _work_packet = 0;
+    _packet = _work_packet = 0;
 }
 
 Packet *
@@ -138,7 +140,7 @@ FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
     
     while (1) {
 
-	if (_ff.read_line(line, errh) <= 0) {
+	if (_ff.read_line(line, errh, true) <= 0) {
 	    q->kill();
 	    return 0;
 	}
@@ -315,23 +317,55 @@ FromNetFlowSummaryDump::handle_multipacket(Packet *p)
     return p;
 }
 
+Packet *
+FromNetFlowSummaryDump::next_packet()
+{
+    if (!_packet) {
+      retry:
+	_packet = (_work_packet ? _work_packet : read_packet(0));
+	if (_packet && _multipacket) {
+	    if (!(_packet = handle_multipacket(_packet)))
+		goto retry;
+	}
+    }
+    return _packet;
+}
+
+void
+FromNetFlowSummaryDump::run_timer(Timer *)
+{
+    if (_active) {
+	if (output_is_push(0))
+	    _task.reschedule();
+	else
+	    _notifier.wake();
+    }
+}
+
 bool
 FromNetFlowSummaryDump::run_task(Task *)
 {
     if (!_active)
 	return false;
 
-    Packet *p = (_work_packet ? _work_packet : read_packet(0));
+    Packet *p = next_packet();
     if (!p) {
 	if (_stop)
 	    router()->please_stop_driver();
 	return false;
+    } else if (_timing) {
+	Timestamp now = Timestamp::now();
+	Timestamp t = _packet->timestamp_anno() + _time_offset;
+	if (t > now) {
+	    t -= Timestamp::make_msec(50);
+	    if (t > now)
+		_timer.schedule_at(t);
+	    else
+		_task.fast_reschedule();
+	    return false;
+	}
     }
-
-    if (_multipacket)
-	p = handle_multipacket(p);
-    if (p)
-	output(0).push(p);
+    output(0).push(_packet);
     _task.fast_reschedule();
     return true;
 }
@@ -344,12 +378,22 @@ FromNetFlowSummaryDump::pull(int)
 	return 0;
     }
 
-    Packet *p = (_work_packet ? _work_packet : read_packet(0));
-    _notifier.set_active(p != 0, true);
+    Packet *p = next_packet();
     if (!p && _stop)
 	router()->please_stop_driver();
-    if (_multipacket)
-	p = handle_multipacket(p);
+    else if (p && _timing) {
+	Timestamp now = Timestamp::now();
+	Timestamp t = _packet->timestamp_anno() + _time_offset;
+	if (t > now) {
+	    t -= Timestamp::make_msec(50);
+	    if (t > now) {
+		_timer.schedule_at(t);
+		_notifier.sleep();
+	    }
+	    return 0;
+	}
+    }
+    _notifier.set_active(p != 0, true);
     return p;
 }
 
@@ -397,7 +441,7 @@ FromNetFlowSummaryDump::write_handler(const String &s_in, Element *e, void *thun
 void
 FromNetFlowSummaryDump::add_handlers()
 {
-    add_read_handler("active", read_handler, (void *)H_ACTIVE);
+    add_read_handler("active", read_handler, (void *)H_ACTIVE, Handler::CHECKBOX);
     add_write_handler("active", write_handler, (void *)H_ACTIVE);
     add_read_handler("encap", read_handler, (void *)H_ENCAP);
     _ff.add_handlers(this);

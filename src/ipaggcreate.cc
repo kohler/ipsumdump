@@ -89,7 +89,7 @@
 #define SPLIT_PACKETS_OPT	605
 #define SPLIT_BYTES_OPT		606
 
-#define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
+#define CLP_TIMESTAMP_TYPE	(Clp_ValFirstUser)
 
 static Clp_Option options[] = {
 
@@ -100,9 +100,9 @@ static Clp_Option options[] = {
     { "interface", 'i', INTERFACE_OPT, 0, 0 },
     { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
-    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
+    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ValString, 0 },
     { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
-    { "dag", 0, READ_DAG_DUMP_OPT, Clp_ArgString, Clp_Optional },
+    { "dag", 0, READ_DAG_DUMP_OPT, Clp_ValString, Clp_Optional },
     { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "tu-summary", 0, READ_TUDUMP_OPT, 0, 0 },
     { "ip-addresses", 0, READ_IPADDR_OPT, 0, 0 },
@@ -110,24 +110,24 @@ static Clp_Option options[] = {
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
     
-    { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
-    { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
+    { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ValString, 0 },
+    { "filter", 'f', FILTER_OPT, Clp_ValString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
     { "binary", 'b', BINARY_OPT, 0, Clp_Negate },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
-    { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
+    { "sample", 0, SAMPLE_OPT, Clp_ValDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
-    { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
+    { "random-seed", 0, RANDOM_SEED_OPT, Clp_ValUnsigned, 0 },
     { "promiscuous", 0, PROMISCUOUS_OPT, 0, Clp_Negate },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
 
-    { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+    { "output", 'o', OUTPUT_OPT, Clp_ValString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
 
     { "src", 's', AGG_SRC_OPT, 0, 0 },
     { "dst", 'd', AGG_DST_OPT, 0, 0 },
     { "length", 'l', AGG_LENGTH_OPT, 0, 0 },
-    { "ip", 0, AGG_IP_OPT, Clp_ArgString, 0 },
+    { "ip", 0, AGG_IP_OPT, Clp_ValString, 0 },
     { "flows", 0, AGG_FLOWS_OPT, 0, 0 },
     { "unidirectional-flows", 0, AGG_UNI_FLOWS_OPT, 0, 0 },
     { "uni-flows", 0, AGG_UNI_FLOWS_OPT, 0, 0 },
@@ -140,14 +140,14 @@ static Clp_Option options[] = {
     { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "interval", 't', INTERVAL_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "start-time", 0, START_TIME_OPT, CLP_TIMESTAMP_TYPE, 0 },
-    { "limit-aggregates", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
-    { "limit-labels", 0, LIMIT_AGG_OPT, Clp_ArgUnsigned, 0 },
-    { "split-aggregates", 0, SPLIT_AGG_OPT, Clp_ArgUnsigned, 0 },
-    { "split-labels", 0, SPLIT_AGG_OPT, Clp_ArgUnsigned, 0 },
+    { "limit-aggregates", 0, LIMIT_AGG_OPT, Clp_ValUnsigned, 0 },
+    { "limit-labels", 0, LIMIT_AGG_OPT, Clp_ValUnsigned, 0 },
+    { "split-aggregates", 0, SPLIT_AGG_OPT, Clp_ValUnsigned, 0 },
+    { "split-labels", 0, SPLIT_AGG_OPT, Clp_ValUnsigned, 0 },
     { "split-time", 0, SPLIT_TIME_OPT, CLP_TIMESTAMP_TYPE, 0 },
-    { "split-packets", 0, SPLIT_PACKETS_OPT, Clp_ArgUnsigned, 0 },
-    { "split-count", 0, SPLIT_PACKETS_OPT, Clp_ArgUnsigned, 0 },
-    { "split-bytes", 0, SPLIT_BYTES_OPT, Clp_ArgUnsigned, 0 },
+    { "split-packets", 0, SPLIT_PACKETS_OPT, Clp_ValUnsigned, 0 },
+    { "split-count", 0, SPLIT_PACKETS_OPT, Clp_ValUnsigned, 0 },
+    { "split-bytes", 0, SPLIT_BYTES_OPT, Clp_ValUnsigned, 0 },
 
 };
 
@@ -441,7 +441,7 @@ main(int argc, char *argv[])
 	  case OUTPUT_OPT:
 	    if (output)
 		die_usage("'--output' already specified");
-	    output = clp->arg;
+	    output = clp->vstr;
 	    break;
 	    
 	  case INTERFACE_OPT:
@@ -467,8 +467,8 @@ main(int argc, char *argv[])
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
-	    if (clp->have_arg)
-		options.dag_encap = clp->arg;
+	    if (clp->have_val)
+		options.dag_encap = clp->vstr;
 	    break;
 	    
 	  case IPSUMDUMP_FORMAT_OPT:
@@ -477,19 +477,19 @@ main(int argc, char *argv[])
 	    else if (action && action != READ_IPSUMDUMP_OPT)
 		die_usage("'--format' only useful with '--ipsumdump'");
 	    action = READ_IPSUMDUMP_OPT;
-	    options.ipsumdump_format = clp->arg;
+	    options.ipsumdump_format = clp->vstr;
 	    break;
 	    
 	  case WRITE_DUMP_OPT:
 	    if (write_dump)
 		die_usage("'--write-tcpdump' already specified");
-	    write_dump = clp->arg;
+	    write_dump = clp->vstr;
 	    break;
 
 	  case FILTER_OPT:
 	    if (options.filter)
 		die_usage("'--filter' already specified");
-	    options.filter = clp->arg;
+	    options.filter = clp->vstr;
 	    break;
 
 	  case ANONYMIZE_OPT:
@@ -565,7 +565,7 @@ main(int argc, char *argv[])
 	  case AGG_IP_OPT:
 	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
-	    agg = clp->arg;
+	    agg = clp->vstr;
 	    break;
 
 	  case AGG_FLOWS_OPT:
@@ -636,7 +636,7 @@ particular purpose.\n");
 	    break;
 
 	  case Clp_NotOption:
-	    files.push_back(clp->arg);
+	    files.push_back(clp->vstr);
 	    break;
 	    
 	  case Clp_BadOption:

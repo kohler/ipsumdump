@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.64
+
+* Add '--no-header', '--eth-src', and '--eth-dst' options.  Requested by
+  Vern Paxson.
+
+
 Version 1.63   19.Jan.2007
 
 * Add '--payload-md5' option.  Requested by Vern Paxson.

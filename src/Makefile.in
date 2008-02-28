@@ -49,7 +49,7 @@ IPSUMDUMP_ELEMENT_OBJS = \
 	fromdagdump.o fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
 	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o \
 	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_ip.o ipsumdump_tcp.o \
-	toipsumdump.o todump.o \
+	ipsumdump_link.o toipsumdump.o todump.o \
 	anonipaddr.o changeuid.o classifier.o counter.o drivermanager.o \
 	discard.o fakepcap.o ipfilter.o ipnameinfo.o progressbar.o \
 	randomsample.o script.o switch.o tee.o timefilter.o timesortedsched.o \
@@ -75,7 +75,7 @@ IPAGGCREATE_OBJS = \
 IPAGGMANIP_OBJS = aggtree.o aggwtree.o ipaggmanip.o
 
 
-CPPFLAGS = @CPPFLAGS@ -g -MD -DCLICK_USERLEVEL
+CPPFLAGS = @CPPFLAGS@ -g -DCLICK_USERLEVEL
 CFLAGS = @CFLAGS@
 CXXFLAGS = @CXXFLAGS@
 DEPCFLAGS = @DEPCFLAGS@

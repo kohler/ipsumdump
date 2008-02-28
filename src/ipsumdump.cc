@@ -4,7 +4,7 @@
  * Eddie Kohler
  *
  * Copyright (c) 2001-4 International Computer Science Institute
- * Copyright (c) 2004-6 Regents of the University of California
+ * Copyright (c) 2004-8 Regents of the University of California
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -61,6 +61,7 @@
 #define LIMIT_PACKETS_OPT	318
 #define BINARY_OPT		319
 #define MMAP_OPT		320
+#define HEADER_OPT		321
 
 // data sources
 #define INTERFACE_OPT		400
@@ -80,7 +81,7 @@ static const char* const field_names[] = {
     "tcp_opt", "tcp_sack", "payload_len", "count",	// 12-15
     "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
     "link", "udp_len", "ip_opt", "ip_sum", "tcp_window", // 20-24
-    "payload_md5"					// 25
+    "payload_md5", "eth_src", "eth_dst"			// 25-27
 };
 
 // options for logging
@@ -111,8 +112,10 @@ static const char* const field_names[] = {
 #define IP_SUM_OPT		1023
 #define TCP_WINDOW_OPT		1024
 #define PAYLOAD_MD5_OPT		1025
+#define ETH_SRC_OPT		1026
+#define ETH_DST_OPT		1027
 
-#define CLP_TIMESTAMP_TYPE	(Clp_FirstUserType)
+#define CLP_TIMESTAMP_TYPE	(Clp_ValFirstUser)
 
 static Clp_Option options[] = {
 
@@ -123,32 +126,33 @@ static Clp_Option options[] = {
     { "interface", 'i', INTERFACE_OPT, 0, 0 },
     { "tcpdump", 'r', READ_DUMP_OPT, 0, 0 },
     { "ipsumdump", 0, READ_IPSUMDUMP_OPT, 0, 0 },
-    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ArgString, 0 },
+    { "format", 0, IPSUMDUMP_FORMAT_OPT, Clp_ValString, 0 },
     { "nlanr", 0, READ_NLANR_DUMP_OPT, 0, 0 },
-    { "dag", 0, READ_DAG_DUMP_OPT, Clp_ArgString, Clp_Optional },
+    { "dag", 0, READ_DAG_DUMP_OPT, Clp_ValString, Clp_Optional },
     { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
     
-    { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ArgString, 0 },
-    { "filter", 'f', FILTER_OPT, Clp_ArgString, 0 },
+    { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ValString, 0 },
+    { "filter", 'f', FILTER_OPT, Clp_ValString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
     { "binary", 'b', BINARY_OPT, 0, Clp_Negate },
-    { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
-    { "map-address", 0, MAP_PREFIX_OPT, Clp_ArgString, 0 },
+    { "map-prefix", 0, MAP_PREFIX_OPT, Clp_ValString, 0 },
+    { "map-address", 0, MAP_PREFIX_OPT, Clp_ValString, 0 },
     { "mmap", 0, MMAP_OPT, 0, Clp_Negate },
+    { "headers", 0, HEADER_OPT, 0, Clp_Negate },
     { "multipacket", 0, MULTIPACKET_OPT, 0, Clp_Negate },
-    { "sample", 0, SAMPLE_OPT, Clp_ArgDouble, Clp_Negate },
+    { "sample", 0, SAMPLE_OPT, Clp_ValDouble, Clp_Negate },
     { "collate", 0, COLLATE_OPT, 0, Clp_Negate },
-    { "random-seed", 0, RANDOM_SEED_OPT, Clp_ArgUnsigned, 0 },
+    { "random-seed", 0, RANDOM_SEED_OPT, Clp_ValUnsigned, 0 },
     { "promiscuous", 0, PROMISCUOUS_OPT, 0, Clp_Negate },
-    { "record-counts", 0, WRITE_DROPS_OPT, Clp_ArgString, 0 },
+    { "record-counts", 0, WRITE_DROPS_OPT, Clp_ValString, 0 },
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "bad-packets", 0, BAD_PACKETS_OPT, 0, Clp_Negate },
     { "interval", 0, INTERVAL_OPT, CLP_TIMESTAMP_TYPE, 0 },
-    { "limit-packets", 0, LIMIT_PACKETS_OPT, Clp_ArgUnsigned, Clp_Negate },
+    { "limit-packets", 0, LIMIT_PACKETS_OPT, Clp_ValUnsigned, Clp_Negate },
 
-    { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+    { "output", 'o', OUTPUT_OPT, Clp_ValString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
 
     { "capture-length", 0, IPCAPLEN_OPT, 0, 0 },
@@ -177,7 +181,9 @@ static Clp_Option options[] = {
     { "tcp-seq", 'Q', TCP_SEQ_OPT, 0, 0 },
     { "tcp-window", 'W', TCP_WINDOW_OPT, 0, 0 },
     { "timestamp", 't', TIMESTAMP_OPT, 0, 0 },
-    { "udp-length", 0, UDP_LEN_OPT, 0, 0 }
+    { "udp-length", 0, UDP_LEN_OPT, 0, 0 },
+    { "eth-src", 0, ETH_SRC_OPT, 0, 0 },
+    { "eth-dst", 0, ETH_DST_OPT, 0, 0 }
 
 };
 
@@ -236,6 +242,8 @@ Options that determine summary dump contents (can give multiple options):\n\
       --capture-length       Include lengths of captured IP data.\n\
   -c, --packet-count         Include packet counts (usually 1).\n\
       --link                 Include link numbers (NLANR/NetFlow).\n\
+      --eth-src              Include Ethernet source addresses.\n\
+      --eth-dst              Include Ethernet destination addresses.\n\
 \n");
   printf("\
 Data source options (give exactly one):\n\
@@ -269,7 +277,8 @@ Other options:\n\
       --record-counts TIME   Record packet counts every TIME seconds in output.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
       --no-mmap              Don't memory-map input files.\n\
-  -q, --quiet                Do not print progress bar.\n\
+      --no-headers           Don't print summary dump headers.\n\
+  -q, --quiet                Don't print progress bar.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
@@ -464,6 +473,7 @@ main(int argc, char *argv[])
     bool quiet_explicit = false;
     bool bad_packets = false;
     bool binary = false;
+    bool header = true;
     Vector<String> files;
     const char *record_drops = 0;
     unsigned limit_packets = 0;
@@ -482,7 +492,7 @@ main(int argc, char *argv[])
 	  case OUTPUT_OPT:
 	    if (output)
 		die_usage("'--output' already specified");
-	    output = clp->arg;
+	    output = clp->vstr;
 	    break;
 	    
 	  case INTERFACE_OPT:
@@ -505,8 +515,8 @@ main(int argc, char *argv[])
 	    if (action)
 		die_usage("data source option already specified");
 	    action = opt;
-	    if (clp->have_arg)
-		options.dag_encap = clp->arg;
+	    if (clp->have_val)
+		options.dag_encap = clp->vstr;
 	    break;
 	    
 	  case IPSUMDUMP_FORMAT_OPT:
@@ -515,19 +525,19 @@ main(int argc, char *argv[])
 	    else if (action && action != READ_IPSUMDUMP_OPT)
 		die_usage("'--format' only useful with '--ipsumdump'");
 	    action = READ_IPSUMDUMP_OPT;
-	    options.ipsumdump_format = clp->arg;
+	    options.ipsumdump_format = clp->vstr;
 	    break;
 	    
 	  case WRITE_DUMP_OPT:
 	    if (write_dump)
 		die_usage("'--write-tcpdump' already specified");
-	    write_dump = clp->arg;
+	    write_dump = clp->vstr;
 	    break;
 
 	  case FILTER_OPT:
 	    if (options.filter)
 		die_usage("'--filter' already specified");
-	    options.filter = clp->arg;
+	    options.filter = clp->vstr;
 	    options.force_ip = true;
 	    break;
 
@@ -545,7 +555,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case WRITE_DROPS_OPT:
-	    record_drops = clp->arg;
+	    record_drops = clp->vstr;
 	    break;
 
 	  case LIMIT_PACKETS_OPT:
@@ -557,7 +567,7 @@ main(int argc, char *argv[])
 	    break;
 
 	  case MAP_PREFIX_OPT: {
-	      String arg(clp->arg);
+	      String arg(clp->vstr);
 	      char *data = arg.mutable_data();
 	      int len = arg.length();
 	      for (int i = 0; i < len; i++)
@@ -615,6 +625,10 @@ main(int argc, char *argv[])
 	  case MMAP_OPT:
 	    options.mmap = !clp->negated;
 	    break;
+
+	  case HEADER_OPT:
+	    header = !clp->negated;
+	    break;
 	    
 	  case CONFIG_OPT:
 	    config = true;
@@ -628,7 +642,7 @@ main(int argc, char *argv[])
 	  case VERSION_OPT:
 	    printf("Ipsumdump %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
 	    printf("Copyright (c) 2001-2003 International Computer Science Institute\n\
-Copyright (c) 2004-2006 Regents of the University of California\n\
+Copyright (c) 2004-2008 Regents of the University of California\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -640,7 +654,7 @@ particular purpose.\n");
 	    break;
 
 	  case Clp_NotOption:
-	    files.push_back(clp->arg);
+	    files.push_back(clp->vstr);
 	    break;
 	    
 	  case Clp_BadOption:
@@ -774,7 +788,10 @@ particular purpose.\n");
 	for (int i = 0; i < argc; i++)
 	    banner << argv[i] << ' ';
 	banner.pop_back();
-	sa << cp_quote(banner.take_string()) << ");\n";
+	sa << cp_quote(banner.take_string());
+	if (!header)
+	    sa << ", HEADER false";
+	sa << ");\n";
 	script_sa << "Script(TYPE SIGNAL HUP, write to_dump.flush);\n";
     }
 

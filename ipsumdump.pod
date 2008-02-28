@@ -335,6 +335,18 @@ Include the link number in the dump.  TSH-format NLANR logs, NetFlow
 summary logs, and some IP summary logs can contain a link number.  Example:
 C<2>.  For NetFlow summary logs, B<--link> uses the input interface number.
 
+=item B<--eth-src>
+
+Include the Ethernet source address in the dump.  Example:
+C<00-0A-95-A6-D9-BC>.  Note that Ethernet addresses are only printed for IP
+packets.
+
+=item B<--eth-dst>
+
+Include the Ethernet destination address in the dump.  Example:
+C<00-0A-95-A6-D9-BC>.  Note that Ethernet addresses are only printed for IP
+packets.
+
 =back
 
 =head2 Other Options
@@ -418,7 +430,7 @@ overlapping tcpdump(1) files into a single, sorted tcpdump(1) file.
 =item B<--interval>=I<time>
 
 Process packets for I<time>, an interval length in seconds (or give a
-suffix like 'C<2m>' or 'C<1hr>'). For B<--interface>, B<ipsumdump> will
+suffix like '2m' or '1hr'). For B<--interface>, B<ipsumdump> will
 quit after it has run for I<time>. For other options, B<ipsumdump> will
 quit before writing a packet whose timestamp is more than I<time> seconds
 later than the timestamp on the first packet it sees.
@@ -463,6 +475,11 @@ you feed B<ipsumdump> a corrupted file. See BUGS, below.
 
 Do not print a progress bar to standard error. This is the default when
 B<ipsumdump> isn't running interactively.
+
+=item B<--no-headers>
+
+Do not print the IP summary dump header lines that make the dump
+self-describing.
 
 =item B<--config>
 

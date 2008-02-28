@@ -4,7 +4,7 @@
  * Eddie Kohler
  *
  * Copyright (c) 2001-3 International Computer Science Institute
- * Copyright (c) 2004-7 Regents of the University of California
+ * Copyright (c) 2004-8 Regents of the University of California
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -43,6 +43,7 @@ void
 ToIPSummaryDump::static_initialize()
 {
     IPSummaryDump::anno_register_unparsers();
+    IPSummaryDump::link_register_unparsers();
     IPSummaryDump::ip_register_unparsers();
     IPSummaryDump::tcp_register_unparsers();
     IPSummaryDump::udp_register_unparsers();
@@ -64,19 +65,20 @@ ToIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
     bool careful_trunc = true;
     bool multipacket = false;
     bool binary = false;
+    bool header = true;
 
-    if (cp_va_parse(conf, this, errh,
-		    cpFilename, "dump filename", &_filename,
-		    cpKeywords,
-		    "CONTENTS", cpArgument, "log contents", &save,
-		    "DATA", cpArgument, "log contents", &save,
-		    "VERBOSE", cpBool, "be verbose?", &verbose,
-		    "BANNER", cpString, "banner", &_banner,
-		    "MULTIPACKET", cpBool, "output multiple packets based on packet count anno?", &multipacket,
-		    "BAD_PACKETS", cpBool, "output '!bad' messages for non-IP or bad IP packets?", &bad_packets,
-		    "CAREFUL_TRUNC", cpBool, "output '!bad' messages for truncated IP packets?", &careful_trunc,
-		    "BINARY", cpBool, "output binary data?", &binary,
-		    cpEnd) < 0)
+    if (cp_va_kparse(conf, this, errh,
+		     "FILENAME", cpkP+cpkM, cpFilename, &_filename,
+		     "CONTENTS", 0, cpArgument, &save,
+		     "DATA", 0, cpArgument, &save,
+		     "VERBOSE", 0, cpBool, &verbose,
+		     "HEADER", 0, cpBool, &header,
+		     "BANNER", 0, cpString, &_banner,
+		     "MULTIPACKET", 0, cpBool, &multipacket,
+		     "BAD_PACKETS", 0, cpBool, &bad_packets,
+		     "CAREFUL_TRUNC", 0, cpBool, &careful_trunc,
+		     "BINARY", 0, cpBool, &binary,
+		     cpEnd) < 0)
 	return -1;
 
     Vector<String> v;
@@ -119,6 +121,7 @@ ToIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
     _careful_trunc = careful_trunc;
     _multipacket = multipacket;
     _binary = binary;
+    _header = header;
 
     return (before == errh->nerrors() ? 0 : -1);
 }
@@ -176,7 +179,8 @@ ToIPSummaryDump::initialize(ErrorHandler *errh)
 	sa << "!binary\n";
 
     // print output
-    fwrite(sa.data(), 1, sa.length(), _f);
+    if (_header)
+	fwrite(sa.data(), 1, sa.length(), _f);
 
     return 0;
 }
@@ -336,6 +340,6 @@ ToIPSummaryDump::add_handlers()
     add_write_handler("flush", flush_handler, 0);
 }
 
-ELEMENT_REQUIRES(userlevel IPSummaryDump IPSummaryDump_Anno IPSummaryDump_IP IPSummaryDump_TCP)
+ELEMENT_REQUIRES(userlevel IPSummaryDump IPSummaryDump_Anno IPSummaryDump_IP IPSummaryDump_TCP IPSummaryDump_Link)
 EXPORT_ELEMENT(ToIPSummaryDump)
 CLICK_ENDDECLS

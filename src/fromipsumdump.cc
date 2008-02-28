@@ -73,21 +73,20 @@ FromIPSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
     _sampling_prob = (1 << SAMPLING_SHIFT);
     String default_contents, default_flowid;
     
-    if (cp_va_parse(conf, this, errh,
-		    cpFilename, "dump file name", &_ff.filename(),
-		    cpKeywords,
-		    "STOP", cpBool, "stop driver when done?", &stop,
-		    "ACTIVE", cpBool, "start active?", &active,
-		    "ZERO", cpBool, "zero packet data?", &zero,
-		    "CHECKSUM", cpBool, "set packet checksums?", &checksum,
-		    "SAMPLE", cpUnsignedReal2, "sampling probability", SAMPLING_SHIFT, &_sampling_prob,
-		    "PROTO", cpByte, "default IP protocol", &default_proto,
-		    "MULTIPACKET", cpBool, "generate multiple packets per record?", &multipacket,
-		    "DEFAULT_CONTENTS", cpArgument, "default contents of log", &default_contents,
-		    "DEFAULT_FLOWID", cpArgument, "default flow ID", &default_flowid,
-		    "CONTENTS", cpArgument, "default contents of log", &default_contents,
-		    "FLOWID", cpArgument, "default flow ID", &default_flowid,
-		    cpEnd) < 0)
+    if (cp_va_kparse(conf, this, errh,
+		     "FILENAME", cpkP+cpkM, cpFilename, &_ff.filename(),
+		     "STOP", 0, cpBool, &stop,
+		     "ACTIVE", 0, cpBool, &active,
+		     "ZERO", 0, cpBool, &zero,
+		     "CHECKSUM", 0, cpBool, &checksum,
+		     "SAMPLE", 0, cpUnsignedReal2, SAMPLING_SHIFT, &_sampling_prob,
+		     "PROTO", 0, cpByte, &default_proto,
+		     "MULTIPACKET", 0, cpBool, &multipacket,
+		     "DEFAULT_CONTENTS", 0, cpArgument, &default_contents,
+		     "DEFAULT_FLOWID", 0, cpArgument, &default_flowid,
+		     "CONTENTS", 0, cpArgument, &default_contents,
+		     "FLOWID", 0, cpArgument, &default_flowid,
+		     cpEnd) < 0)
 	return -1;
     if (_sampling_prob > (1 << SAMPLING_SHIFT)) {
 	errh->warning("SAMPLE probability reduced to 1");
@@ -148,7 +147,7 @@ FromIPSummaryDump::initialize(ErrorHandler *errh)
     
     _minor_version = IPSummaryDump::MINOR_VERSION; // expected minor version
     String line;
-    if (_ff.peek_line(line, errh) < 0)
+    if (_ff.peek_line(line, errh, true) < 0)
 	return -1;
     else if (line.substring(0, 14) == "!IPSummaryDump") {
 	int major_version;
@@ -158,7 +157,7 @@ FromIPSummaryDump::initialize(ErrorHandler *errh)
 		_minor_version = IPSummaryDump::MINOR_VERSION;
 	    }
 	}
-	(void) _ff.read_line(line, errh); // throw away line
+	(void) _ff.read_line(line, errh, true); // throw away line
     } else {
 	// parse line again, warn if this doesn't look like a dump
 	if (line.substring(0, 8) != "!creator" && line.substring(0, 5) != "!data" && line.substring(0, 9) != "!contents") {
@@ -735,7 +734,7 @@ FromIPSummaryDump::read_packet(ErrorHandler *errh)
 		return 0;
 	    } else
 		binary = (result == 1);
-	} else if (_ff.read_line(line, errh) <= 0) {
+	} else if (_ff.read_line(line, errh, true) <= 0) {
 	    q->kill();
 	    return 0;
 	}
@@ -1482,10 +1481,10 @@ void
 FromIPSummaryDump::add_handlers()
 {
     add_read_handler("sampling_prob", read_handler, (void *)H_SAMPLING_PROB);
-    add_read_handler("active", read_handler, (void *)H_ACTIVE);
+    add_read_handler("active", read_handler, (void *)H_ACTIVE, Handler::CHECKBOX);
     add_write_handler("active", write_handler, (void *)H_ACTIVE);
     add_read_handler("encap", read_handler, (void *)H_ENCAP);
-    add_write_handler("stop", write_handler, (void *)H_STOP);
+    add_write_handler("stop", write_handler, (void *)H_STOP, Handler::BUTTON);
     _ff.add_handlers(this);
     if (output_is_push(0))
 	add_task_handlers(&_task);

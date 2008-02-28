@@ -74,15 +74,15 @@
 #define AGG_ADDRS_ACT		517
 #define CORR_SIZE_AGG_ADDR_ACT	518
 
-#define CLP_TWO_UINTS_TYPE	(Clp_FirstUserType)
+#define CLP_TWO_UINTS_TYPE	(Clp_ValFirstUser)
 
 static Clp_Option options[] = {
 
   { "help", 'h', HELP_OPT, 0, 0 },
   { "version", 'v', VERSION_OPT, 0, 0 },
 
-  { "read-file", 'r', READ_FILE_OPT, Clp_ArgString, 0 },
-  { "output", 'o', OUTPUT_OPT, Clp_ArgString, 0 },
+  { "read-file", 'r', READ_FILE_OPT, Clp_ValString, 0 },
+  { "output", 'o', OUTPUT_OPT, Clp_ValString, 0 },
   { "binary", 'b', BINARY_OPT, 0, 0 },
   { "text", 'A', ASCII_OPT, 0, 0 },
   { "ip", 0, ASCII_IP_OPT, 0, 0 },
@@ -109,59 +109,59 @@ static Clp_Option options[] = {
   { "all-discriminating-prefix-counts", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
   { "all-discpfx-counts", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
   { "all-num-discriminated-by-prefix", 0, ALL_NNZ_DISCRIM_ACT, 0, 0 },
-  { "conditional-split-counts", 0, COND_SPLIT_ACT, Clp_ArgUnsigned, 0 },
-  { "prefix", 'p', PREFIX_ACT, Clp_ArgUnsigned, 0 },
+  { "conditional-split-counts", 0, COND_SPLIT_ACT, Clp_ValUnsigned, 0 },
+  { "prefix", 'p', PREFIX_ACT, Clp_ValUnsigned, 0 },
   { "posterize", 'P', POSTERIZE_ACT, 0, 0 },
-  { "remap-prefixes", 0, REMAP_PREFIXES_ACT, Clp_ArgString, 0 },
+  { "remap-prefixes", 0, REMAP_PREFIXES_ACT, Clp_ValString, 0 },
   { "average-and-variance", 0, AVG_VAR_ACT, 0, 0 },
   { "avg-var", 0, AVG_VAR_ACT, 0, 0 },
   { "average-and-variance-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
   { "avg-var-by-prefix", 0, AVG_VAR_PREFIX_ACT, 0, 0 },
-  { "sample", 0, SAMPLE_ACT, Clp_ArgDouble, 0 },
+  { "sample", 0, SAMPLE_ACT, Clp_ValDouble, 0 },
 
-  { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ArgUnsigned, 0 },
+  { "cut-smaller", 0, CUT_SMALLER_ACT, Clp_ValUnsigned, 0 },
   { "cut-smaller-aggregates", 0, CUT_SMALLER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-smaller-host-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-smaller-label-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-smaller-address-aggregates", 0, CUT_SMALLER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
-  { "cut-larger", 0, CUT_LARGER_ACT, Clp_ArgUnsigned, 0 },
+  { "cut-larger", 0, CUT_LARGER_ACT, Clp_ValUnsigned, 0 },
   { "cut-larger-aggregates", 0, CUT_LARGER_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger-host-aggregates", 0, CUT_LARGER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger-label-aggregates", 0, CUT_LARGER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "cut-larger-address-aggregates", 0, CUT_LARGER_ADDR_AGG_ACT, CLP_TWO_UINTS_TYPE, 0 },
 
-  { "cull", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-labels", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-labels-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-addresses", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-addresses-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-addrs", 0, CULL_ADDRS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-addrs-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ArgUnsigned, 0 },
-  { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ArgUnsigned, 0 },
+  { "cull", 0, CULL_PACKETS_ACT, Clp_ValUnsigned, 0 },
+  { "cull-labels", 0, CULL_ADDRS_ACT, Clp_ValUnsigned, 0 },
+  { "cull-labels-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ValUnsigned, 0 },
+  { "cull-addresses", 0, CULL_ADDRS_ACT, Clp_ValUnsigned, 0 },
+  { "cull-addresses-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ValUnsigned, 0 },
+  { "cull-addrs", 0, CULL_ADDRS_ACT, Clp_ValUnsigned, 0 },
+  { "cull-addrs-by-packets", 0, CULL_ADDRS_BY_PACKETS_ACT, Clp_ValUnsigned, 0 },
+  { "cull-packets", 0, CULL_PACKETS_ACT, Clp_ValUnsigned, 0 },
 
   { "haar-wavelet-energy", 0, HAAR_WAVELET_ENERGY_ACT, 0, 0 },
 
   { "sizes", 0, SIZES_ACT, 0, 0 },
   { "sorted-sizes", 0, SORTED_SIZES_ACT, 0, 0 },
   { "size-counts", 0, SIZE_COUNTS_ACT, 0, 0 },
-  { "container-sizes", 0, AGG_SIZES_ACT, Clp_ArgUnsigned, 0 },
-  { "container-addresses", 0, AGG_ADDRS_ACT, Clp_ArgUnsigned, 0 },
-  { "container-addrs", 0, AGG_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  { "container-sizes", 0, AGG_SIZES_ACT, Clp_ValUnsigned, 0 },
+  { "container-addresses", 0, AGG_ADDRS_ACT, Clp_ValUnsigned, 0 },
+  { "container-addrs", 0, AGG_ADDRS_ACT, Clp_ValUnsigned, 0 },
   
   { "counts", 0, SIZES_ACT, 0, 0 },
   { "sorted-counts", 0, SORTED_SIZES_ACT, 0, 0 },
   { "count-counts", 0, SIZE_COUNTS_ACT, 0, 0 },
-  { "container-counts", 0, AGG_SIZES_ACT, Clp_ArgUnsigned, 0 },
-  { "container-labels", 0, AGG_ADDRS_ACT, Clp_ArgUnsigned, 0 },
+  { "container-counts", 0, AGG_SIZES_ACT, Clp_ValUnsigned, 0 },
+  { "container-labels", 0, AGG_ADDRS_ACT, Clp_ValUnsigned, 0 },
   
-  { "balance", 0, BALANCE_ACT, Clp_ArgUnsigned, 0 },
+  { "balance", 0, BALANCE_ACT, Clp_ValUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
-  { "all-branching-counts", 0, ALL_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
-  { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, Clp_ArgDouble, Clp_Optional },
-  { "fake-by-branching-counts", 0, FAKE_BY_BRANCHING_ACT, Clp_ArgUnsigned, 0 },
+  { "all-branching-counts", 0, ALL_BRANCHING_ACT, Clp_ValUnsigned, 0 },
+  { "fake-by-discriminating-prefixes", 0, FAKE_BY_DISCRIM_ACT, Clp_ValDouble, Clp_Optional },
+  { "fake-by-branching-counts", 0, FAKE_BY_BRANCHING_ACT, Clp_ValUnsigned, 0 },
   { "fake-by-dirichlet", 0, FAKE_BY_DIRICHLET_ACT, 0, 0 },
-  { "correlation-size-container-addresses", 0, CORR_SIZE_AGG_ADDR_ACT, Clp_ArgUnsigned, 0 },
+  { "correlation-size-container-addresses", 0, CORR_SIZE_AGG_ADDR_ACT, Clp_ValUnsigned, 0 },
   
 };
 
@@ -326,10 +326,10 @@ parse_two_uints(Clp_Parser *clp, const char *arg, int complain, void *)
     Vector<String> conf;
     cp_argvec(arg, conf);
     if (conf.size() == 2
-	&& cp_va_parse(conf, 0, ErrorHandler::silent_handler(),
-		       cpUnsigned, "arg 1", &clp->val.us[0],
-		       cpUnsigned, "arg 2", &clp->val.us[1],
-		       0) >= 0)
+	&& cp_va_kparse(conf, 0, ErrorHandler::silent_handler(),
+			"ARG1", cpkP+cpkM, cpUnsigned, &clp->val.us[0],
+			"ARG2", cpkP+cpkM, cpUnsigned, &clp->val.us[1],
+			cpEnd) >= 0)
 	return 1;
     else if (complain)
 	return Clp_OptionError(clp, "'%O' expects two unsigned integers separated by a comma, not '%s'", arg);
@@ -911,7 +911,7 @@ main(int argc, char *argv[])
 	  case OUTPUT_OPT:
 	    if (output)
 		die_usage("'--output' already specified");
-	    output = clp->arg;
+	    output = clp->vstr;
 	    break;
 
 	  case BINARY_OPT:
@@ -939,7 +939,7 @@ main(int argc, char *argv[])
 	    break;
 	    
 	  case READ_FILE_OPT:
-	    files.push_back(clp->arg);
+	    files.push_back(clp->vstr);
 	    break;
 
 	  case HELP_OPT:
@@ -1032,7 +1032,7 @@ particular purpose.\n");
 	    break;
 
 	  case FAKE_BY_DISCRIM_ACT:
-	    if (!clp->have_arg)
+	    if (!clp->have_val)
 		clp->val.d = 1;	// random
 	    else if (clp->val.d < 0 || clp->val.d > 1)
 		die_usage("'" + optname + "' arg should be between 0 and 1");
@@ -1040,11 +1040,11 @@ particular purpose.\n");
 	    break;
 
 	  case REMAP_PREFIXES_ACT:
-	    add_action(opt, 0, 0, clp->arg);
+	    add_action(opt, 0, 0, clp->vstr);
 	    break;
 	    
 	  case Clp_NotOption:
-	    files.push_back(clp->arg);
+	    files.push_back(clp->vstr);
 	    break;
 	    
 	  case Clp_BadOption:

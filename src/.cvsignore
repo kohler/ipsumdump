@@ -1,8 +1,13 @@
 Makefile *.d
-sd_elements.cc sd_elements.mk sd_elements.conf
-ac_elements.cc ac_elements.mk ac_elements.conf
+sd_elements.cc
+sd_elements.mk
+sd_elements.conf
+ac_elements.cc
+ac_elements.mk
+ac_elements.conf
 ipsumdump
 ipaggcreate
+ipaggmanip
 aggcounter.cc
 aggcounter.hh
 aggregateip.cc
@@ -41,6 +46,8 @@ fromnlanrdump.cc
 fromnlanrdump.hh
 fromtcpdump.cc
 fromtcpdump.hh
+kernelfilter.cc
+kernelfilter.hh
 ipfieldinfo.cc
 ipfieldinfo.hh
 ipfilter.cc
@@ -50,6 +57,7 @@ ipmirror.hh
 ipnameinfo.cc
 ipnameinfo.hh
 ipsumdump_anno.cc
+ipsumdump_link.cc
 ipsumdump_ip.cc
 ipsumdump_tcp.cc
 ipsumdumpinfo.cc
