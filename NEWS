@@ -1,6 +1,6 @@
 Ipsumdump NEWS
 
-Version 1.64
+Version 1.64   27.Feb.2008
 
 * Add '--no-header', '--eth-src', and '--eth-dst' options.  Requested by
   Vern Paxson.
