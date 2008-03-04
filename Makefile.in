@@ -111,7 +111,6 @@ fetch-click:
 	    || echo "Could not copy $(clicksrcdir)/$$f!" 1>&2; \
 	    test "$$alteration" = "$$fgroup" || perl -pi -e "$$alteration" $(top_srcdir)/src/$$g; \
 	  done; done
-	cd $(top_srcdir); cp $(libclick)/aclocal.m4 .
 
 
 distdir = $(PACKAGE)-$(VERSION)
