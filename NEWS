@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.66   4.Mar.2008
+
+* Another bug fix, reported this time by Nick Weaver.
+
+
 Version 1.65   28.Feb.2008
 
 * Fix sampling.  Problem reported by Vern Paxson.
