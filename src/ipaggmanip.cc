@@ -76,7 +76,7 @@
 
 #define CLP_TWO_UINTS_TYPE	(Clp_ValFirstUser)
 
-static Clp_Option options[] = {
+static const Clp_Option options[] = {
 
   { "help", 'h', HELP_OPT, 0, 0 },
   { "version", 'v', VERSION_OPT, 0, 0 },

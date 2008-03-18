@@ -117,7 +117,7 @@ static const char* const field_names[] = {
 
 #define CLP_TIMESTAMP_TYPE	(Clp_ValFirstUser)
 
-static Clp_Option options[] = {
+static const Clp_Option options[] = {
 
     { "help", 'h', HELP_OPT, 0, 0 },
     { "version", 'v', VERSION_OPT, 0, 0 },
