@@ -28,13 +28,13 @@ The 'B<-sd>' option, which is equivalent to 'B<--src --dst>', tells
 B<ipsumdump> to log I<s>ource and I<d>estination IP addresses.
 'F</home/kohler/largedump.gz>' is a compressed tcpdump(1) file. Each data
 line represents a packet; a space separates the two addresses. The
-'C<!data>' comment describes the contents of each data line.
+C<!data> comment describes the contents of each data line.
 
 =head1 OPTIONS
 
-=head2 Data Sources
+=head2 Source Options
 
-Data source options tell B<ipsumdump> what kind of data source to use:
+Source options tell B<ipsumdump> what kind of data source to use:
 L<tcpdump(1)> raw-packet files (B<--tcpdump>), live network interfaces
 (B<--interface>), NetFlow summary files (B<--netflow-summary>),
 B<ipsumdump> output files (B<--ipsumdump>), DAG or NLANR-formatted files
@@ -119,19 +119,21 @@ still make do.  Only works with tcpdump versions 3.7 and earlier.
 
 =back
 
-=head2 Dump Contents
+=head2 Data Options
 
-These options determine what actually goes in the dump; supply an arbitrary
-number of them. In the output, fields are separated by spaces. If you say
-'B<-sd>', for example -- or the equivalent 'B<--src --dst>' -- the dump's
-data lines will contain an IP source address, a space, and an IP
-destination address:
+These options determine the dump's contents. Each data option adds a field
+to the output file; you can supply any number of data options. In the
+output, fields are separated by spaces. If you say 'B<-sd>',
+or the equivalent 'B<--src --dst>', the dump's data lines will contain an
+IP source address, a space, and an IP destination address:
 
     192.168.1.101 18.26.4.44
 
 If you supply no dump content options, B<ipsumdump> will not create a
 summary dump. This may be useful if you're only interested in creating a
 tcpdump file with B<--write-tcpdump>.
+
+=head3 Generic Options
 
 =over 4
 
@@ -148,6 +150,43 @@ Include flow-begin timestamp in the dump. Example: C<1000212479.001937>.
 This is meaningful only for packet sources that include flow-begin
 timestamps, such as NetFlow summaries.
 
+=item B<--packet-count>, B<-c>
+
+Include packet count in the dump.  Some kinds of logs -- such as NetFlow
+summary logs -- record information about flows, not packets.  A flow
+represents multiple packets; the packet count says exactly how many. 
+Example: C<1>.  See also B<--multipacket>, below.
+
+=item B<--link>
+
+Include the link number in the dump.  TSH-format NLANR logs, NetFlow
+summary logs, and some IP summary logs can contain a link number.  Example:
+C<2>.  For NetFlow summary logs, B<--link> uses the input interface number.
+
+=back
+
+=head3 Ethernet Options
+
+=over 4
+
+=item B<--eth-src>
+
+Include the Ethernet source address in the dump.  Example:
+C<00-0A-95-A6-D9-BC>.  Note that Ethernet addresses are only printed for IP
+packets.
+
+=item B<--eth-dst>
+
+Include the Ethernet destination address in the dump.  Example:
+C<00-0A-95-A6-D9-BC>.  Note that Ethernet addresses are only printed for IP
+packets.
+
+=back
+
+=head3 IP Options
+
+=over 4
+
 =item B<--src>, B<-s>
 
 Include IP source address in the dump. Example: C<192.168.1.101>.
@@ -155,16 +194,6 @@ Include IP source address in the dump. Example: C<192.168.1.101>.
 =item B<--dst>, B<-d>
 
 Include IP destination address in the dump. Example: C<18.26.4.44>.
-
-=item B<--sport>, B<-S>
-
-Include TCP or UDP source port in the dump. Example: C<8928>. For non-TCP
-or UDP packets, and for fragments after the first, this field is a single
-dash C<->.
-
-=item B<--dport>, B<-D>
-
-Include TCP or UDP destination port in the dump. Example: C<80>.
 
 =item B<--length>, B<-l>
 
@@ -176,10 +205,6 @@ Example: C<72>.
 Include IP protocol in the dump. Can be C<T> for TCP, C<U> for UDP,
 C<I> for ICMP, or a number for some other protocol.
 
-=item B<--id>
-
-Include IP ID field in the dump. Example: C<19371>.
-
 =item B<--fragment>, B<-g>
 
 Include IP fragment test in the dump. The field value is C<F> for first
@@ -189,9 +214,17 @@ period) for nonfragments.
 =item B<--fragment-offset>, B<--fragoff>, B<-G>
 
 Include IP fragment offset in the dump. The field value is the fragment
-offset in bytes, possibly followed by a C<+> suffix, indicating the MF
-(more fragments) flag. Examples: C<0+> (fragment offset 0, more fragments
+offset in bytes, possibly followed by a C<+> suffix, indicating the
+MF (more fragments) flag. Examples: C<0+> (fragment offset 0, more fragments
 forthcoming), C<552> (fragment offset 552, this is the last fragment).
+
+=item B<--ip-id>
+
+Include IP ID field in the dump. Example: C<19371>.
+
+=item B<--ip-sum>
+
+Include IP checksum in the dump.  Example: C<34987>.
 
 =item B<--ip-opt>
 
@@ -228,73 +261,30 @@ representations:
 		    octets separated by colons)
 
 Multiple options are separated by semicolons. Any invalid option causes the
-entire field to be replaced by a single question mark 'C<?>'. A period
-'C<.>' is used for packets with no options (except possibly EOL and NOP).
+entire field to be replaced by a single question mark C<?>. A period
+C<.> is used for packets with no options (except possibly EOL and NOP).
 
-=item B<--ip-sum>
+=item B<--capture-length>
 
-Include IP checksum in the dump.  Example: C<34987>.
+Include the length of captured IP data in the dump. This can be less than
+the full IP length (see B<--length>), since many packet capture programs
+will store only part of each packet's data.
 
-=item B<--tcp-seq>, B<-Q>
+=back
 
-Include TCP sequence number in the dump. Example: C<4009339012>. For
-non-TCP packets, and for fragments after the first, this field is a single
+=head3 Transport Options
+
+=over 4
+
+=item B<--sport>, B<-S>
+
+Include TCP or UDP source port in the dump. Example: C<8928>. For non-TCP
+or UDP packets, and for fragments after the first, this field is a single
 dash C<->.
 
-=item B<--tcp-ack>, B<-K>
+=item B<--dport>, B<-D>
 
-Include TCP acknowledgement number in the dump. Example: C<4009339012>. For
-non-TCP packets, and for fragments after the first, this field is a single
-dash C<->.
-
-=item B<--tcp-flags>, B<-F>
-
-Include TCP flags byte in the dump. Each flag is represented by an
-uppercase letter. Example: C<PA> (PSH and ACK are on, everything else is
-off). If no flags are on, prints C<.> (a single period). For non-TCP
-packets, and for fragments after the first, this field is a single dash
-C<->.
-
-Flag characters are C<F> for FIN, C<S> for SYN, C<R> for RST, C<P> for PSH,
-C<A> for ACK, C<U> for URG, C<E> for ECE (flag bit 6), C<C> for CWR (flag
-bit 7), and C<N> for Nonce Sum (flag bit 8).
-
-=item B<--tcp-window>, B<-W>
-
-Include TCP receive window in the dump.  This value is not scaled by the
-connection's window scale, if any.  Example: C<480>.  For non-TCP packets,
-and for fragments after the first, this field is a single dash C<->.
-
-=item B<--tcp-opt>, B<-O>
-
-Include TCP options in the dump. Single TCP option fields have the
-following representations:
-
-    EOL, NOP        No representation
-    MSS             'mss1400'
-    Window scale    'wscale10'
-    SACK permitted  'sackok'
-    SACK            'sack95-98'; each SACK block
-                    is listed separately
-    Timestamp       'ts669063908:38382731'
-    Other options   '98' (option 98, no data),
-                    '99=0:5:10' (option with data, data
-		    octets separated by colons)
-
-Multiple options are separated by semicolons. Any invalid option causes the
-entire field to be replaced by a single question mark 'C<?>'. A period
-'C<.>' is used for packets with no options (except possibly EOL and NOP).
-
-=item B<--tcp-sack>
-
-Include SACK-related TCP options in the dump, using the format given under
-C<--tcp-opt>, above.
-
-=item B<--udp-length>
-
-Include UDP length in the dump. This is the length reported in UDP packet
-headers; a dash is printed for non-UDP packets, and second and subsequent
-UDP fragments. Example: C<1000>.
+Include TCP or UDP destination port in the dump. Example: C<80>.
 
 =item B<--payload-length>, B<-L>
 
@@ -316,36 +306,103 @@ as defined above. In ASCII output, the output is a 22-character string
 consisting of characters [a-zA-Z0-9_@]; in binary output, it's a
 16-character binary digest. Example: C<sQy@IjqXnFPwZtgtwaC5Hb>.
 
-=item B<--capture-length>
+=back
 
-Include the length of captured IP data in the dump. This can be less than
-the full IP length (see B<--length>), since many packet capture programs
-will store only part of each packet's data.
+=head3 TCP Options
 
-=item B<--packet-count>, B<-c>
+TCP header fields equal a dash C<-> for non-TCP packets and non-first
+fragments.
 
-Include packet count in the dump.  Some kinds of logs -- such as NetFlow
-summary logs -- record information about flows, not packets.  A flow
-represents multiple packets; the packet count says exactly how many. 
-Example: C<1>.  See also B<--multipacket>, below.
+=over 4
 
-=item B<--link>
+=item B<--tcp-flags>, B<-F>
 
-Include the link number in the dump.  TSH-format NLANR logs, NetFlow
-summary logs, and some IP summary logs can contain a link number.  Example:
-C<2>.  For NetFlow summary logs, B<--link> uses the input interface number.
+Include TCP flags byte in the dump. Each flag is represented by an
+uppercase letter. Example: C<PA> (PSH and ACK are on, everything else is
+off). If no flags are on, the field is C<.> (a single period).
 
-=item B<--eth-src>
+Flag characters are C<F> for FIN, C<S> for SYN, C<R> for RST, C<P> for PSH,
+C<A> for ACK, C<U> for URG, C<E> for ECE (flag bit 6), C<C> for CWR (flag
+bit 7), and C<N> for Nonce Sum (flag bit 8).
 
-Include the Ethernet source address in the dump.  Example:
-C<00-0A-95-A6-D9-BC>.  Note that Ethernet addresses are only printed for IP
-packets.
+=item B<--tcp-seq>, B<-Q>
 
-=item B<--eth-dst>
+Include TCP sequence number in the dump. Example: C<4009339012>.
 
-Include the Ethernet destination address in the dump.  Example:
-C<00-0A-95-A6-D9-BC>.  Note that Ethernet addresses are only printed for IP
-packets.
+=item B<--tcp-ack>, B<-K>
+
+Include TCP acknowledgement number in the dump. Example: C<4009339012>.
+
+=item B<--tcp-window>, B<-W>
+
+Include TCP receive window in the dump.  This value is not scaled by the
+connection's window scale, if any.  Example: C<480>.
+
+=item B<--tcp-opt>, B<-O>
+
+Include TCP options in the dump. Single TCP option fields have the
+following representations:
+
+    EOL, NOP        No representation
+    MSS             'mss1400'
+    Window scale    'wscale10'
+    SACK permitted  'sackok'
+    SACK            'sack95-98'; each SACK block
+                    is listed separately
+    Timestamp       'ts669063908:38382731'
+    Other options   '98' (option 98, no data),
+                    '99=0:5:10' (option with data, data
+		    octets separated by colons)
+
+Multiple options are separated by semicolons. Any invalid option causes the
+entire field to be replaced by a single question mark C<?>. A period
+C<.> is used for packets with no options (except possibly EOL and NOP).
+
+=item B<--tcp-sack>
+
+Include SACK-related TCP options in the dump, using the format given under
+C<--tcp-opt>, above.
+
+=back
+
+=head3 UDP Options
+
+UDP header fields equal a dash C<-> for non-UDP packets and non-first
+fragments.
+
+=over 4
+
+=item B<--udp-length>
+
+Include UDP length in the dump. This is the length reported in the UDP
+packet header. Example: C<1000>.
+
+=back
+
+=head3 ICMP Options
+
+ICMP header fields equal a dash C<-> for non-ICMP packets and non-first
+fragments.
+
+=over 4
+
+=item B<--icmp-type>
+
+Include ICMP types in the dump. Example: C<3>.
+
+=item B<--icmp-code>
+
+Include ICMP codes in the dump. Example: C<8>.
+
+=item B<--icmp-type-name>
+
+Include ICMP types in the dump, using textual names if known. Examples:
+C<echo>, C<echo-reply>, C<100>.
+
+=item B<--icmp-code-name>
+
+Include ICMP codes in the dump, using textual names if known. Examples:
+C<filterprohibited>, C<srcroutefail>, C<reassembly>, C<97>.
 
 =back
 
@@ -378,11 +435,11 @@ tcpdump's syntax.)
 
 =item B<--bad-packets>
 
-Print lines like 'C<!bad IP header length 4>' for packets with no IP
+Print lines like C<!bad IP header length 4> for packets with no IP
 headers, bad IP headers, or bad TCP/UDP headers. (A bad header has an
 incorrect length or unexpected version, or is spread across multiple
-fragments.)  The 'C<!bad>' line will immediately precede the normal output
-line.  Whether or not B<--bad-packets> is true, a dash 'C<->' is printed
+fragments.)  The C<!bad> line will immediately precede the normal output
+line.  Whether or not B<--bad-packets> is true, a dash C<-> is printed
 for any piece of information that came from a bad header, or that came from
 a portion of the header that was not captured.
 
@@ -409,7 +466,7 @@ default.
 Sample packets with probability I<p>. That is, I<p> is the chance that a
 packet will cause output to be generated. The actual probability may differ
 from the specified probability, due to fixed point arithmetic; check the
-output for a 'C<!sampling_prob>' comment to see the real probability.
+output for a C<!sampling_prob> comment to see the real probability.
 Strictly speaking, this option samples records, not packets; so for NetFlow
 summaries without B<--multipacket>, it will sample flows.
 
@@ -543,7 +600,7 @@ Here is the same data, anonymized with B<-A>:
 =head1 BINARY FORMAT
 
 Binary ipsumdump files begin with several ASCII lines, just like regular
-ipsumdump files. The line 'C<!binary>' indicates that the rest of the file,
+ipsumdump files. The line C<!binary> indicates that the rest of the file,
 starting immediately after the newline, consists of binary records. Each
 record looks like this:
 
@@ -555,11 +612,11 @@ record looks like this:
 The initial word of data contains the record length in bytes. (All numbers
 in the file are stored in network byte order.) The record length includes
 the initial word itself, so the minimum valid record length is 4. The
-high-order bit 'C<X>' is the metadata indicator. It is zero for regular
+high-order bit C<X> is the metadata indicator. It is zero for regular
 packets and one for metadata lines.
 
 Regular packet records have binary fields stored in the order indicated by
-the 'C<!data>' line, as follows:
+the C<!data> line, as follows:
 
    Field Name     Length  Description
    timestamp         8    timestamp sec, usec
@@ -584,12 +641,12 @@ the 'C<!data>' line, as follows:
    payload_len       4    payload length
    count             4    packet count
 
-Each field is Length bytes long. Variable-length fields have Length 'C<?>' in
+Each field is Length bytes long. Variable-length fields have Length C<?> in
 the table; in a packet record, these fields consist of a single length byte,
 followed by that many bytes of data.
 
 The data stored in a metadata record is just an ASCII string, ending with
-newline, same as in a regular ASCII IPSummaryDump file. 'C<!bad>' records, for
+newline, same as in a regular ASCII IPSummaryDump file. C<!bad> records, for
 example, are stored this way.
 
 =head1 CLICK
@@ -621,7 +678,7 @@ Version 1.0 versions printed a number between 0 and 255 for tcp_flags, or
 used C<X> and C<Y> for ECE and CWR.  Version 1.2 and later uses C<C> for
 CWR.
 
-The names of 'C<!data>' fields were formerly printed in quotes, and could
+The names of C<!data> fields were formerly printed in quotes, and could
 contain spaces, like the following:
 
   !data 'timestamp' 'ip src' 'sport' 'ip dst' 'dport' 'ip proto'

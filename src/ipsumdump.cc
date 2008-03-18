@@ -62,8 +62,9 @@
 #define BINARY_OPT		319
 #define MMAP_OPT		320
 #define HEADER_OPT		321
+#define HELP_DATA_OPT		322
 
-// data sources
+// sources
 #define INTERFACE_OPT		400
 #define READ_DUMP_OPT		401
 #define READ_NETFLOW_SUMMARY_OPT 402
@@ -81,10 +82,11 @@ static const char* const field_names[] = {
     "tcp_opt", "tcp_sack", "payload_len", "count",	// 12-15
     "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
     "link", "udp_len", "ip_opt", "ip_sum", "tcp_window", // 20-24
-    "payload_md5", "eth_src", "eth_dst"			// 25-27
+    "payload_md5", "eth_src", "eth_dst", "icmp_type", "icmp_code", // 25-29
+    "ip_ttl", "icmp_type_name", "icmp_code_name"		// 30-32
 };
 
-// options for logging
+// data
 #define FIRST_LOG_OPT		1000
 #define TIMESTAMP_OPT		1000
 #define FIRST_TIMESTAMP_OPT	1001
@@ -114,12 +116,18 @@ static const char* const field_names[] = {
 #define PAYLOAD_MD5_OPT		1025
 #define ETH_SRC_OPT		1026
 #define ETH_DST_OPT		1027
+#define ICMP_TYPE_OPT		1028
+#define ICMP_CODE_OPT		1029
+#define IP_TTL_OPT		1030
+#define ICMP_TYPE_NAME_OPT	1031
+#define ICMP_CODE_NAME_OPT	1032
 
 #define CLP_TIMESTAMP_TYPE	(Clp_ValFirstUser)
 
 static const Clp_Option options[] = {
 
-    { "help", 'h', HELP_OPT, 0, 0 },
+    { "help", 'h', HELP_OPT, 0, Clp_PreferredMatch },
+    { "help-data", 0, HELP_DATA_OPT, 0, 0 },
     { "version", 'v', VERSION_OPT, 0, 0 },
     { "verbose", 'V', VERBOSE_OPT, 0, Clp_Negate },
 
@@ -163,6 +171,7 @@ static const Clp_Option options[] = {
     { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
     { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
     { "id", 0, IPID_OPT, 0, 0 },
+    { "ip-id", 0, IPID_OPT, 0, 0 },
     { "ip-opt", 0, IP_OPT_OPT, 0, 0 },
     { "ip-sum", 0, IP_SUM_OPT, 0, 0 },
     { "length", 'l', LENGTH_OPT, 0, 0 },
@@ -183,7 +192,12 @@ static const Clp_Option options[] = {
     { "timestamp", 't', TIMESTAMP_OPT, 0, 0 },
     { "udp-length", 0, UDP_LEN_OPT, 0, 0 },
     { "eth-src", 0, ETH_SRC_OPT, 0, 0 },
-    { "eth-dst", 0, ETH_DST_OPT, 0, 0 }
+    { "eth-dst", 0, ETH_DST_OPT, 0, 0 },
+    { "icmp-type", 0, ICMP_TYPE_OPT, 0, Clp_PreferredMatch },
+    { "icmp-code", 0, ICMP_CODE_OPT, 0, Clp_PreferredMatch },
+    { "ip-ttl", 0, IP_TTL_OPT, 0, 0 },
+    { "icmp-type-name", 0, ICMP_TYPE_NAME_OPT, 0, 0 },
+    { "icmp-code-name", 0, ICMP_CODE_NAME_OPT, 0, 0 },
 
 };
 
@@ -205,48 +219,80 @@ Try '%s --help' for more information.",
 }
 
 void
-usage()
+usage_data()
 {
   printf("\
-'Ipsumdump' reads IP packets from tcpdump(1) files, or network interfaces,\n\
-and summarizes their contents in an ASCII log.\n\
-\n\
-Usage: %s [CONTENT OPTIONS] [-i DEVNAMES | FILES] > LOGFILE\n\
-\n\
-Options that determine summary dump contents (can give multiple options):\n\
+Generic options:\n\
   -t, --timestamp            Include packet timestamps.\n\
   -T, --first-timestamp      Include flow-begin timestamps.\n\
+  -c, --packet-count         Include packet counts (usually 1).\n\
+      --link                 Include link numbers (NLANR/NetFlow).\n\
+\n\
+Ethernet options:\n\
+      --eth-src              Include Ethernet source addresses.\n\
+      --eth-dst              Include Ethernet destination addresses.\n\
+\n\
+IP options:\n\
   -s, --src                  Include IP source addresses.\n\
   -d, --dst                  Include IP destination addresses.\n\
-  -S, --sport                Include TCP/UDP source ports.\n\
-  -D, --dport                Include TCP/UDP destination ports.\n",
-	 program_name);
-  printf("\
   -l, --length               Include IP lengths.\n\
   -p, --protocol             Include IP protocols.\n\
-      --id                   Include IP IDs.\n\
   -g, --fragment             Include IP fragment flags ('F' or '.').\n\
   -G, --fragment-offset      Include IP fragment offsets.\n\
+      --ip-id                Include IP IDs.\n\
       --ip-sum               Include IP checksums.\n\
       --ip-opt               Include IP options.\n\
+      --capture-length       Include lengths of captured IP data.\n\n");
+  printf("\
+Transport options:\n\
+  -S, --sport                Include TCP/UDP source ports.\n\
+  -D, --dport                Include TCP/UDP destination ports.\n\
+  -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
+      --payload              Include packet payloads as quoted strings.\n\
+      --payload-md5          Include MD5 checksum of packet payloads.\n\
+\n\
+TCP options:\n\
   -F, --tcp-flags            Include TCP flags word.\n\
   -Q, --tcp-seq              Include TCP sequence numbers.\n\
   -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
   -W, --tcp-window           Include TCP receive window (unscaled).\n\
   -O, --tcp-opt              Include TCP options.\n\
       --tcp-sack             Include TCP selective acknowledgement options.\n\
-      --udp-length           Include UDP lengths.\n\
-  -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
-      --payload              Include packet payloads as quoted strings.\n\
-      --payload-md5          Include MD5 checksum of packet payloads.\n\
-      --capture-length       Include lengths of captured IP data.\n\
-  -c, --packet-count         Include packet counts (usually 1).\n\
-      --link                 Include link numbers (NLANR/NetFlow).\n\
-      --eth-src              Include Ethernet source addresses.\n\
-      --eth-dst              Include Ethernet destination addresses.\n\
-\n");
+\n\
+UDP options:\n\
+      --udp-length           Include UDP lengths.\n\n");
   printf("\
-Data source options (give exactly one):\n\
+ICMP options:\n\
+      --icmp-type            Include ICMP types.\n\
+      --icmp-code            Include ICMP codes.\n\
+      --icmp-type-name       Include human-readable ICMP types.\n\
+      --icmp-code-name       Include human-readable ICMP codes.\n\
+\n\
+      --help                 Print general help message.\n");
+}
+
+void
+usage()
+{
+  printf("\
+'Ipsumdump' reads IP packets from tcpdump(1) files, or network interfaces,\n\
+and summarizes their contents in an ASCII file.\n\
+\n\
+Usage: %s [DATA OPTIONS] [-i DEVNAMES | FILES] > SUMMARYFILE\n\
+\n\
+Data options (give zero or more):\n\
+  -t, --timestamp            Include packet timestamps.\n\
+  -s, --src                  Include IP source addresses.\n\
+  -d, --dst                  Include IP destination addresses.\n\
+  -S, --sport                Include TCP/UDP source ports.\n\
+  -D, --dport                Include TCP/UDP destination ports.\n\
+  -l, --length               Include IP lengths.\n\
+  -p, --protocol             Include IP protocols.\n\
+\n\
+      --help-data            List more data options.\n\
+\n", program_name);
+  printf("\
+Source options (give exactly one):\n\
   -r, --tcpdump              Read tcpdump(1) FILES (default).\n\
   -i, --interface            Read network devices DEVNAMES until interrupted.\n\
       --ipsumdump            Read existing ipsumdump FILES.\n\
@@ -636,6 +682,11 @@ main(int argc, char *argv[])
 	    
 	  case HELP_OPT:
 	    usage();
+	    exit(0);
+	    break;
+
+	  case HELP_DATA_OPT:
+	    usage_data();
 	    exit(0);
 	    break;
 
