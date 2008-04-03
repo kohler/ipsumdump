@@ -1,420 +1,1423 @@
-2001-12-31 Monday 13:09  Eddie Kohler <kohler@aciri.org>
+2008-03-18 Tuesday 14:44  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* configure.in (1.35), src/toipsumdump.cc (1.20),
-	src/toipsumdump.hh (1.22): to 1.19: better bad-header checks
+	* ipsumdump.pod (1.56), src/ipsumdump.cc (1.90), src/toipsumdump.cc
+	  (1.55), src/toipsumdump.hh (1.57): add ICMP options and improve
+	  documentation and help message situation
 
-2001-12-31 Monday 12:26  Eddie Kohler <kohler@aciri.org>
+2008-03-17 Monday 22:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: ipaggcreate.cc (1.45), ipaggmanip.cc (1.49), ipsumdump.cc
+	  (1.89): little nit: const options arrays
+
+2008-03-04 Tuesday 15:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Makefile.in (1.26): fix fetch-click target
+
+2008-03-04 Tuesday 15:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.62), configure (1.24), configure.in (1.85): to 1.66
+
+2008-02-28 Thursday 15:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* configure (1.23), configure.in (1.84): to 1.65
+
+2008-02-28 Thursday 14:14  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.61), src/ipsumdump.cc (1.88): ipsumdump --sample fix:
+	  handler return values have changed
+
+2008-02-27 Wednesday 17:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Makefile.in (1.25), NEWS (1.60), src/Makefile.in (1.42): to 1.64
+
+2008-02-27 Wednesday 16:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.27), NEWS (1.59), aclocal.m4 (1.31), configure
+	  (1.22), configure.in (1.83), ipsumdump.pod (1.55), src/.cvsignore
+	  (1.6), src/Makefile.in (1.41), src/anonipaddr.cc (1.16),
+	  src/anonipaddr.hh (1.12), src/fromipsumdump.cc (1.43),
+	  src/fromnetflowsumdump.cc (1.29), src/fromnetflowsumdump.hh
+	  (1.24), src/ipaggcreate.cc (1.44), src/ipaggmanip.cc (1.48),
+	  src/ipsumdump.cc (1.87), src/toipsumdump.cc (1.54),
+	  src/toipsumdump.hh (1.56): Update ipsumdump, and add
+	  --no-headers, --eth-src, and --eth-dst options.
+
+2007-01-19 Friday 12:49  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.58), configure (1.21), configure.in (1.82), ipsumdump.pod
+	  (1.54), src/fromipsumdump.cc (1.42), src/fromnetflowsumdump.cc
+	  (1.28), src/ipsumdump.cc (1.86), src/toipsumdump.cc (1.53),
+	  src/toipsumdump.hh (1.55): add --payload-md5 option
+
+2006-09-23 Saturday 11:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* .cvsignore (1.5), DISTFILES (1.15), Makefile.in (1.24),
+	  ipaggcreate.pod (1.6), ipaggmanip.pod (1.1), src/aggtree.cc
+	  (1.38), src/aggtree.hh (1.31), src/aggwtree.cc (1.25),
+	  src/aggwtree.hh (1.15), src/ipaggcreate.cc (1.43),
+	  src/ipaggmanip.cc (1.47), test/bad-fragment-length.trace (1.1):
+	  ipaggmanip documentation, and output format based on input format
+	  by default
+
+2006-09-20 Wednesday 23:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* aclocal.m4 (1.30), configure (1.20), configure.in (1.81): 1.62b
+	  to denote version with ipaggmanip
+
+2006-09-20 Wednesday 21:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: Makefile.in (1.40), aggtree.hh (1.30), aggwtree.cc (1.24),
+	  aggwtree.hh (1.14), ipaggmanip.cc (1.46): ipaggmanip compiles and
+	  is installed
+
+2006-09-17 Sunday 22:52  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.57), README (1.11), aclocal.m4 (1.29),
+	  src/fromipsumdump.cc (1.41), src/fromipsumdump.hh (1.30),
+	  src/fromnetflowsumdump.cc (1.27), src/fromnetflowsumdump.hh
+	  (1.23), src/toipsumdump.cc (1.52), src/toipsumdump.hh (1.54): to
+	  1.62
+
+2006-06-18 Sunday 11:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.56): nit
+
+2006-06-18 Sunday 10:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Makefile.in (1.23), NEWS (1.55), aclocal.m4 (1.28), configure
+	  (1.19), configure.in (1.80), src/anonipaddr.hh (1.11),
+	  src/fromipsumdump.hh (1.29), src/fromnetflowsumdump.hh (1.22),
+	  src/toipsumdump.hh (1.53): update to new Click
+
+2006-01-31 Tuesday 12:48  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: Makefile.in (1.39), ipaggcreate.cc (1.42), ipaggmanip.cc
+	  (1.45): aggmanip updates
+
+2006-01-17 Tuesday 22:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.54), configure (1.18), configure.in (1.79),
+	  test/dash-L-way-too-big.trace (1.1): to 1.61
+
+2006-01-09 Monday 20:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.53), configure (1.17), configure.in (1.78),
+	  src/Makefile.in (1.38), src/ipaggcreate.cc (1.41): hooray
+
+2006-01-09 Monday 19:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* DISTFILES (1.14), Makefile.in (1.22), acclick.m4 (1.23),
+	  ipaggcreate.pod (1.5), ipsumdump.pod (1.53), src/ipaggcreate.cc
+	  (1.40), src/ipsumdump.cc (1.85): ipaggcreate is documented!
+
+2006-01-09 Monday 18:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* .cvsignore (1.4), CLICKFILES (1.26), ipaggcreate.pod (1.4),
+	  ipsumdump.pod (1.52), src/.cvsignore (1.5), src/Makefile.in
+	  (1.37), src/fromipsumdump.cc (1.40), src/fromnetflowsumdump.cc
+	  (1.26), src/ipaggcreate.cc (1.39), src/ipsumdump.cc (1.84):
+	  ipaggcreate approaches releasability
+
+2005-12-17 Saturday 21:37  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.25), configure (1.16), src/Makefile.in (1.36),
+	  src/ipaggcreate.cc (1.38), src/ipsumdump.cc (1.83),
+	  src/toipsumdump.cc (1.51), src/toipsumdump.hh (1.52): adapt to
+	  Click changes
+
+2005-11-26 Saturday 09:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.52), configure.in (1.77), ipsumdump.pod (1.51),
+	  src/ipsumdump.cc (1.82): add --tcp-window
+
+2005-11-21 Monday 16:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* ipsumdump.pod (1.50): podnit
+
+2005-11-21 Monday 16:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.51), configure (1.15), configure.in (1.76), ipsumdump.pod
+	  (1.49), src/ipsumdump.cc (1.81): Vern Vern Vern Vern
+
+2005-10-03 Monday 17:45  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.50), configure (1.14), configure.in (1.75),
+	  src/anonipaddr.cc (1.15), src/anonipaddr.hh (1.10),
+	  src/fromipsumdump.cc (1.39), src/fromipsumdump.hh (1.28),
+	  src/fromnetflowsumdump.cc (1.25), src/fromnetflowsumdump.hh
+	  (1.21), src/ipaggcreate.cc (1.37), src/ipsumdump.cc (1.80),
+	  src/toipsumdump.cc (1.50), src/toipsumdump.hh (1.51): update
+	  Click library, to 1.57
+
+2005-08-31 Wednesday 10:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.24), Makefile.in (1.21), NEWS (1.49), aclocal.m4
+	  (1.27), configure (1.13), configure.in (1.74), src/.cvsignore
+	  (1.4), src/Makefile.in (1.35), src/ipsumdump.cc (1.79): to 1.56
+
+2005-06-03 Friday 11:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.23), DISTFILES (1.13), NEWS (1.48), configure
+	  (1.12), configure.in (1.73), ipaggcreate.pod (1.3), ipsumdump.pod
+	  (1.48), src/Makefile.in (1.34), src/ipsumdump.cc (1.78): to 1.55
+
+2005-05-27 Friday 09:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* ipaggcreate.pod (1.2), ipsumdump.pod (1.47), src/fromipsumdump.cc
+	  (1.38), src/fromipsumdump.hh (1.27), src/ipaggcreate.cc (1.36):
+	  updates
+
+2005-05-20 Friday 18:22  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* test/smflow.trace.gz (1.1): x
+
+2005-05-20 Friday 13:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* test/: fddi-encap.trace (1.1), frag-example.trace.gz (1.1),
+	  ftpdump.trace.gz (1.1), none-vs-bare-FIN.trace (1.1),
+	  problem.trace.gz (1.1): x
+
+2005-05-15 Sunday 19:37  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: .cvsignore (1.3), ipaggcreate.cc (1.35), ipsumdump.cc
+	  (1.77): rework ipaggcreate/ipsumdump input configuration path
+
+2005-05-14 Saturday 19:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.22), Makefile.in (1.20), src/Makefile.in (1.33),
+	  src/ipaggcreate.cc (1.34): integrate aggcreate
+
+2005-04-10 Sunday 16:53  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.47), aclocal.m4 (1.26), configure (1.11), configure.in
+	  (1.72): Mac OS X needs to check for declaration of
+	  pcap_setnonblock
+
+2005-04-09 Saturday 11:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.21), NEWS (1.46), aclocal.m4 (1.25), configure
+	  (1.10), configure.in (1.71), src/Makefile.in (1.32),
+	  src/toipsumdump.cc (1.49), src/toipsumdump.hh (1.50): to 1.53
+
+2005-03-15 Tuesday 15:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.45), configure (1.9), configure.in (1.70),
+	  src/anonipaddr.cc (1.14), src/fromipsumdump.cc (1.37),
+	  src/fromnetflowsumdump.cc (1.24), src/toipsumdump.cc (1.48): to
+	  1.52: solaris
+
+2005-02-03 Thursday 21:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.44), configure (1.8): to 2.51
+
+2005-02-03 Thursday 21:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* configure.in (1.69), ipsumdump.pod (1.46), src/ipsumdump.cc
+	  (1.76), src/toipsumdump.hh (1.49): add --ip-sum option (Jose'
+	  Maria [Chema] Gonza'lez)
+
+2005-01-25 Tuesday 11:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.43), configure (1.7), configure.in (1.68), ipsumdump.pod
+	  (1.45), src/ipsumdump.cc (1.75): add --ip-opt
+
+2005-01-25 Tuesday 11:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.42), configure (1.6), configure.in (1.67): to 1.49
+
+2005-01-20 Thursday 08:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* test/vlan-snippet.trace (1.1): vlan-snippet
+
+2005-01-13 Thursday 10:58  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* configure (1.5), ipsumdump.pod (1.44), src/ipsumdump.cc (1.74),
+	  src/toipsumdump.cc (1.47), src/toipsumdump.hh (1.48): add udp_len
+	  type (Ruoming Pang)
+
+2005-01-12 Wednesday 22:14  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* .cvsignore (1.3), NEWS (1.41), configure (1.4), configure.in
+	  (1.66), src/.cvsignore (1.2), src/ipsumdump.cc (1.73),
+	  src/toipsumdump.cc (1.46), src/toipsumdump.hh (1.47): to 1.48:
+	  Ruoming Pang reported bug
+
+2005-01-12 Wednesday 01:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.40), aclocal.m4 (1.24), configure (1.3), configure.in
+	  (1.65): ipsumdump
+
+2005-01-03 Monday 20:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* test/v6.trace (1.1): v6 trace
+
+2005-01-03 Monday 20:48  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.39), configure (1.2), configure.in (1.64): to 1.44:
+	  nanosecond timestamps, and NULL encapsulation
+
+2005-01-03 Monday 19:38  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* .cvsignore (1.2), configure (1.1): add configure
+
+2005-01-03 Monday 19:36  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Makefile.in (1.19), config.h.in (1.3), configure.in (1.63),
+	  ipsumdump.pod (1.43), src/fromipsumdump.cc (1.36),
+	  src/fromipsumdump.hh (1.26), src/fromnetflowsumdump.cc (1.23),
+	  src/fromnetflowsumdump.hh (1.20), src/ipsumdump.cc (1.72),
+	  src/toipsumdump.cc (1.45), src/toipsumdump.hh (1.46):
+	  --enable-nanotimestamp
+
+2004-11-12 Friday 19:53  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* aclocal.m4 (1.23), src/anonipaddr.cc (1.13): afsdn
+
+2004-10-21 Thursday 19:01  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* ipaggcreate.pod (1.1): x
+
+2004-10-21 Thursday 18:24  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.37), aggwtree.cc (1.23), ipaggmanip.cc
+	  (1.44): $packed means $packed_le; nits
+
+2004-10-21 Thursday 16:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.33): click updates
+
+2004-10-21 Thursday 16:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.36), aggwtree.cc (1.22), ipaggmanip.cc
+	  (1.43): updates for new click
+
+2004-09-16 Thursday 20:01  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.38), configure.in (1.62), ipsumdump.pod (1.42),
+	  src/fromnetflowsumdump.cc (1.22), src/fromnetflowsumdump.hh
+	  (1.19), src/ipsumdump.cc (1.71), src/toipsumdump.cc (1.44),
+	  src/toipsumdump.hh (1.45): to 1.43: add --link
+
+2004-09-15 Wednesday 21:52  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.20), acclick.m4 (1.22), aclocal.m4 (1.22),
+	  src/Makefile.in (1.31), src/fromipsumdump.cc (1.35),
+	  src/toipsumdump.cc (1.43), src/toipsumdump.hh (1.44): new
+	  ToIPSummaryDump plan
+
+2004-09-03 Friday 12:03  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.37), configure.in (1.61), ipsumdump.pod (1.41),
+	  src/ipsumdump.cc (1.70): add --dag-ppp option: to v1.42
+
+2004-08-20 Friday 00:01  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.36), README (1.10), acclick.m4 (1.21), aclocal.m4 (1.21),
+	  configure.in (1.60), ipsumdump.pod (1.40), src/fromipsumdump.hh
+	  (1.25), src/toipsumdump.hh (1.43): update to 1.41
+
+2004-08-16 Monday 17:38  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.35), configure.in (1.59), src/toipsumdump.hh (1.42): to
+	  v1.40
+
+2004-08-10 Tuesday 20:38  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* test/new-format.erf (1.1): add new-format.erf
+
+2004-08-10 Tuesday 20:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.34), configure.in (1.58), src/fromipsumdump.cc (1.34),
+	  src/fromipsumdump.hh (1.24), src/fromnetflowsumdump.cc (1.21),
+	  src/fromnetflowsumdump.hh (1.18), src/toipsumdump.cc (1.42),
+	  src/ipsumdump.cc (1.69): to 1.39
+
+2004-07-11 Sunday 11:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipsumdump.cc (1.68): use SNIFFER placeholder argument
+
+2004-07-10 Saturday 14:14  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.33), configure.in (1.57), ipsumdump.pod (1.39),
+	  src/fromipsumdump.cc (1.33), src/toipsumdump.cc (1.41),
+	  src/toipsumdump.hh (1.41): to version 1.38
+
+2004-07-09 Friday 22:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.32), configure.in (1.56), src/ipsumdump.cc (1.67),
+	  test/hdlc.trace (1.1): to 1.37
+
+2004-07-09 Friday 22:44  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.31), configure.in (1.55), src/anonipaddr.cc (1.12),
+	  src/fromipsumdump.cc (1.32), src/fromnetflowsumdump.cc (1.20),
+	  src/toipsumdump.cc (1.40): to 1.36
+
+2004-07-08 Thursday 09:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggwtree.hh (1.13), ipaggmanip.cc (1.42): changes to still
+	  compile
+
+2004-06-18 Friday 00:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.30), README (1.9), configure.in (1.54), src/Makefile.in
+	  (1.30): to version 1.35
+
+2004-06-17 Thursday 17:48  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.19), NEWS (1.29), ipsumdump.pod (1.38),
+	  src/Makefile.in (1.29), src/fromipsumdump.cc (1.31),
+	  src/ipsumdump.cc (1.66), src/toipsumdump.cc (1.39),
+	  src/toipsumdump.hh (1.40): add --dag, --nlanr, --capture-length
+	  (not all work yet)
+
+2004-06-17 Thursday 14:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: fromipsumdump.cc (1.30), toipsumdump.cc (1.38),
+	  toipsumdump.hh (1.39): add ts_usec1 type
+
+2004-05-13 Thursday 20:45  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipsumdump.cc (1.65): finally it works
+
+2004-05-13 Thursday 20:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* acclick.m4 (1.20), aclocal.m4 (1.20), configure.in (1.53),
+	  src/anonipaddr.cc (1.11), src/anonipaddr.hh (1.9),
+	  src/fromipsumdump.cc (1.29), src/fromipsumdump.hh (1.23),
+	  src/fromnetflowsumdump.cc (1.19), src/fromnetflowsumdump.hh
+	  (1.17), src/ipsumdump.cc (1.64), src/toipsumdump.cc (1.37),
+	  src/toipsumdump.hh (1.38): to 1.4pre1
+
+2004-01-26 Monday 10:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.18), NEWS (1.28), acclick.m4 (1.19), aclocal.m4
+	  (1.19), configure.in (1.52), src/Makefile.in (1.28),
+	  src/fromipsumdump.cc (1.28), src/fromipsumdump.hh (1.22),
+	  src/fromnetflowsumdump.cc (1.18), src/fromnetflowsumdump.hh
+	  (1.16), src/ipsumdump.cc (1.63): to version1 1.34
+
+2003-12-04 Thursday 11:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.17), ipsumdump.pod (1.37), src/Makefile.in (1.27),
+	  src/fromipsumdump.hh (1.21), src/ipsumdump.cc (1.62): add
+	  --tcpdump-text
+
+2003-12-03 Wednesday 18:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.27), src/ipsumdump.cc (1.61): allow progress bars w/o
+	  ipsumdump output
+
+2003-12-03 Wednesday 18:44  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.26), acclick.m4 (1.18), aclocal.m4 (1.18), configure.in
+	  (1.51), ipsumdump.pod (1.36), src/ipsumdump.cc (1.60): to version
+	  1.33: add --no-mmap
+
+2003-12-03 Wednesday 18:27  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.25), acclick.m4 (1.17), aclocal.m4 (1.17), configure.in
+	  (1.50): to version 1.32 (why didnt this get checked in earlier?)
+
+2003-11-06 Thursday 12:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.16), NEWS (1.24), configure.in (1.49),
+	  src/Makefile.in (1.26), src/fromipsumdump.cc (1.27),
+	  src/fromipsumdump.hh (1.20), src/fromnetflowsumdump.hh (1.15),
+	  src/ipsumdump.cc (1.59), src/toipsumdump.cc (1.36),
+	  src/toipsumdump.hh (1.37): to version 1.31
+
+2003-09-05 Friday 19:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipsumdump.cc (1.58): nits
+
+2003-09-05 Friday 18:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.23), README (1.8), configure.in (1.48), ipsumdump.pod
+	  (1.35), src/fromipsumdump.cc (1.26), src/fromipsumdump.hh (1.19),
+	  src/fromnetflowsumdump.cc (1.17), src/fromnetflowsumdump.hh
+	  (1.14): doc fixes, to 1.30
+
+2003-09-04 Thursday 08:59  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.22), configure.in (1.47): libclick update fixes build
+	  problems
+
+2003-09-03 Wednesday 12:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* ipsumdump.pod (1.34): manual nit
+
+2003-09-03 Wednesday 12:30  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.21), README (1.7), configure.in (1.46), src/ipsumdump.cc
+	  (1.57): more nits for 1.28 release
+
+2003-09-03 Wednesday 12:14  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* acclick.m4 (1.16), aclocal.m4 (1.16), ipsumdump.pod (1.33),
+	  src/Makefile.in (1.25), src/anonipaddr.cc (1.10),
+	  src/fromipsumdump.cc (1.25), src/fromipsumdump.hh (1.18),
+	  src/fromnetflowsumdump.cc (1.16), src/fromnetflowsumdump.hh
+	  (1.13), src/ipsumdump.cc (1.56), src/toipsumdump.cc (1.35):
+	  update Click, and fix bug reported by andrew_white@ici.com
+
+2003-08-25 Monday 14:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.32): whitespace
+
+2003-04-25 Friday 14:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.20), acclick.m4 (1.15), aclocal.m4 (1.15), configure.in
+	  (1.45), src/Makefile.in (1.24): adapt to Click changes
+
+2003-04-22 Tuesday 17:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.19), configure.in (1.44): version 1.26: just a new Click
+
+2003-04-01 Tuesday 15:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.35), aggwtree.cc (1.21), ipaggcreate.cc
+	  (1.31): aggregate files use "!" for metadata lines, not "$"; add
+	  --ip to aggcreate; other nits
+
+2003-03-31 Monday 23:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* ipsumdump.pod (1.32), src/ipsumdump.cc (1.54), src/ipsumdump.cc
+	  (1.55): add --format option; better handling of signals
+
+2003-03-27 Thursday 16:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.30): update Click changes
+
+2003-03-27 Thursday 16:12  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipsumdump.cc (1.53): update to newer Click
+
+2003-03-27 Thursday 11:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.15), configure.in (1.43), src/Makefile.in (1.23),
+	  src/fromipsumdump.cc (1.24), src/fromipsumdump.hh (1.17),
+	  src/fromnetflowsumdump.cc (1.15), src/fromnetflowsumdump.hh
+	  (1.12), src/ipsumdump.cc (1.52), src/toipsumdump.cc (1.34),
+	  src/toipsumdump.hh (1.36): update for new Click
+
+2003-02-13 Thursday 21:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.29): adapt to Click changes (particularly
+	  HandlerCalls)
+
+2003-02-13 Thursday 21:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* acclick.m4 (1.14), aclocal.m4 (1.14), configure.in (1.42),
+	  src/fromipsumdump.cc (1.23), src/fromipsumdump.hh (1.16),
+	  src/fromnetflowsumdump.cc (1.14), src/fromnetflowsumdump.hh
+	  (1.11), src/ipsumdump.cc (1.51), src/toipsumdump.cc (1.33),
+	  src/toipsumdump.hh (1.35): new Click, including new HandlerCall
+	  stuff and new configury
+
+2002-12-05 Thursday 17:30  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.41): doc update
+
+2002-11-14 Thursday 08:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.40): nit
+
+2002-11-13 Wednesday 22:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.34), aggtree.hh (1.29), ipaggmanip.cc (1.39):
+	  add --remap option
+
+2002-10-30 Wednesday 23:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* ipsumdump.pod (1.31), src/toipsumdump.cc (1.32),
+	  src/toipsumdump.hh (1.34): remove padding of "!binary" line
+
+2002-10-30 Wednesday 20:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* acclick.m4 (1.13), aclocal.m4 (1.13), ipsumdump.pod (1.30),
+	  src/fromipsumdump.cc (1.22), src/ipsumdump.cc (1.50),
+	  src/toipsumdump.cc (1.31), src/toipsumdump.hh (1.33): change
+	  binary format; add --tcp-opt and --tcp-sack
+
+2002-10-30 Wednesday 17:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* ipsumdump.pod (1.29), src/toipsumdump.cc (1.30): nitlet
+
+2002-10-16 Wednesday 20:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* acclick.m4 (1.12), aclocal.m4 (1.12), src/anonipaddr.cc (1.9),
+	  src/fromipsumdump.cc (1.21), src/ipsumdump.cc (1.49),
+	  src/toipsumdump.cc (1.29): updatelet
+
+2002-10-16 Wednesday 20:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: ipaggcreate.cc (1.28), ipaggmanip.cc (1.38): remove
+	  implicit String -> const char * casts
+
+2002-10-05 Saturday 11:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: ipaggcreate.cc (1.27), aggtree.cc (1.33), aggtree.hh
+	  (1.28), aggwtree.cc (1.20), ipaggmanip.cc (1.37): use C++ names
+	  for C #includes
+
+2002-10-01 Tuesday 23:00  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.32), aggtree.hh (1.27): note_ok() can check
+	  for emmory corruption
+
+2002-10-01 Tuesday 22:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.31), aggwtree.cc (1.19): fix mismatched
+	  delete yay valgrind
+
+2002-10-01 Tuesday 22:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.30), aggtree.hh (1.26), aggwtree.cc (1.18),
+	  aggwtree.hh (1.12), ipaggmanip.cc (1.36): aggmanip supports IP
+	  aggregate output and input
+
+2002-10-01 Tuesday 11:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.26): nit
+
+2002-09-21 Saturday 09:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Makefile.in (1.18), NEWS (1.18), acclick.m4 (1.11), aclocal.m4
+	  (1.11), src/fromipsumdump.cc (1.20), src/fromipsumdump.hh (1.15),
+	  src/toipsumdump.cc (1.28), src/toipsumdump.hh (1.32): to 1.25
+
+2002-08-24 Saturday 01:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.14), NEWS (1.17), acclick.m4 (1.10), aclocal.m4
+	  (1.10), configure.in (1.41), ipsumdump.pod (1.28),
+	  src/Makefile.in (1.22), src/anonipaddr.cc (1.8),
+	  src/anonipaddr.hh (1.8), src/fromipsumdump.cc (1.19),
+	  src/fromipsumdump.hh (1.14), src/fromnetflowsumdump.cc (1.13),
+	  src/fromnetflowsumdump.hh (1.10), src/ipsumdump.cc (1.48),
+	  src/toipsumdump.cc (1.27), src/toipsumdump.hh (1.31): support
+	  --binary
+
+2002-07-31 Wednesday 18:45  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.13), NEWS (1.16), configure.in (1.40),
+	  ipsumdump.pod (1.27), src/Makefile.in (1.21), src/ipsumdump.cc
+	  (1.47): to 1.24
+
+2002-07-31 Wednesday 15:24  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.25): change names of *CALL handlers, from
+	  CALL_AFTER_* to *_CALL
+
+2002-07-31 Wednesday 11:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* acclick.m4 (1.9), aclocal.m4 (1.9), src/anonipaddr.cc (1.7),
+	  src/anonipaddr.hh (1.7), src/fromipsumdump.cc (1.18),
+	  src/fromnetflowsumdump.cc (1.12): click updates
+
+2002-07-31 Wednesday 11:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipsumdump.cc (1.46): avoid needless packet copies with -w
+
+2002-06-11 Tuesday 15:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.24): support DAG
+
+2002-06-11 Tuesday 15:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.23): AggregateCounter supports IP
+	  address-like ASCII output formats
+
+2002-06-03 Monday 08:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* ipsumdump.pod (1.26), src/toipsumdump.hh (1.30): documentation
+	  nitlets
+
+2002-06-02 Sunday 23:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.15), src/ipsumdump.cc (1.45), src/toipsumdump.cc (1.26),
+	  src/toipsumdump.hh (1.29): update NEWS, add CAREFUL_TRUNC option
+	  to ToIPSD, and fix truncated-ip behavior by turning CAREFUL_TRUNC
+	  off for --tcpdump
+
+2002-06-02 Sunday 23:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.14), configure.in (1.39), ipsumdump.pod (1.25),
+	  src/fromipsumdump.cc (1.17), src/ipsumdump.cc (1.44),
+	  src/toipsumdump.hh (1.28): update to 1.23
+
+2002-06-02 Sunday 23:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.6), ipsumdump.pod (1.24): documentation fix
+
+2002-06-02 Sunday 00:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.13), README (1.5), configure.in (1.38), ipsumdump.pod
+	  (1.23), src/fromipsumdump.cc (1.16), src/fromipsumdump.hh (1.13),
+	  src/ipsumdump.cc (1.43), src/toipsumdump.cc (1.25),
+	  src/toipsumdump.hh (1.27): to version 1.22: mostly IPSummaryDump
+	  elements fragoff stuff
+
+2002-05-21 Tuesday 20:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.12), acclick.m4 (1.8), aclocal.m4 (1.8), configure.in
+	  (1.37), src/anonipaddr.cc (1.6), src/fromipsumdump.cc (1.15),
+	  src/fromnetflowsumdump.cc (1.11), src/toipsumdump.cc (1.24),
+	  src/toipsumdump.hh (1.26): new libclick version
+
+2002-04-23 Tuesday 21:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.29), aggwtree.cc (1.17): #include
+	  <click/glue.hh>
+
+2002-04-23 Tuesday 21:47  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.28), aggtree.hh (1.25), aggwtree.cc (1.16):
+	  update to Click changes: use first_bit_set, and take away const
+	  from Vector<String> & in configure() signature
+
+2002-04-23 Tuesday 21:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.22): file errors are fatal
+
+2002-04-23 Tuesday 21:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.27), aggwtree.cc (1.15): WTree had a
+	  "!_topheavy" bug (ACK!); also, fix return value of ok()
+
+2002-04-23 Tuesday 15:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* acclick.m4 (1.7), aclocal.m4 (1.7), src/anonipaddr.cc (1.5),
+	  src/anonipaddr.hh (1.6), src/fromipsumdump.cc (1.14),
+	  src/fromipsumdump.hh (1.12), src/fromnetflowsumdump.cc (1.10),
+	  src/fromnetflowsumdump.hh (1.9), src/toipsumdump.cc (1.23),
+	  src/toipsumdump.hh (1.25): adapt to Click changes
+
+2002-03-26 Tuesday 17:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: anonipaddr.cc (1.4), anonipaddr.hh (1.5), fromipsumdump.cc
+	  (1.13), fromipsumdump.hh (1.11), fromnetflowsumdump.cc (1.9),
+	  fromnetflowsumdump.hh (1.8), toipsumdump.cc (1.22),
+	  toipsumdump.hh (1.24): newer versions of many elements
+
+2002-02-01 Friday 11:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.21): add --start-time
+
+2002-01-29 Tuesday 11:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.35): better --sample logic
+
+2002-01-28 Monday 16:37  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggwtree.cc (1.14), ipaggmanip.cc (1.34): updates to
+	  aggmanip, which broke on freebsd; but why?
+
+2002-01-27 Sunday 21:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.20): untest
+
+2002-01-27 Sunday 21:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.19): test
+
+2002-01-27 Sunday 21:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.18): use AggregateFlows instead of
+	  FlowToAddress
+
+2002-01-27 Sunday 11:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggwtree.cc (1.13), aggwtree.hh (1.11), ipaggmanip.cc
+	  (1.33): x
+
+2002-01-24 Thursday 19:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.26), ipaggmanip.cc (1.32), aggtree.hh (1.24):
+	  add --assign-counts
+
+2002-01-24 Thursday 16:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/aggtree.cc (1.25): fix balance_histogram bug!!!! thanks
+	  Jinyang...
+
+2002-01-24 Thursday 11:20  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.17): fix --flows option
+
+2002-01-21 Monday 17:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: ipaggmanip.cc (1.30), aggtree.cc (1.24), aggtree.hh (1.23),
+	  aggwtree.cc (1.12), ipaggmanip.cc (1.31): add take_nonzero_sizes
+	  and --correlation
+
+2002-01-19 Saturday 22:02  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.23), aggtree.hh (1.22), aggwtree.cc (1.11),
+	  aggwtree.hh (1.10), ipaggmanip.cc (1.29): add
+	  --fake-by-branching-counts, and update --fake-by-discrim to take
+	  a randomness factor between 0 and 1
+
+2002-01-19 Saturday 12:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.28): add --size-counts option to speed up
+	  "aggsizedist"
+
+2002-01-17 Thursday 00:20  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggwtree.cc (1.10), aggwtree.hh (1.9), ipaggmanip.cc
+	  (1.27): add nonrandom fake_dp
+
+2002-01-16 Wednesday 00:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.26): branching factors first cut
+
+2002-01-15 Tuesday 23:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.22), aggtree.hh (1.21), aggwtree.hh (1.8),
+	  ipaggmanip.cc (1.25): add --branching-counts and
+	  --conditional-split-counts
+
+2002-01-15 Tuesday 23:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.16): support Bro connection summaries
+
+2002-01-15 Tuesday 10:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggwtree.cc (1.9), aggwtree.hh (1.7), ipaggmanip.cc (1.24):
+	  fix faking by discriminating prefix: now it works!
+
+2002-01-15 Tuesday 00:00  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.21), aggtree.hh (1.20), aggwtree.cc (1.8),
+	  aggwtree.hh (1.6), ipaggmanip.cc (1.23): update discriminating
+	  prefix calculation
+
+2002-01-14 Monday 17:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.20), aggtree.hh (1.19), aggwtree.cc (1.7),
+	  aggwtree.hh (1.5), ipaggmanip.cc (1.22): move from child_count
+	  method to full_count method in AggregateWTree
+
+2002-01-08 Tuesday 18:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipsumdump.cc (1.42): nitlets
+
+2002-01-08 Tuesday 18:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* CLICKFILES (1.12), NEWS (1.11), configure.in (1.36),
+	  ipsumdump.pod (1.22), src/Makefile.in (1.20), src/ipsumdump.cc
+	  (1.41): add --interval option
+
+2002-01-08 Tuesday 18:14  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: fromipsumdump.cc (1.12), fromipsumdump.hh (1.10),
+	  toipsumdump.cc (1.21), toipsumdump.hh (1.23): add "link" type
+	  (X/L = remote/local)
+
+2001-12-31 Monday 13:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.10), configure.in (1.35), src/toipsumdump.cc (1.20),
+	  src/toipsumdump.hh (1.22): to 1.19: better bad-header checks
+
+2001-12-31 Monday 12:26  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* test/trashed-packets.trace (1.1): xxx
 
-2001-12-30 Sunday 02:23  Eddie Kohler <kohler@aciri.org>
+2001-12-30 Sunday 02:23  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/fromnetflowsumdump.hh (1.7): doc nitlet
 
-2001-12-30 Sunday 02:03  Eddie Kohler <kohler@aciri.org>
+2001-12-30 Sunday 02:03  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* configure.in (1.34), ipsumdump.pod (1.21): to version 1.18
+	* NEWS (1.9), configure.in (1.34), ipsumdump.pod (1.21): to version
+	  1.18
 
-2001-12-30 Sunday 02:02  Eddie Kohler <kohler@aciri.org>
+2001-12-30 Sunday 02:02  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* test/: bad-contents.trace (1.1), bad-hdr.trace (1.1),
-	embedded-NUL.trace (1.1), one-byte-payload.trace (1.1): add test
-	files
+	  embedded-NUL.trace (1.1), one-byte-payload.trace (1.1): add test
+	  files
 
-2001-12-30 Sunday 02:01  Eddie Kohler <kohler@aciri.org>
+2001-12-30 Sunday 02:01  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/toipsumdump.cc (1.19): fix "payload" content type: had bad
-	length
+	  length
 
-2001-12-18 Tuesday 09:53  Eddie Kohler <kohler@aciri.org>
+2001-12-20 Thursday 13:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.15): change name to ipaggcreate; add
+	  --format option
+
+2001-12-18 Tuesday 09:53  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/ipsumdump.cc (1.40): --help nit
 
-2001-12-18 Tuesday 09:36  Eddie Kohler <kohler@aciri.org>
+2001-12-18 Tuesday 09:36  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/ipsumdump.cc (1.39): add --payload option to --help
 
-2001-12-17 Monday 15:48  Eddie Kohler <kohler@aciri.org>
+2001-12-17 Monday 15:48  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* configure.in (1.33), src/ipsumdump.cc (1.38), src/toipsumdump.cc
-	(1.18), src/toipsumdump.hh (1.21): to 1.17: Brecht's fix
+	* NEWS (1.8), configure.in (1.33), src/ipsumdump.cc (1.38),
+	  src/toipsumdump.cc (1.18), src/toipsumdump.hh (1.21): to 1.17:
+	  Brecht's fix
 
-2001-12-11 Tuesday 10:48  Eddie Kohler <kohler@aciri.org>
+2001-12-11 Tuesday 10:48  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.32): update libclick version
 
-2001-11-30 Friday 16:58  Eddie Kohler <kohler@aciri.org>
+2001-11-30 Friday 16:58  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* configure.in (1.31), ipsumdump.pod (1.20), src/ipsumdump.cc
-	(1.37): to 1.16
+	* NEWS (1.7), configure.in (1.31), ipsumdump.pod (1.20),
+	  src/ipsumdump.cc (1.37): to 1.16
 
-2001-11-28 Wednesday 15:47  Eddie Kohler <kohler@aciri.org>
+2001-11-28 Wednesday 15:47  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* configure.in (1.30), src/toipsumdump.cc (1.17): to 1.15: fix IP
-	length bug
+	* NEWS (1.6), configure.in (1.30), src/toipsumdump.cc (1.17): to
+	  1.15: fix IP length bug
 
-2001-11-28 Wednesday 15:27  Eddie Kohler <kohler@aciri.org>
+2001-11-28 Wednesday 15:27  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* ipsumdump.pod (1.18), ipsumdump.pod (1.19): nit
 
-2001-11-28 Wednesday 15:08  Eddie Kohler <kohler@aciri.org>
+2001-11-28 Wednesday 15:08  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* configure.in (1.29), ipsumdump.pod (1.17), src/fromipsumdump.cc
-	(1.11), src/fromipsumdump.hh (1.9), src/fromnetflowsumdump.cc
-	(1.8), src/ipsumdump.cc (1.36), src/toipsumdump.cc (1.16),
-	src/toipsumdump.hh (1.20): to version 1.14
+	* NEWS (1.5), configure.in (1.29), ipsumdump.pod (1.17),
+	  src/fromipsumdump.cc (1.11), src/fromipsumdump.hh (1.9),
+	  src/fromnetflowsumdump.cc (1.8), src/ipsumdump.cc (1.36),
+	  src/toipsumdump.cc (1.16), src/toipsumdump.hh (1.20): to version
+	  1.14
 
-2001-11-04 Sunday 12:40  Eddie Kohler <kohler@aciri.org>
+2001-11-07 Wednesday 17:31  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* configure.in (1.28), src/anonipaddr.hh (1.4),
-	src/fromipsumdump.cc (1.10), src/fromipsumdump.hh (1.8),
-	src/fromnetflowsumdump.cc (1.7), src/fromnetflowsumdump.hh (1.6),
-	src/toipsumdump.cc (1.15), src/toipsumdump.hh (1.19): to 1.13:
-	ipsumdump improvements
+	* src/: aggtree.cc (1.19), aggtree.hh (1.18), ipaggmanip.cc (1.21):
+	  add --xor
 
-2001-10-31 Wednesday 09:23  Eddie Kohler <kohler@aciri.org>
+2001-11-07 Wednesday 15:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.20): nitlets
+
+2001-11-06 Tuesday 12:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.18), aggtree.hh (1.17), ipaggmanip.cc (1.19):
+	  support (& / (+ syntax
+
+2001-11-04 Sunday 20:58  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.18): updates
+
+2001-11-04 Sunday 12:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.4), configure.in (1.28), src/anonipaddr.hh (1.4),
+	  src/fromipsumdump.cc (1.10), src/fromipsumdump.hh (1.8),
+	  src/fromnetflowsumdump.cc (1.7), src/fromnetflowsumdump.hh (1.6),
+	  src/toipsumdump.cc (1.15), src/toipsumdump.hh (1.19): to 1.13:
+	  ipsumdump improvements
+
+2001-10-31 Wednesday 14:47  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.14): move from PACKET_COUNT_ANNO to
+	  EXTRA_PACKETS_ANNO, for consistency with EXTRA_LENGTH_ANNO
+
+2001-10-31 Wednesday 09:23  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* README (1.4): clarify license
 
-2001-10-31 Wednesday 09:06  Eddie Kohler <kohler@aciri.org>
+2001-10-31 Wednesday 09:06  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.11), DISTFILES (1.12), src/fromnetflowsumdump.cc
-	(1.6), src/fromnetflowsumdump.hh (1.5): update FromNetFlow...: add
-	filepos, filesize
+	  (1.6), src/fromnetflowsumdump.hh (1.5): update FromNetFlow...:
+	  add filepos, filesize
 
-2001-10-31 Wednesday 09:02  Eddie Kohler <kohler@aciri.org>
+2001-10-31 Wednesday 09:02  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* src/ipsumdump.cc (1.35): fix signal
+	* NEWS (1.3), src/ipsumdump.cc (1.35): fix signal
 
-2001-10-31 Wednesday 08:59  Eddie Kohler <kohler@aciri.org>
+2001-10-31 Wednesday 08:59  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* CLICKFILES (1.10), acclick.m4 (1.6), aclocal.m4 (1.6),
-	configure.in (1.27), ipsumdump.pod (1.16), src/Makefile.in (1.19),
-	src/ipsumdump.cc (1.34): to 1.12: remove default dump content
-	options
+	* CLICKFILES (1.10), NEWS (1.2), acclick.m4 (1.6), aclocal.m4
+	  (1.6), configure.in (1.27), ipsumdump.pod (1.16), src/Makefile.in
+	  (1.19), src/ipsumdump.cc (1.34): to 1.12: remove default dump
+	  content options
 
-2001-10-30 Tuesday 22:34  Eddie Kohler <kohler@aciri.org>
+2001-10-30 Tuesday 22:34  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* ipsumdump.pod (1.15), src/ipsumdump.cc (1.33): now NetFlow
-	elements support filepos handlers, so ProgressBar is OK
+	* src/ipaggcreate.cc (1.13), ipsumdump.pod (1.15), src/ipsumdump.cc
+	  (1.33): now NetFlow elements support filepos handlers, so
+	  ProgressBar is OK
 
-2001-10-29 Monday 13:07  Eddie Kohler <kohler@aciri.org>
+2001-10-30 Tuesday 18:44  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.17): aggmanip updates again
+
+2001-10-30 Tuesday 17:58  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.17), aggtree.hh (1.16), ipaggcreate.cc
+	  (1.12), ipaggmanip.cc (1.16): fixes, aggcreate new options,
+	  aggmanip has --and and --or
+
+2001-10-29 Monday 13:07  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.9), DISTFILES (1.11), src/fromipsumdump.hh (1.7),
-	src/ipsumdump.cc (1.32): to 1.11
+	  src/ipsumdump.cc (1.32): to 1.11
 
-2001-10-29 Monday 08:28  Eddie Kohler <kohler@aciri.org>
+2001-10-29 Monday 08:28  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* DISTFILES (1.10): add NEWS
+	* DISTFILES (1.10), NEWS (1.1): add NEWS
 
-2001-10-29 Monday 08:21  Eddie Kohler <kohler@aciri.org>
+2001-10-29 Monday 08:21  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.26): to 1.11
 
-2001-10-29 Monday 00:10  Eddie Kohler <kohler@aciri.org>
+2001-10-29 Monday 00:10  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.8), ipsumdump.pod (1.14), src/Makefile.in (1.18),
-	src/fromipsumdump.cc (1.9), src/fromipsumdump.hh (1.6),
-	src/ipsumdump.cc (1.31), src/toipsumdump.cc (1.14),
-	src/toipsumdump.hh (1.18): add progress bar
+	  src/fromipsumdump.cc (1.9), src/fromipsumdump.hh (1.6),
+	  src/ipsumdump.cc (1.31), src/toipsumdump.cc (1.14),
+	  src/toipsumdump.hh (1.18): add progress bar
 
-2001-10-17 Wednesday 22:26  Eddie Kohler <kohler@aciri.org>
+2001-10-23 Tuesday 13:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.11): aggcreate: use new ProgressBar stuff
+
+2001-10-22 Monday 13:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.10): use new Click stuff, add --split-time
+	  option to aggcreate
+
+2001-10-20 Saturday 00:49  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.9): progress bar updates fast
+
+2001-10-19 Friday 23:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.8): progress bar updates for aggcreate
+
+2001-10-19 Friday 18:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: ipaggcreate.cc (1.6), ipaggcreate.cc (1.7): add --hashes
+	  option
+
+2001-10-19 Friday 17:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.5): support TU summary dumps in aggcreate
+
+2001-10-19 Friday 14:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.4): aggcreate updates
+
+2001-10-18 Thursday 13:45  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.3): aggcreate updates
+
+2001-10-18 Thursday 13:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: ipaggcreate.cc (1.2), ipaggmanip.cc (1.15): aggcreate
+	  updates
+
+2001-10-18 Thursday 00:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggcreate.cc (1.1): add aggcreate
+
+2001-10-17 Wednesday 22:26  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* acclick.m4 (1.5), aclocal.m4 (1.5), src/Makefile.in (1.17),
-	src/bailerror.cc (1.2), src/bailerror.hh (1.2), src/ipsumdump.cc
-	(1.30): BailErrorHandler moved to main error.hh
+	  src/bailerror.cc (1.2), src/bailerror.hh (1.2), src/ipsumdump.cc
+	  (1.30): BailErrorHandler moved to main error.hh
 
-2001-10-11 Thursday 13:53  Eddie Kohler <kohler@aciri.org>
+2001-10-11 Thursday 13:53  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.7): nitlet
 
-2001-10-10 Wednesday 21:42  Eddie Kohler <kohler@aciri.org>
+2001-10-10 Wednesday 21:42  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* ipsumdump.pod (1.13), src/ipsumdump.cc (1.29): update
-	documentation
+	  documentation
 
-2001-10-10 Wednesday 15:38  Eddie Kohler <kohler@aciri.org>
+2001-10-10 Wednesday 15:38  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.25), ipsumdump.pod (1.12), src/fromipsumdump.cc
-	(1.8), src/fromipsumdump.hh (1.5), src/fromnetflowsumdump.cc (1.5),
-	src/ipsumdump.cc (1.28), src/toipsumdump.cc (1.13),
-	src/toipsumdump.hh (1.17): handle fragments correctly, and
-	introduce --fragment/--fragoff options
+	  (1.8), src/fromipsumdump.hh (1.5), src/fromnetflowsumdump.cc
+	  (1.5), src/ipsumdump.cc (1.28), src/toipsumdump.cc (1.13),
+	  src/toipsumdump.hh (1.17): handle fragments correctly, and
+	  introduce --fragment/--fragoff options
 
-2001-10-10 Wednesday 04:09  Eddie Kohler <kohler@aciri.org>
+2001-10-10 Wednesday 04:09  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.6), configure.in (1.24), src/Makefile.in (1.16),
-	src/ipsumdump.cc (1.27), src/toipsumdump.cc (1.12),
-	src/toipsumdump.hh (1.16): to 1.9: --record-counts
+	  src/ipsumdump.cc (1.27), src/toipsumdump.cc (1.12),
+	  src/toipsumdump.hh (1.16): to 1.9: --record-counts
 
-2001-10-09 Tuesday 16:51  Eddie Kohler <kohler@aciri.org>
+2001-10-09 Tuesday 16:51  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.23): to version 1.8
 
-2001-10-09 Tuesday 14:08  Eddie Kohler <kohler@aciri.org>
+2001-10-09 Tuesday 14:08  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.5), Makefile.in (1.17), ipsumdump.pod (1.11),
-	src/Makefile.in (1.15), src/ipsumdump.cc (1.26): to v1.7 again: fix
-	--filter, add --no-promisc
+	  src/Makefile.in (1.15), src/ipsumdump.cc (1.26): to v1.7 again:
+	  fix --filter, add --no-promisc
 
-2001-10-09 Tuesday 09:24  Eddie Kohler <kohler@aciri.org>
+2001-10-09 Tuesday 09:24  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/fromipsumdump.cc (1.7): FromIPSummaryDump supports "payload
-	len"
+	  len"
 
-2001-10-09 Tuesday 09:22  Eddie Kohler <kohler@aciri.org>
+2001-10-09 Tuesday 09:22  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/fromipsumdump.cc (1.6): fix TCP offset again
 
-2001-10-09 Tuesday 09:19  Eddie Kohler <kohler@aciri.org>
+2001-10-09 Tuesday 09:19  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.22), ipsumdump.pod (1.10), src/fromipsumdump.cc
-	(1.5), src/fromipsumdump.hh (1.4), src/fromnetflowsumdump.cc (1.4),
-	src/fromnetflowsumdump.hh (1.4), src/ipsumdump.cc (1.25),
-	src/toipsumdump.cc (1.11): to version 1.7: move MULTIPACKET to the
-	From... elements, so that sampling works correctly with
-	MULTIPACKET; "ip len" data type now does not include link level
-	headers; other nitlets
+	  (1.5), src/fromipsumdump.hh (1.4), src/fromnetflowsumdump.cc
+	  (1.4), src/fromnetflowsumdump.hh (1.4), src/ipsumdump.cc (1.25),
+	  src/toipsumdump.cc (1.11): to version 1.7: move MULTIPACKET to
+	  the From... elements, so that sampling works correctly with
+	  MULTIPACKET; "ip len" data type now does not include link level
+	  headers; other nitlets
 
-2001-10-09 Tuesday 00:55  Eddie Kohler <kohler@aciri.org>
+2001-10-09 Tuesday 00:55  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/: ipsumdump.cc (1.24), toipsumdump.cc (1.10), toipsumdump.hh
-	(1.15): SIGHUP causes a buffer flush without killing the process
+	  (1.15): SIGHUP causes a buffer flush without killing the process
 
-2001-10-08 Monday 15:50  Eddie Kohler <kohler@aciri.org>
+2001-10-08 Monday 15:50  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.4), configure.in (1.21), src/Makefile.in (1.14),
-	src/ipsumdump.cc (1.23): make use of ToDump USE_ENCAP_FROM, and
-	catch SIGTERM
+	  src/ipsumdump.cc (1.23): make use of ToDump USE_ENCAP_FROM, and
+	  catch SIGTERM
 
-2001-10-08 Monday 15:49  Eddie Kohler <kohler@aciri.org>
+2001-10-08 Monday 15:49  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/: fromipsumdump.cc (1.4), fromipsumdump.hh (1.3),
-	fromnetflowsumdump.cc (1.3), fromnetflowsumdump.hh (1.3): add
-	"encap" handlers to FromIPSummaryDump and FromNetFlowSummaryDump,
-	to support ToDump's USE_ENCAP_FROM option
+	  fromnetflowsumdump.cc (1.3), fromnetflowsumdump.hh (1.3): add
+	  "encap" handlers to FromIPSummaryDump and FromNetFlowSummaryDump,
+	  to support ToDump's USE_ENCAP_FROM option
 
-2001-10-08 Monday 11:18  Eddie Kohler <kohler@aciri.org>
+2001-10-08 Monday 11:18  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.20), ipsumdump.pod (1.9), src/anonipaddr.cc
-	(1.3), src/ipsumdump.cc (1.22): add --random-seed option, and use
-	new click_random_srandom() function
+	  (1.3), src/ipsumdump.cc (1.22): add --random-seed option, and use
+	  new click_random_srandom() function
 
-2001-10-07 Sunday 20:17  Eddie Kohler <kohler@aciri.org>
+2001-10-07 Sunday 20:17  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.3), configure.in (1.19), ipsumdump.pod (1.8),
-	src/Makefile.in (1.13), src/ipsumdump.cc (1.21): support --sample
-	and --collate options; better handling for Ctrl-C if there are
-	multiple files
+	  src/Makefile.in (1.13), src/ipsumdump.cc (1.21): support --sample
+	  and --collate options; better handling for Ctrl-C if there are
+	  multiple files
 
-2001-10-04 Thursday 16:07  Eddie Kohler <kohler@aciri.org>
+2001-10-04 Thursday 21:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/aggwtree.cc (1.6): fix cull-hosts options
+
+2001-10-04 Thursday 16:07  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/toipsumdump.hh (1.14): another doc update
 
-2001-10-04 Thursday 16:00  Eddie Kohler <kohler@aciri.org>
+2001-10-04 Thursday 16:00  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/toipsumdump.hh (1.13): update doc
 
-2001-10-04 Thursday 11:52  Eddie Kohler <kohler@aciri.org>
+2001-10-04 Thursday 13:20  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.16), ipaggmanip.cc (1.14), aggtree.hh (1.15):
+	  add cut-smaller-host-agg, cut-larger-host-agg
+
+2001-10-04 Thursday 12:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.15), aggtree.hh (1.14), aggwtree.cc (1.5),
+	  aggwtree.hh (1.4), ipaggmanip.cc (1.13): support
+	  --cut-larger-aggregates and --cut-smaller-aggregates
+
+2001-10-04 Thursday 11:52  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/ipsumdump.cc (1.20): adapt to new Click clp
 
-2001-10-02 Tuesday 17:43  Eddie Kohler <kohler@aciri.org>
+2001-10-04 Thursday 11:17  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.14), aggtree.hh (1.13), aggwtree.cc (1.4),
+	  aggwtree.hh (1.3): AggregateWTree supports collapse_subtree,
+	  mask_data_by_prefix, and so forth
+
+2001-10-03 Wednesday 00:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.12): add --cut-larger option
+
+2001-10-02 Tuesday 17:43  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Makefile.in (1.16), src/ipsumdump.cc (1.19): catch a couple more
-	signals, and improve Makefile
+	  signals, and improve Makefile
 
-2001-10-02 Tuesday 17:43  Eddie Kohler <kohler@aciri.org>
+2001-10-02 Tuesday 17:43  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* ipsumdump.pod (1.7): doc updates
 
-2001-10-02 Tuesday 17:35  Eddie Kohler <kohler@aciri.org>
+2001-10-02 Tuesday 17:35  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.18), src/ipsumdump.cc (1.18), src/toipsumdump.cc
-	(1.9), src/toipsumdump.hh (1.12): use FromDevice's kernel_drops
-	handler to generate a comment if there were dropped packets
+	  (1.9), src/toipsumdump.hh (1.12): use FromDevice's kernel_drops
+	  handler to generate a comment if there were dropped packets
 
-2001-10-01 Monday 10:39  Eddie Kohler <kohler@aciri.org>
+2001-10-01 Monday 10:39  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* ipsumdump.pod (1.6), src/fromipsumdump.cc (1.3),
-	src/fromipsumdump.hh (1.2), src/toipsumdump.hh (1.11):
-	FromIPSummaryDump can handle the new TCP flags format
+	  src/fromipsumdump.hh (1.2), src/toipsumdump.hh (1.11):
+	  FromIPSummaryDump can handle the new TCP flags format
 
-2001-09-22 Saturday 12:12  Eddie Kohler <kohler@aciri.org>
+2001-09-28 Friday 11:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.13), aggtree.hh (1.12), ipaggmanip.cc (1.11):
+	  add --balance-histogram and balancehist
+
+2001-09-22 Saturday 12:12  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* ipsumdump.pod (1.5): doc updates
 
-2001-09-20 Thursday 00:08  Eddie Kohler <kohler@aciri.org>
+2001-09-20 Thursday 23:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.12), aggtree.hh (1.11), ipaggmanip.cc (1.10),
+	  aggwtree.cc (1.3), aggwtree.hh (1.2): add --balance option
+
+2001-09-20 Thursday 00:08  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.9), Makefile.in (1.15), ipsumdump.pod (1.4),
-	src/ipsumdump.cc (1.17): doc updates, mostly; and release 1.1
+	  src/ipsumdump.cc (1.17): doc updates, mostly; and release 1.1
 
-2001-09-19 Wednesday 17:03  Eddie Kohler <kohler@aciri.org>
+2001-09-19 Wednesday 17:03  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Makefile.in (1.14), ipsumdump.pod (1.3): update documentation
 
-2001-09-19 Wednesday 10:53  Eddie Kohler <kohler@aciri.org>
+2001-09-19 Wednesday 10:53  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.8), Makefile.in (1.13), ipsumdump.pod (1.2),
-	src/ipsumdump.cc (1.16), src/toipsumdump.hh (1.10): doc upates,
-	option updates
+	  src/ipsumdump.cc (1.16), src/toipsumdump.hh (1.10): doc upates,
+	  option updates
 
-2001-09-18 Tuesday 23:34  Eddie Kohler <kohler@aciri.org>
+2001-09-18 Tuesday 23:34  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Makefile.in (1.12), README (1.3), ipsumdump.pod (1.1),
-	src/Makefile.in (1.12), src/frombreslau1dump.cc (1.2),
-	src/frombreslau1dump.hh (1.2), src/fromnetflowsumdump.cc (1.2),
-	src/fromnetflowsumdump.hh (1.2), src/ipsumdump.cc (1.15): change
-	name of file; nitlets and updates; add initial POD
+	  src/Makefile.in (1.12), src/frombreslau1dump.cc (1.2),
+	  src/frombreslau1dump.hh (1.2), src/fromnetflowsumdump.cc (1.2),
+	  src/fromnetflowsumdump.hh (1.2), src/ipsumdump.cc (1.15): change
+	  name of file; nitlets and updates; add initial POD
 
-2001-09-10 Monday 12:08  Eddie Kohler <kohler@aciri.org>
+2001-09-10 Monday 12:08  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.7): DISTFILES nit
 
-2001-09-10 Monday 11:55  Eddie Kohler <kohler@aciri.org>
+2001-09-10 Monday 11:55  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Makefile.in (1.11), configure.in (1.17), src/Makefile.in (1.11),
-	src/aciri-ipsumdump.cc (1.14), src/fromipsumdump.cc (1.2),
-	src/ipsumdump.cc (1.14): rename to ipsumdump (get rid of aciri-
-	header), and bug fixlets
+	  src/aciri-ipsumdump.cc (1.14), src/fromipsumdump.cc (1.2),
+	  src/ipsumdump.cc (1.14): rename to ipsumdump (get rid of aciri-
+	  header), and bug fixlets
 
-2001-09-01 Saturday 21:56  Eddie Kohler <kohler@aciri.org>
+2001-09-01 Saturday 21:56  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.16), src/aciri-ipsumdump.cc (1.13),
-	src/ipsumdump.cc (1.13): use libclick-1.2.2a
+	  src/ipsumdump.cc (1.13): use libclick-1.2.2a
 
-2001-08-29 Wednesday 10:19  Eddie Kohler <kohler@aciri.org>
+2001-08-29 Wednesday 10:19  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.15), src/aciri-ipsumdump.cc (1.12),
-	src/ipsumdump.cc (1.12): update to 1.0: make "-r" option the
-	default
+	  src/ipsumdump.cc (1.12): update to 1.0: make "-r" option the
+	  default
 
-2001-08-24 Friday 10:40  Eddie Kohler <kohler@aciri.org>
+2001-08-24 Friday 10:40  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* acclick.m4 (1.4), aclocal.m4 (1.4): update from Click
 
-2001-08-22 Wednesday 17:04  Eddie Kohler <kohler@aciri.org>
+2001-08-24 Friday 10:39  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.11), aggwtree.cc (1.2): use endianness tests;
+	  generate $packed_le, $packed_ge and friends in output files
+	  (should be backwards-compatible)
+
+2001-08-22 Wednesday 17:04  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.6), configure.in (1.14), src/Makefile.in (1.10),
-	src/aciri-ipsumdump.cc (1.11), src/frombreslau1dump.cc (1.1),
-	src/frombreslau1dump.hh (1.1), src/fromipsumdump.cc (1.1),
-	src/fromipsumdump.hh (1.1), src/fromnetflowsumdump.cc (1.1),
-	src/fromnetflowsumdump.hh (1.1), src/ipsumdump.cc (1.11),
-	src/toipsumdump.cc (1.8), src/toipsumdump.hh (1.9): add
-	FromIPSumDump, FromBreslau1Dump
+	  src/aciri-ipsumdump.cc (1.11), src/frombreslau1dump.cc (1.1),
+	  src/frombreslau1dump.hh (1.1), src/fromipsumdump.cc (1.1),
+	  src/fromipsumdump.hh (1.1), src/fromnetflowsumdump.cc (1.1),
+	  src/fromnetflowsumdump.hh (1.1), src/ipsumdump.cc (1.11),
+	  src/toipsumdump.cc (1.8), src/toipsumdump.hh (1.9): add
+	  FromIPSumDump, FromBreslau1Dump
 
-2001-08-06 Monday 10:05  Eddie Kohler <kohler@aciri.org>
+2001-08-20 Monday 19:38  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.10), aggtree.hh (1.10), ipaggmanip.cc (1.9):
+	  add sizes and sorted_sizes to aggmanip and sizevsrank
+
+2001-08-15 Wednesday 17:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.9), aggtree.hh (1.9), ipaggmanip.cc (1.8):
+	  add --haar-wavelet-energy option
+
+2001-08-14 Tuesday 15:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.8), aggtree.hh (1.8), aggwtree.cc (1.1),
+	  aggwtree.hh (1.1), ipaggmanip.cc (1.7): add cull_hosts,
+	  cull_hosts_by_packets, cull_packets
+
+2001-08-10 Friday 00:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.7), ipaggmanip.cc (1.6), aggtree.hh (1.7):
+	  add --sample and --cut-smaller to aggmanip; use them in new
+	  AddrSummary::sample() and cut_smaller() functions
+
+2001-08-09 Thursday 22:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.6), aggtree.hh (1.6), ipaggmanip.cc (1.5):
+	  aggmanip: add --posterize, --avg-var, and --avg-var-by-prefix
+
+2001-08-06 Monday 10:05  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* acclick.m4 (1.3), aclocal.m4 (1.3): configure noodling from MIT
 
-2001-08-04 Saturday 00:43  Eddie Kohler <kohler@aciri.org>
+2001-08-04 Saturday 00:43  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.13), src/aciri-ipsumdump.cc (1.10),
-	src/ipsumdump.cc (1.10): Vern updates to --map-addr behavior
+	  src/ipsumdump.cc (1.10): Vern updates to --map-addr behavior
 
-2001-08-03 Friday 16:06  Eddie Kohler <kohler@aciri.org>
+2001-08-03 Friday 16:06  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/toipsumdump.hh (1.8): add comment about maintaining
-	correspondence
+	  correspondence
 
-2001-08-03 Friday 15:57  Eddie Kohler <kohler@aciri.org>
+2001-08-03 Friday 15:57  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Makefile.in (1.10), acclick.m4 (1.2), aclocal.m4 (1.2),
-	configure.in (1.12), src/aciri-ipsumdump.cc (1.9), src/ipsumdump.cc
-	(1.9), src/toipsumdump.cc (1.7), src/toipsumdump.hh (1.7): add
-	latest Vern-requested flags, and update to latest libclick
+	  configure.in (1.12), src/aciri-ipsumdump.cc (1.9),
+	  src/ipsumdump.cc (1.9), src/toipsumdump.cc (1.7),
+	  src/toipsumdump.hh (1.7): add latest Vern-requested flags, and
+	  update to latest libclick
 
-2001-08-01 Wednesday 23:29  Eddie Kohler <kohler@aciri.org>
+2001-08-02 Thursday 09:47  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.4): add --help
+
+2001-08-02 Thursday 09:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: ipaggmanip.cc (1.3), aggtree.cc (1.5), aggtree.hh (1.5):
+	  add --nnz-in-left-prefixes to aggmanip
+
+2001-08-01 Wednesday 23:29  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Makefile.in (1.9), configure.in (1.11), src/anonipaddr.hh (1.3),
-	src/toipsumdump.hh (1.6): nitlet
+	  src/toipsumdump.hh (1.6): nitlet
 
-2001-07-31 Tuesday 01:09  Eddie Kohler <kohler@aciri.org>
+2001-08-01 Wednesday 23:02  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/ipaggmanip.cc (1.2): added new data
+
+2001-08-01 Wednesday 22:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.4), aggtree.hh (1.4), ipaggmanip.cc (1.1):
+	  add aggmanip.cc: real program
+
+2001-08-01 Wednesday 18:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.3), aggtree.hh (1.3): nitlets
+
+2001-08-01 Wednesday 18:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.2), aggtree.hh (1.2): aggmanip AggregateTree
+	  is getting there
+
+2001-08-01 Wednesday 15:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* src/: aggtree.cc (1.1), aggtree.hh (1.1): add aggmanip directory;
+	  update build process
+
+2001-07-31 Tuesday 01:09  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* acclick.m4 (1.1), aclocal.m4 (1.1): convenience copies of
-	acclick.m4 and aclocal.m4 from Click distro
+	  acclick.m4 and aclocal.m4 from Click distro
 
-2001-07-31 Tuesday 00:56  Eddie Kohler <kohler@aciri.org>
+2001-07-31 Tuesday 00:56  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.5), Makefile.in (1.8), configure.in (1.10),
-	src/Makefile.in (1.9), src/aciri-ipsumdump.cc (1.8),
-	src/anonipaddr.cc (1.2), src/anonipaddr.hh (1.2), src/ipsumdump.cc
-	(1.8): adapt to Click configuration changes
+	  src/Makefile.in (1.9), src/aciri-ipsumdump.cc (1.8),
+	  src/anonipaddr.cc (1.2), src/anonipaddr.hh (1.2),
+	  src/ipsumdump.cc (1.8): adapt to Click configuration changes
 
-2001-07-25 Wednesday 22:06  Eddie Kohler <kohler@aciri.org>
+2001-07-25 Wednesday 22:06  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.4), configure.in (1.9), src/Makefile.in (1.8),
-	src/aciri-ipsumdump.cc (1.7), src/anonipaddr.cc (1.1),
-	src/anonipaddr.hh (1.1), src/ipsumdump.cc (1.7), src/toipsumdump.cc
-	(1.6): updates, and add anonymization
+	  src/aciri-ipsumdump.cc (1.7), src/anonipaddr.cc (1.1),
+	  src/anonipaddr.hh (1.1), src/ipsumdump.cc (1.7),
+	  src/toipsumdump.cc (1.6): updates, and add anonymization
 
-2001-07-25 Wednesday 01:18  Eddie Kohler <kohler@aciri.org>
+2001-07-25 Wednesday 01:18  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* configure.in (1.8), mkinstalldirs (1.2): use library
-	mkinstalldirs, bugfix
+	  mkinstalldirs, bugfix
 
-2001-07-25 Wednesday 01:09  Eddie Kohler <kohler@aciri.org>
+2001-07-25 Wednesday 01:09  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/Makefile.in (1.6), Makefile.in (1.7), configure.in (1.7),
-	src/Makefile.in (1.7): Makefile nits
+	  src/Makefile.in (1.7): Makefile nits
 
-2001-07-25 Wednesday 01:06  Eddie Kohler <kohler@aciri.org>
+2001-07-25 Wednesday 01:06  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Makefile.in (1.6), configure.in (1.6), src/Makefile.in (1.5):
-	compile without GNU make
+	  compile without GNU make
 
-2001-07-25 Wednesday 01:01  Eddie Kohler <kohler@aciri.org>
+2001-07-25 Wednesday 01:01  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.2), configure.in (1.5): make compilable without GNU
-	make
+	  make
 
-2001-07-24 Tuesday 22:33  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 22:33  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* README (1.2): README nitlets
 
-2001-07-24 Tuesday 21:03  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 21:03  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.3), README (1.1), src/aciri-ipsumdump.cc (1.6),
-	src/ipsumdump.cc (1.6), src/toipsumdump.cc (1.5),
-	src/toipsumdump.hh (1.5): bugfixes, documentation
+	  src/ipsumdump.cc (1.6), src/toipsumdump.cc (1.5),
+	  src/toipsumdump.hh (1.5): bugfixes, documentation
 
-2001-07-24 Tuesday 18:03  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 18:03  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/: bailerror.cc (1.1), bailerror.hh (1.1): check in bailerror
 
-2001-07-24 Tuesday 18:02  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 18:02  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.2), Makefile.in (1.5), config.h.in (1.2),
-	configure.in (1.4), src/aciri-ipsumdump.cc (1.5), src/ipsumdump.cc
-	(1.5), src/toipsumdump.cc (1.4), src/toipsumdump.hh (1.4): update
-	aciri-ipsumdump
+	  configure.in (1.4), src/aciri-ipsumdump.cc (1.5),
+	  src/ipsumdump.cc (1.5), src/toipsumdump.cc (1.4),
+	  src/toipsumdump.hh (1.4): update aciri-ipsumdump
 
-2001-07-24 Tuesday 15:26  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 15:26  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* src/: aciri-ipsumdump.cc (1.4), ipsumdump.cc (1.4),
-	toipsumdump.cc (1.3), toipsumdump.hh (1.3): woo hoo!
+	  toipsumdump.cc (1.3), toipsumdump.hh (1.3): woo hoo!
 
-2001-07-24 Tuesday 15:19  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 15:19  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* DISTFILES (1.1), Makefile.in (1.4), mkinstalldirs (1.1),
-	src/Makefile.in (1.4), src/aciri-ipsumdump.cc (1.3),
-	src/ipsumdump.cc (1.3): first working version
+	  src/Makefile.in (1.4), src/aciri-ipsumdump.cc (1.3),
+	  src/ipsumdump.cc (1.3): first working version
 
-2001-07-24 Tuesday 12:55  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 12:55  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Makefile.in (1.3), configure.in (1.3), src/Makefile.in (1.3),
-	src/aciri-ipsumdump.cc (1.2), src/ipsumdump.cc (1.2),
-	src/toipsumdump.cc (1.2), src/toipsumdump.hh (1.2): updates
+	  src/aciri-ipsumdump.cc (1.2), src/ipsumdump.cc (1.2),
+	  src/toipsumdump.cc (1.2), src/toipsumdump.hh (1.2): updates
 
-2001-07-24 Tuesday 01:20  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 01:20  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* CLICKFILES (1.1), Makefile.in (1.2), configure.in (1.2),
-	src/Makefile.in (1.2): updates
+	  src/Makefile.in (1.2): updates
 
-2001-07-24 Tuesday 00:41  Eddie Kohler <kohler@aciri.org>
+2001-07-24 Tuesday 00:41  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* .cvsignore (1.1), Makefile.in (1.1), config.h.in (1.1),
-	configure.in (1.1), src/.cvsignore (1.1), src/Makefile.in (1.1),
-	src/aciri-ipsumdump.cc (1.1), src/ipsumdump.cc (1.1),
-	src/toipsumdump.cc (1.1), src/toipsumdump.hh (1.1): added files
+	  configure.in (1.1), src/.cvsignore (1.1), src/Makefile.in (1.1),
+	  src/aciri-ipsumdump.cc (1.1), src/ipsumdump.cc (1.1),
+	  src/toipsumdump.cc (1.1), src/toipsumdump.hh (1.1): added files
 
