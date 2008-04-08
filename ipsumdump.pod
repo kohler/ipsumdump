@@ -264,6 +264,18 @@ Multiple options are separated by semicolons. Any invalid option causes the
 entire field to be replaced by a single question mark C<?>. A period
 C<.> is used for packets with no options (except possibly EOL and NOP).
 
+=item B<--ip-ttl>
+
+Include the IP time-to-live field in the dump.
+
+=item B<--ip-tos>
+
+Include the IP type of service field in the dump.
+
+=item B<--ip-hl>
+
+Include the IP header length in the dump.  The length is measured in bytes.
+
 =item B<--capture-length>
 
 Include the length of captured IP data in the dump. This can be less than
@@ -388,20 +400,21 @@ fragments.
 
 =item B<--icmp-type>
 
-Include ICMP types in the dump. Example: C<3>.
+Include ICMP type in the dump. Example: C<3>. A dash is output for non-ICMP
+packets.
 
 =item B<--icmp-code>
 
-Include ICMP codes in the dump. Example: C<8>.
+Include ICMP code in the dump. Example: C<8>.
 
 =item B<--icmp-type-name>
 
-Include ICMP types in the dump, using textual names if known. Examples:
+Include ICMP type in the dump, using textual names if known. Examples:
 C<echo>, C<echo-reply>, C<100>.
 
 =item B<--icmp-code-name>
 
-Include ICMP codes in the dump, using textual names if known. Examples:
+Include ICMP code in the dump, using textual names if known. Examples:
 C<filterprohibited>, C<srcroutefail>, C<reassembly>, C<97>.
 
 =back

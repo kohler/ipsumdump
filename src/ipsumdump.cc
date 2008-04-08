@@ -83,7 +83,7 @@ static const char* const field_names[] = {
     "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
     "link", "udp_len", "ip_opt", "ip_sum", "tcp_window", // 20-24
     "payload_md5", "eth_src", "eth_dst", "icmp_type", "icmp_code", // 25-29
-    "ip_ttl", "icmp_type_name", "icmp_code_name"		// 30-32
+    "ip_ttl", "icmp_type_name", "icmp_code_name", "ip_tos", "ip_hl" // 30-34
 };
 
 // data
@@ -121,6 +121,8 @@ static const char* const field_names[] = {
 #define IP_TTL_OPT		1030
 #define ICMP_TYPE_NAME_OPT	1031
 #define ICMP_CODE_NAME_OPT	1032
+#define IP_TOS_OPT		1033
+#define IP_HL_OPT		1034
 
 #define CLP_TIMESTAMP_TYPE	(Clp_ValFirstUser)
 
@@ -171,9 +173,14 @@ static const Clp_Option options[] = {
     { "fragment-offset", 0, FRAGOFF_OPT, 0, 0 },
     { "fragoff", 'G', FRAGOFF_OPT, 0, 0 },
     { "id", 0, IPID_OPT, 0, 0 },
+    { "ip-dst", 'd', DST_OPT, 0, 0 },
+    { "ip-hl", 0, IP_HL_OPT, 0, 0 },
     { "ip-id", 0, IPID_OPT, 0, 0 },
     { "ip-opt", 0, IP_OPT_OPT, 0, 0 },
+    { "ip-protocol", 0, PROTO_OPT, 0, 0 },
+    { "ip-src", 's', SRC_OPT, 0, 0 },
     { "ip-sum", 0, IP_SUM_OPT, 0, 0 },
+    { "ip-tos", 0, IP_TOS_OPT, 0, 0 },
     { "length", 'l', LENGTH_OPT, 0, 0 },
     { "link", 0, LINK_OPT, 0, 0 },
     { "packet-count", 'c', COUNT_OPT, 0, 0 },
@@ -223,50 +230,53 @@ usage_data()
 {
   printf("\
 Generic options:\n\
-  -t, --timestamp            Include packet timestamps.\n\
-  -T, --first-timestamp      Include flow-begin timestamps.\n\
-  -c, --packet-count         Include packet counts (usually 1).\n\
-      --link                 Include link numbers (NLANR/NetFlow).\n\
+  -t, --timestamp            Include packet timestamp.\n\
+  -T, --first-timestamp      Include flow-begin timestamp.\n\
+  -c, --packet-count         Include packet count (usually 1).\n\
+      --link                 Include link number (NLANR/NetFlow).\n\
 \n\
 Ethernet options:\n\
-      --eth-src              Include Ethernet source addresses.\n\
-      --eth-dst              Include Ethernet destination addresses.\n\
+      --eth-src              Include Ethernet source address.\n\
+      --eth-dst              Include Ethernet destination address.\n\
 \n\
 IP options:\n\
-  -s, --src                  Include IP source addresses.\n\
-  -d, --dst                  Include IP destination addresses.\n\
-  -l, --length               Include IP lengths.\n\
-  -p, --protocol             Include IP protocols.\n\
+  -s, --src                  Include IP source address.\n\
+  -d, --dst                  Include IP destination address.\n\
+  -l, --length               Include IP length.\n\
+  -p, --protocol             Include IP protocol.\n\
   -g, --fragment             Include IP fragment flags ('F' or '.').\n\
-  -G, --fragment-offset      Include IP fragment offsets.\n\
-      --ip-id                Include IP IDs.\n\
-      --ip-sum               Include IP checksums.\n\
+  -G, --fragment-offset      Include IP fragment offset.\n\
+      --ip-id                Include IP ID.\n\
+      --ip-sum               Include IP checksum.\n\
       --ip-opt               Include IP options.\n\
-      --capture-length       Include lengths of captured IP data.\n\n");
+      --ip-ttl               Include IP time to live.\n\
+      --ip-tos               Include IP type of service.\n\
+      --ip-hl                Include IP header length.\n\
+      --capture-length       Include length of captured IP data.\n\n");
   printf("\
 Transport options:\n\
-  -S, --sport                Include TCP/UDP source ports.\n\
-  -D, --dport                Include TCP/UDP destination ports.\n\
-  -L, --payload-length       Include payload lengths (no IP/UDP/TCP headers).\n\
-      --payload              Include packet payloads as quoted strings.\n\
-      --payload-md5          Include MD5 checksum of packet payloads.\n\
+  -S, --sport                Include TCP/UDP source port.\n\
+  -D, --dport                Include TCP/UDP destination port.\n\
+  -L, --payload-length       Include payload length (no IP/UDP/TCP headers).\n\
+      --payload              Include packet payload as quoted string.\n\
+      --payload-md5          Include MD5 checksum of packet payload.\n\
 \n\
 TCP options:\n\
   -F, --tcp-flags            Include TCP flags word.\n\
-  -Q, --tcp-seq              Include TCP sequence numbers.\n\
-  -K, --tcp-ack              Include TCP acknowledgement numbers.\n\
+  -Q, --tcp-seq              Include TCP sequence number.\n\
+  -K, --tcp-ack              Include TCP acknowledgement number.\n\
   -W, --tcp-window           Include TCP receive window (unscaled).\n\
   -O, --tcp-opt              Include TCP options.\n\
       --tcp-sack             Include TCP selective acknowledgement options.\n\
 \n\
 UDP options:\n\
-      --udp-length           Include UDP lengths.\n\n");
+      --udp-length           Include UDP length.\n\n");
   printf("\
 ICMP options:\n\
-      --icmp-type            Include ICMP types.\n\
-      --icmp-code            Include ICMP codes.\n\
-      --icmp-type-name       Include human-readable ICMP types.\n\
-      --icmp-code-name       Include human-readable ICMP codes.\n\
+      --icmp-type            Include ICMP type.\n\
+      --icmp-code            Include ICMP code.\n\
+      --icmp-type-name       Include human-readable ICMP type.\n\
+      --icmp-code-name       Include human-readable ICMP code.\n\
 \n\
       --help                 Print general help message.\n");
 }
@@ -281,15 +291,15 @@ and summarizes their contents in an ASCII file.\n\
 Usage: %s [DATA OPTIONS] [-i DEVNAMES | FILES] > SUMMARYFILE\n\
 \n\
 Data options (give zero or more):\n\
-  -t, --timestamp            Include packet timestamps.\n\
-  -s, --src                  Include IP source addresses.\n\
-  -d, --dst                  Include IP destination addresses.\n\
-  -S, --sport                Include TCP/UDP source ports.\n\
-  -D, --dport                Include TCP/UDP destination ports.\n\
-  -l, --length               Include IP lengths.\n\
-  -p, --protocol             Include IP protocols.\n\
+  -t, --timestamp            Include packet timestamp.\n\
+  -s, --src                  Include IP source address.\n\
+  -d, --dst                  Include IP destination address.\n\
+  -S, --sport                Include TCP/UDP source port.\n\
+  -D, --dport                Include TCP/UDP destination port.\n\
+  -l, --length               Include IP length.\n\
+  -p, --protocol             Include IP protocol.\n\
 \n\
-      --help-data            List more data options.\n\
+      --help-data            List more data options, including ICMP, etc.\n\
 \n", program_name);
   printf("\
 Source options (give exactly one):\n\

@@ -1,5 +1,12 @@
 Ipsumdump NEWS
 
+Version 1.67   3.Apr.2008
+
+* Add '--ip-ttl', '--ip-tos', '--ip-hl', '--icmp-type', '--icmp-code',
+  '--icmp-type-name', '--icmp-code-name' options (Nicholas Weaver and
+  Kamran Shafi).
+
+
 Version 1.66   4.Mar.2008
 
 * Another bug fix, reported this time by Nick Weaver.
