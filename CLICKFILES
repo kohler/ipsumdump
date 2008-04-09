@@ -60,6 +60,8 @@ elements/ip/ipmirror.cc
 elements/ip/ipmirror.hh
 elements/ip/ipnameinfo.cc
 elements/ip/ipnameinfo.hh
+elements/ip/truncateippayload.cc
+elements/ip/truncateippayload.hh
 elements/standard/classifier.cc
 elements/standard/classifier.hh
 elements/standard/counter.cc

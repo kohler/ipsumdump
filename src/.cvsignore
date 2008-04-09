@@ -82,5 +82,7 @@ timesortedsched.cc
 timesortedsched.hh
 todump.cc
 todump.hh
+truncateippayload.cc
+truncateippayload.hh
 unqueue.cc
 unqueue.hh

@@ -439,6 +439,10 @@ summary output.  Options including B<--filter> and dump contents require
 IP; in the presence of these options, the output tcpdump(1) I<file> will
 contain only IP packets.  (ARP packets, for example, will not be written.)
 
+=item B<--no-payload>
+
+Do not include IP packet payloads in any B<--write-tcpdump> output.
+
 =item B<--filter>=I<filter>, B<-f> I<filter>
 
 Only include packets and flows matching a tcpdump(1) filter. For example,

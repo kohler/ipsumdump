@@ -63,6 +63,7 @@
 #define MMAP_OPT		320
 #define HEADER_OPT		321
 #define HELP_DATA_OPT		322
+#define NO_PAYLOAD_OPT		323
 
 // sources
 #define INTERFACE_OPT		400
@@ -161,6 +162,7 @@ static const Clp_Option options[] = {
     { "bad-packets", 0, BAD_PACKETS_OPT, 0, Clp_Negate },
     { "interval", 0, INTERVAL_OPT, CLP_TIMESTAMP_TYPE, 0 },
     { "limit-packets", 0, LIMIT_PACKETS_OPT, Clp_ValUnsigned, Clp_Negate },
+    { "no-payload", 0, NO_PAYLOAD_OPT, 0, 0 },
 
     { "output", 'o', OUTPUT_OPT, Clp_ValString, 0 },
     { "config", 0, CONFIG_OPT, 0, 0 },
@@ -317,6 +319,7 @@ Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -b, --binary               Create binary output file.\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
+      --no-payload           Drop payloads from tcpdump output.\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
       --no-promiscuous       Do not put interfaces into promiscuous mode.\n\
@@ -530,6 +533,7 @@ main(int argc, char *argv[])
     bool bad_packets = false;
     bool binary = false;
     bool header = true;
+    bool write_dump_payload = true;
     Vector<String> files;
     const char *record_drops = 0;
     unsigned limit_packets = 0;
@@ -588,6 +592,10 @@ main(int argc, char *argv[])
 	    if (write_dump)
 		die_usage("'--write-tcpdump' already specified");
 	    write_dump = clp->vstr;
+	    break;
+
+	  case NO_PAYLOAD_OPT:
+	    write_dump_payload = false;
 	    break;
 
 	  case FILTER_OPT:
@@ -822,6 +830,8 @@ particular purpose.\n");
 
     // elements to write tcpdump file
     if (write_dump) {
+	if (!write_dump_payload)
+	    sa << "  -> TruncateIPPayload\n";
 	sa << "  -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
 	for (int i = 0; i < files.size(); i++)
 	    sa << " src" << i;
