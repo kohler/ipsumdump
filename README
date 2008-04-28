@@ -23,7 +23,8 @@ INSTALLATION
 ------------
 
     Standard Autoconf: `./configure', with any of the usual options,
-followed by `make' or `make install'.
+followed by `make' or `make install'.  If you checked out ipsumdump from
+a git repository, see README.git.
 
 ABOUT CLICK
 -----------

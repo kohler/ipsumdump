@@ -98,19 +98,7 @@ clicksrcdir = @clicksrcdir@
 clickbuilddir = @clickbuilddir@
 fetch-click:
 	@[ $(clickbuilddir) != NONE ] || (echo "Reconfigure with --with-click-build!"; exit 1)
-	cd $(clickbuilddir)/etc/libclick; $(MAKE) dist
-	cd $(top_srcdir); tar xzf $(clickbuilddir)/etc/libclick/$(libclick).tar.gz
-	@for fgroup in `cat $(top_srcdir)/CLICKFILES`; do \
-	  alteration=`echo "$$fgroup" | sed 's/[^:]*://'`; \
-	  fgroup=`echo "$$fgroup" | sed 's/:.*//'`; \
-	  for f in `cd $(clicksrcdir) && eval echo $$fgroup`; do \
-	    g=`echo $$f | sed 's/.*\/\([^/]*\)$$/\1/'`; \
-	    rm -f $(top_srcdir)/src/$$g; \
-	    ln $(clicksrcdir)/$$f $(top_srcdir)/src/$$g 2>/dev/null \
-	    || cp -p $(clicksrcdir)/$$f $(top_srcdir)/src/$$g \
-	    || echo "Could not copy $(clicksrcdir)/$$f!" 1>&2; \
-	    test "$$alteration" = "$$fgroup" || perl -pi -e "$$alteration" $(top_srcdir)/src/$$g; \
-	  done; done
+	cd $(top_srcdir); sh ./sourcecheckout.sh "$(clickbuilddir)"
 
 
 distdir = $(PACKAGE)-$(VERSION)

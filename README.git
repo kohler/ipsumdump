@@ -1,0 +1,8 @@
+BUILDING IPSUMDUMP FROM GIT SOURCES
+===================================
+
+   Check out Click from git and build it.  Change back to the ipsumdump
+source directory and run "./sourcecheckout.sh CLICKBUILDDIR", where
+CLICKBUILDDIR is the Click build directory.  Then configure and build as
+usual.  You may want to supply the "--with-click-build=CLICKBUILDDIR"
+option.
