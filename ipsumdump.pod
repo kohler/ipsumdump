@@ -197,7 +197,7 @@ Include IP destination address in the dump. Example: C<18.26.4.44>.
 
 =item B<--length>, B<-l>
 
-Include packet length in the dump, not including any link-level headers.
+Include IP packet length in the dump, not including any link-level headers.
 Example: C<72>.
 
 =item B<--protocol>, B<-p>

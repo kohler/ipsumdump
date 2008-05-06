@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.69   28.Apr.2008
+
+* Reading from IP summary dumps preserves all extra length, including
+  extra length above 0xFFFF (Damien Ancelin).
+
+
 Version 1.68   9.Apr.2008
 
 * Add '--no-payload' (Nicholas Weaver).

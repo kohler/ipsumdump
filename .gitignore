@@ -5,6 +5,7 @@ config.h
 config.log
 config.cache
 config.status
+config.status.lineno
 conftest.*
 ipsumdump.1
 ipaggcreate.1
