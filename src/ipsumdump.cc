@@ -292,7 +292,7 @@ and summarizes their contents in an ASCII file.\n\
 \n\
 Usage: %s [DATA OPTIONS] [-i DEVNAMES | FILES] > SUMMARYFILE\n\
 \n\
-Data options (give zero or more):\n\
+Selected data options (--help-data lists more):\n\
   -t, --timestamp            Include packet timestamp.\n\
   -s, --src                  Include IP source address.\n\
   -d, --dst                  Include IP destination address.\n\
@@ -300,8 +300,6 @@ Data options (give zero or more):\n\
   -D, --dport                Include TCP/UDP destination port.\n\
   -l, --length               Include IP length.\n\
   -p, --protocol             Include IP protocol.\n\
-\n\
-      --help-data            List more data options, including ICMP, etc.\n\
 \n", program_name);
   printf("\
 Source options (give exactly one):\n\

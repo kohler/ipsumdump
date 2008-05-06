@@ -2,7 +2,7 @@ Makefile.in
 NEWS
 README
 configure
-configure.in
+configure.ac
 config.h.in
 ipaggcreate.pod
 ipaggcreate.1

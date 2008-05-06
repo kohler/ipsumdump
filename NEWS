@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.70   5.May.2008
+
+* Add support for IEEE802_11_RADIO encapsulation.  Requested by Mustafa
+  Mohammad.
+
+
 Version 1.69   28.Apr.2008
 
 * Reading from IP summary dumps preserves all extra length, including

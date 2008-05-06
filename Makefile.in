@@ -72,7 +72,7 @@ $(srcdir)/ipaggmanip.1: $(srcdir)/ipaggmanip.pod
 always:
 	@:
 
-$(srcdir)/configure: $(srcdir)/configure.in
+$(srcdir)/configure: $(srcdir)/configure.ac
 	cd $(srcdir) && $(ACLOCAL) && $(AUTOCONF)
 config.status: $(srcdir)/configure
 	$(SHELL) $(srcdir)/configure @ac_configure_args@
