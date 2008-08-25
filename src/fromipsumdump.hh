@@ -3,6 +3,7 @@
 #define CLICK_FROMIPSUMDUMP_HH
 #include <click/element.hh>
 #include <click/task.hh>
+#include <click/timer.hh>
 #include <click/notifier.hh>
 #include <click/ipflowid.hh>
 #include "fromfile.hh"
@@ -12,7 +13,7 @@ CLICK_DECLS
 /*
 =c
 
-FromIPSummaryDump(FILENAME [, I<KEYWORDS>])
+FromIPSummaryDump(FILENAME [, I<keywords> STOP, TIMING, ACTIVE, ZERO, CHECKSUM, PROTO, MULTIPACKET, SAMPLE, CONTENTS, FLOWID])
 
 =s traces
 
@@ -40,6 +41,12 @@ Keyword arguments are:
 Boolean. If true, then FromIPSummaryDump will ask the router to stop when it
 is done reading. Default is false.
 
+=item TIMING
+
+Boolean. If true, then FromIPSummaryDump tries to maintain the timing of the
+original packet stream. The first packet is emitted immediately; thereafter,
+FromIPSummaryDump maintains the delays between packets. Default is false.
+
 =item ACTIVE
 
 Boolean. If false, then FromIPSummaryDump will not emit packets (until the
@@ -52,8 +59,12 @@ E<lparen>the default), this data is zero. If false, it is random garbage.
 
 =item CHECKSUM
 
-Boolean. If true, then output packets' IP, TCP, and UDP checksums are set. If
-false (the default), the checksum fields contain random garbage.
+Boolean. If true, then output packets' IP, TCP, and UDP checksums are set, and
+have actual data bytes covering the entire IP length (whether or not those
+data bytes were defined). If false (the default), then the checksum fields
+contain random garbage, and output packets may be shorter than their IP
+headers' length fields (the EXTRA_LENGTH annotation is set to account for the
+difference).
 
 =item PROTO
 
@@ -149,18 +160,7 @@ class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
 
     bool run_task(Task *);
     Packet *pull(int);
-
-    enum { DO_IPOPT_PADDING = 1, DO_IPOPT_ROUTE = 2, DO_IPOPT_TS = 4,
-	   DO_IPOPT_UNKNOWN = 32,
-	   DO_IPOPT_ALL = 0xFFFFFFFFU, DO_IPOPT_ALL_NOPAD = 0xFFFFFFFEU };
-    static const unsigned char *parse_ip_opt_ascii(const unsigned char *begin, const unsigned char *end, String *, int);
-
-    enum { DO_TCPOPT_PADDING = 1, DO_TCPOPT_MSS = 2, DO_TCPOPT_WSCALE = 4,
-	   DO_TCPOPT_SACK = 8, DO_TCPOPT_TIMESTAMP = 16,
-	   DO_TCPOPT_UNKNOWN = 32,
-	   DO_TCPOPT_ALL = 0xFFFFFFFFU, DO_TCPOPT_ALL_NOPAD = 0xFFFFFFFEU,
-	   DO_TCPOPT_NTALL = 0xFFFFFFEEU };
-    static const unsigned char *parse_tcp_opt_ascii(const unsigned char *begin, const unsigned char *end, String *, int);
+    void run_timer(Timer *timer);
     
   private:
 
@@ -168,7 +168,8 @@ class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
 
     FromFile _ff;
 
-    Vector<int> _contents;
+    Vector<const IPSummaryDump::FieldReader *> _fields;
+    Vector<int> _field_order;
     uint16_t _default_proto;
     uint32_t _sampling_prob;
     IPFlowID _flowid;
@@ -181,28 +182,32 @@ class FromIPSummaryDump : public Element, public IPSummaryDumpInfo { public:
     bool _active : 1;
     bool _multipacket : 1;
     bool _have_flowid : 1;
-    bool _use_flowid : 1;
     bool _have_aggregate : 1;
-    bool _use_aggregate : 1;
     bool _binary : 1;
+    bool _timing : 1;
+    bool _have_timing : 1;
     Packet *_work_packet;
     uint32_t _multipacket_length;
     Timestamp _multipacket_timestamp_delta;
     Timestamp _multipacket_end_timestamp;
+    Timestamp _timing_offset;
 
     Task _task;
     ActiveNotifier _notifier;
+    Timer _timer;
 
     int _minor_version;
     IPFlowID _given_flowid;
 
     int read_binary(String &, ErrorHandler *);
     
+    static int sort_fields_compare(const void *, const void *, void *);
     void bang_data(const String &, ErrorHandler *);
     void bang_flowid(const String &, ErrorHandler *);
     void bang_aggregate(const String &, ErrorHandler *);
     void bang_binary(const String &, ErrorHandler *);
     void check_defaults();
+    bool check_timing(Packet *p);
     Packet *read_packet(ErrorHandler *);
     Packet *handle_multipacket(Packet *);
 

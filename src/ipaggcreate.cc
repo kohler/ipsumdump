@@ -251,7 +251,6 @@ parse_timestamp(Clp_Parser *clp, const char *arg, int complain, void *)
 
 static StringAccum banner_sa;
 
-static String::Initializer string_init;
 static String output;
 static int multi_output = -1;
 static Vector<String> output_calls;

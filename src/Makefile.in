@@ -48,9 +48,10 @@ mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 
 IPSUMDUMP_ELEMENT_OBJS = \
 	fromdagdump.o fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
-	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o \
-	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_ip.o ipsumdump_tcp.o \
-	ipsumdump_link.o toipsumdump.o todump.o \
+	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o kernelfilter.o \
+	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_icmp.o ipsumdump_ip.o \
+	ipsumdump_link.o ipsumdump_payload.o ipsumdump_tcp.o ipsumdump_udp.o \
+	toipsumdump.o todump.o \
 	anonipaddr.o changeuid.o classifier.o counter.o drivermanager.o \
 	discard.o fakepcap.o ipfilter.o ipnameinfo.o progressbar.o \
 	randomsample.o script.o switch.o tee.o timefilter.o timesortedsched.o \
@@ -61,7 +62,7 @@ IPSUMDUMP_OBJS = \
 
 IPAGGCREATE_ELEMENT_OBJS = \
 	fromdagdump.o fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
-	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o \
+	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o kernelfilter.o \
 	ipsumdumpinfo.o \
 	aggcounter.o aggregateip.o aggregateipaddrpair.o aggregateipflows.o \
 	aggregatelen.o aggregatenotifier.o aggregatepaint.o \

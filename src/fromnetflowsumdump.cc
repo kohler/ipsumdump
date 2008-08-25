@@ -48,10 +48,9 @@ FromNetFlowSummaryDump::~FromNetFlowSummaryDump()
 void *
 FromNetFlowSummaryDump::cast(const char *n)
 {
-    if (strcmp(n, Notifier::EMPTY_NOTIFIER) == 0 && !output_is_push(0)) {
-	_notifier.initialize(router());
+    if (strcmp(n, Notifier::EMPTY_NOTIFIER) == 0 && !output_is_push(0))
 	return static_cast<Notifier *>(&_notifier);
-    } else
+    else
 	return Element::cast(n);
 }
 
@@ -91,7 +90,7 @@ int
 FromNetFlowSummaryDump::initialize(ErrorHandler *errh)
 {
     if (!output_is_push(0))
-	_notifier.initialize(router());
+	_notifier.initialize(Notifier::EMPTY_NOTIFIER, router());
 
     if (_ff.initialize(errh) < 0)
 	return -1;
@@ -183,7 +182,7 @@ FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
 	    SET_FIRST_TIMESTAMP_ANNO(q, Timestamp(j, 0)), ok++;
 	if (cp_integer(words[8], &j)) {
 	    if (j)
-		q->timestamp_anno().set(j, 0);
+		q->timestamp_anno().assign(j, 0);
 	    else
 		q->timestamp_anno() = FIRST_TIMESTAMP_ANNO(q);
 	    ok++;

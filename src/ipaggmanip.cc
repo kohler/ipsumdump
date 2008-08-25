@@ -355,7 +355,6 @@ read_aggregates(AggregateTree &tree, String &name, ErrorHandler *errh)
 	fclose(f);
 }
 
-static String::Initializer initializer;
 static String last_filename;
 
 static void
@@ -894,7 +893,6 @@ main(int argc, char *argv[])
     program_name = Clp_ProgramName(clp);
     Clp_AddType(clp, CLP_TWO_UINTS_TYPE, 0, parse_two_uints, 0);
     
-    String::static_initialize();
     cp_va_static_initialize();
     ErrorHandler *errh = new FileErrorHandler(stderr, "");
     ErrorHandler::static_initialize(errh);
