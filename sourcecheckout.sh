@@ -35,7 +35,12 @@ if [ ! -f "$1/etc/libclick/libclick-$version.tar.gz" ]; then
     usage
 fi
 
-zcat "$1/etc/libclick/libclick-$version.tar.gz" | tar xf -
+gzcat=zcat
+if which gzcat 2>&1 | grep -v '^\(which: \)*no' >/dev/null && which gzcat 2>/dev/null | grep . >/dev/null; then
+    gzcat=gzcat
+fi
+
+$gzcat "$1/etc/libclick/libclick-$version.tar.gz" | tar xf -
 
 for fgroup in `cat CLICKFILES`; do
     alteration=`echo "$fgroup" | sed 's/[^:]*://'`
