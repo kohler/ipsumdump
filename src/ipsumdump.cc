@@ -84,7 +84,8 @@ static const char* const field_names[] = {
     "ip_frag", "ip_fragoff", "payload", "ip_capture_len", // 16-19
     "link", "udp_len", "ip_opt", "ip_sum", "tcp_window", // 20-24
     "payload_md5", "eth_src", "eth_dst", "icmp_type", "icmp_code", // 25-29
-    "ip_ttl", "icmp_type_name", "icmp_code_name", "ip_tos", "ip_hl" // 30-34
+    "ip_ttl", "icmp_type_name", "icmp_code_name", "ip_tos", "ip_hl", // 30-34
+    "payload_md5_hex"					// 35
 };
 
 // data
@@ -124,6 +125,7 @@ static const char* const field_names[] = {
 #define ICMP_CODE_NAME_OPT	1032
 #define IP_TOS_OPT		1033
 #define IP_HL_OPT		1034
+#define PAYLOAD_MD5_HEX_OPT	1035
 
 #define CLP_TIMESTAMP_TYPE	(Clp_ValFirstUser)
 
@@ -189,6 +191,7 @@ static const Clp_Option options[] = {
     { "payload", 0, PAYLOAD_OPT, 0, 0 },
     { "payload-length", 'L', PAYLOAD_LEN_OPT, 0, 0 },
     { "payload-md5", 0, PAYLOAD_MD5_OPT, 0, 0 },
+    { "payload-md5-hex", 0, PAYLOAD_MD5_HEX_OPT, 0, 0 },
     { "protocol", 'p', PROTO_OPT, 0, 0 },
     { "src", 's', SRC_OPT, 0, 0 },
     { "sport", 'S', SPORT_OPT, 0, 0 },
@@ -221,7 +224,7 @@ die_usage(String specific = String())
     if (specific)
 	errh->error("%s: %s", program_name, specific.c_str());
     errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
-Try '%s --help' for more information.",
+Try '%s --help' or '%s --help-data' for more information.",
 		program_name, program_name);
     // should not get here, but just in case...
     exit(1);
@@ -262,6 +265,7 @@ Transport options:\n\
   -L, --payload-length       Include payload length (no IP/UDP/TCP headers).\n\
       --payload              Include packet payload as quoted string.\n\
       --payload-md5          Include MD5 checksum of packet payload.\n\
+      --payload-md5-hex      Include MD5 payload checksum in md5sum hex format.\n\
 \n\
 TCP options:\n\
   -F, --tcp-flags            Include TCP flags word.\n\
@@ -734,7 +738,7 @@ particular purpose.\n");
 	  default:
 	    assert(opt >= FIRST_LOG_OPT);
 	    log_contents.push_back(opt - FIRST_LOG_OPT);
-	    if (opt == PAYLOAD_OPT || opt == PAYLOAD_MD5_OPT)
+	    if (opt == PAYLOAD_OPT || opt == PAYLOAD_MD5_OPT || opt == PAYLOAD_MD5_HEX_OPT)
 		options.snaplen = 2000;
 	    options.force_ip = true;
 	    break;

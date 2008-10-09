@@ -318,6 +318,12 @@ as defined above. In ASCII output, the output is a 22-character string
 consisting of characters [a-zA-Z0-9_@]; in binary output, it's a
 16-character binary digest. Example: C<sQy@IjqXnFPwZtgtwaC5Hb>.
 
+=item B<--payload-md5-hex>
+
+Like B<--payload-md5>, but in ASCII output, the checksum is printed as 32
+hexadecimal digits (the same format used by B<md5sum>). Example:
+C<12f6bb1941df66b8f138a446d4e8670c>.
+
 =back
 
 =head3 TCP Options
@@ -702,6 +708,10 @@ contain spaces, like the following:
 
 B<ipsumdump> still understands files with the old format.
 
+Version 1.2 could unfortunately contain incorrect MD5 checksums for packets
+with both link-level headers and short payloads, such as pure TCP
+acknowledgments.
+
 =head1 BUGS
 
 B<Ipsumdump> can use the mmap(2) system call to access files, which often
@@ -712,7 +722,7 @@ corrupt file, it may crash with a segmentation violation.
 
 tcpdump(1), tcpdpriv(1), click(1), ipaggcreate(1)
 
-See http://www.pdos.csail.mit.edu/click/ for more on Click.
+See http://www.read.cs.ucla.edu/click/ for more on Click.
 
 =head1 AUTHOR
 

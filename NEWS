@@ -1,5 +1,16 @@
 Ipsumdump NEWS
 
+Version 1.71   8.Oct.2008
+
+* Generate correct MD5 checksums for packets with link-level headers and
+  short payloads, such as pure TCP acknowledgments from Ethernet traces.
+  This makes payload MD5 sums incompatible with prior versions, an
+  unfortunate, but unavoidable, incompatibility.  Problem reported by
+  Nicholas Weaver and Christian Kreibich.
+
+* Add '--payload-md5-hex'.
+
+
 Version 1.70   5.May.2008
 
 * Add support for IEEE802_11_RADIO encapsulation.  Requested by Mustafa
