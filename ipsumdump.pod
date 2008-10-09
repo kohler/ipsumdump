@@ -16,7 +16,7 @@ B<--binary> option, which generates a smaller binary file.)
 Here are a couple lines of B<ipsumdump> output, from 'ipsumdump -sd
 /home/kohler/largedump.gz':
 
-  !IPSummaryDump 1.2
+  !IPSummaryDump 1.3
   !creator "ipsumdump -sd /home/kohler/largedump.gz"
   !host max.lcdf.org
   !runtime 1000943858.353723 (Wed Sep 19 16:57:38 2001)
@@ -594,7 +594,7 @@ about each packet: timestamp, source address, source port, destination
 address, destination port, and protocol. Invoking 'ipsumdump B<-i> eth1
 B<-tsSdDp>' might produce output like this:
 
-  !IPSummaryDump 1.2
+  !IPSummaryDump 1.3
   !creator "ipsumdump -i eth1 -tsSdDp"
   !host max.lcdf.org
   !runtime 1000967293.569808 (Wed Sep 19 23:28:13 2001)
@@ -608,7 +608,7 @@ B<-tsSdDp>' might produce output like this:
 
 Here is the same data, anonymized with B<-A>:
 
-  !IPSummaryDump 1.2
+  !IPSummaryDump 1.3
   !creator "ipsumdump --ipsumdump -A -tsSdDp"
   !host max.lcdf.org
   !runtime 1000968019.67508 (Wed Sep 19 23:40:19 2001)
