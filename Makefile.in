@@ -91,7 +91,7 @@ clean:
 distclean:
 	@-for d in $(libclick) src; do (cd $$d && $(MAKE) distclean); done
 	-rm -f config.h Makefile config.status
-	-rm -f config.cache config.log click-compile stamp-h
+	-rm -f config.cache config.log stamp-h
 
 
 clicksrcdir = @clicksrcdir@

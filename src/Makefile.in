@@ -19,7 +19,6 @@ mandir = @mandir@
 datadir = @datadir@/click
 
 CLICK_BUILDTOOL = @CLICK_BUILDTOOL@
-CLICK_COMPILE = @CLICK_COMPILE@
 
 VPATH = .:$(top_srcdir)/$(subdir):$(top_srcdir)
 
@@ -82,8 +81,8 @@ CFLAGS = @CFLAGS@
 CXXFLAGS = @CXXFLAGS@
 DEPCFLAGS = @DEPCFLAGS@
 LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@ @CLICKLIB@ `$(CLICK_COMPILE) --otherlibs`
-DEFS = @DEFS@ `$(CLICK_COMPILE) --defs`
+LIBS = @LIBS@ @CLICKLIB@ `$(CLICK_BUILDTOOL) --otherlibs`
+DEFS = @DEFS@ `$(CLICK_BUILDTOOL) --cflags`
 INCLUDES = -I$(top_builddir) -I$(srcdir) @CLICKINCLUDES@
 
 CXXCOMPILE = $(CXX) $(INCLUDES) $(DEFS) $(CPPFLAGS) $(CXXFLAGS) $(DEPCFLAGS)

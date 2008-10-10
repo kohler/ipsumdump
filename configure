@@ -657,7 +657,6 @@ conf_auxdir
 subdirs
 LIBCLICK_TARGET
 CLICK_BUILDTOOL
-CLICK_COMPILE
 CLICKINCLUDES
 CLICKLIB
 CLICKLIBFILE
@@ -1813,7 +1812,6 @@ test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
 if test "$clickprefix" = NONE; then
     LIBCLICK_TARGET=libclick-1.6.9
     CLICK_BUILDTOOL='$(top_builddir)/'"$LIBCLICK_TARGET"'/click-buildtool'
-    CLICK_COMPILE='$(top_builddir)/'"$LIBCLICK_TARGET"'/click-compile'
     CLICKINCLUDES='-I$(top_builddir)/'"$LIBCLICK_TARGET"'/include -I$(top_srcdir)/'"$LIBCLICK_TARGET"'/include'
     CLICKLIB='$(top_builddir)/'"$LIBCLICK_TARGET"'/libsrc/libclick.a'
     CLICKLIBFILE=$CLICKLIB
@@ -1822,12 +1820,10 @@ if test "$clickprefix" = NONE; then
 else
     LIBCLICK_TARGET=
     CLICK_BUILDTOOL="${clickprefix}/bin/click-buildtool"
-    CLICK_COMPILE="${clickprefix}/bin/click-compile"
     CLICKINCLUDES=
     CLICKLIB="-L${clickprefix}/lib -lclick"
     CLICKLIBFILE=
 fi
-
 
 
 
@@ -5597,7 +5593,6 @@ conf_auxdir!$conf_auxdir$ac_delim
 subdirs!$subdirs$ac_delim
 LIBCLICK_TARGET!$LIBCLICK_TARGET$ac_delim
 CLICK_BUILDTOOL!$CLICK_BUILDTOOL$ac_delim
-CLICK_COMPILE!$CLICK_COMPILE$ac_delim
 CLICKINCLUDES!$CLICKINCLUDES$ac_delim
 CLICKLIB!$CLICKLIB$ac_delim
 CLICKLIBFILE!$CLICKLIBFILE$ac_delim
@@ -5636,7 +5631,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 81; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 80; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

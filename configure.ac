@@ -36,7 +36,6 @@ test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
 if test "$clickprefix" = NONE; then
     LIBCLICK_TARGET=libclick-AC_LIBCLICK_VERSION
     CLICK_BUILDTOOL='$(top_builddir)/'"$LIBCLICK_TARGET"'/click-buildtool'
-    CLICK_COMPILE='$(top_builddir)/'"$LIBCLICK_TARGET"'/click-compile'
     CLICKINCLUDES='-I$(top_builddir)/'"$LIBCLICK_TARGET"'/include -I$(top_srcdir)/'"$LIBCLICK_TARGET"'/include'
     CLICKLIB='$(top_builddir)/'"$LIBCLICK_TARGET"'/libsrc/libclick.a'
     CLICKLIBFILE=$CLICKLIB
@@ -44,7 +43,6 @@ if test "$clickprefix" = NONE; then
 else
     LIBCLICK_TARGET=
     CLICK_BUILDTOOL="${clickprefix}/bin/click-buildtool"
-    CLICK_COMPILE="${clickprefix}/bin/click-compile"
     CLICKINCLUDES=
     CLICKLIB="-L${clickprefix}/lib -lclick"
     CLICKLIBFILE=
@@ -52,7 +50,6 @@ fi
 
 AC_SUBST(LIBCLICK_TARGET)
 AC_SUBST(CLICK_BUILDTOOL)
-AC_SUBST(CLICK_COMPILE)
 AC_SUBST(CLICKINCLUDES)
 AC_SUBST(CLICKLIB)
 AC_SUBST(CLICKLIBFILE)
