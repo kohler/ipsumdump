@@ -779,6 +779,7 @@ particular purpose.\n");
 	    sa << options.time_config << ", ";
 	if (options.split_time) {
 	    sa << "INTERVAL " << options.split_time << ", END_CALL trigger.run";
+	    output_calls.push_back("time.start $(time.end)");
 	    output_calls.push_back("time.extend_interval " + options.split_time.unparse());
 	} else
 	    sa << "STOP true";
@@ -888,8 +889,11 @@ particular purpose.\n");
 	bsa << "!creator " << cp_quote(argsa.take_string()) << "\n";
 	bsa << "!counts " << (aggctr_pb == "BYTES false" ? "packets\n" : "bytes\n");
 	sa << ",\n\twriteq ac.banner \""
-	   << cp_expand_in_quotes(bsa.take_string(), '\"')
-	   << "!times $(tr.range) $(tr.interval)\\n";
+	   << cp_expand_in_quotes(bsa.take_string(), '\"');
+	if (options.split_time)
+	    sa << "!times $(time.start) $(time.end) " << options.split_time << "\\n";
+	else
+	    sa << "!times $(tr.range) $(tr.interval)\\n";
 	if (multi_output >= 0)
 	    sa << "!section $onum\\n";
 	sa << "\"";
