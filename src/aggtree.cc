@@ -127,14 +127,14 @@ AggregateTree::node_ok(Node *n, int last_swivel, ErrorHandler *errh) const
     return errh->error("%x: memory corruption at %p", n->aggregate, n);
   found_block:
 #endif
-    
+
     if (n->child[0] && n->child[1]) {
 	int swivel = ffs_msb(n->child[0]->aggregate ^ n->child[1]->aggregate);
 	if (swivel == 0)
 	    return errh->error("%x: bad swivel 0 (%x-%x %p-%p)", n->aggregate, n->child[0]->aggregate, n->child[1]->aggregate, n->child[0], n->child[1]);
 	if (swivel <= last_swivel)
 	    return errh->error("%x: bad swivel %d <= %d (%x-%x)", n->aggregate, swivel, last_swivel, n->child[0]->aggregate, n->child[1]->aggregate);
-	
+
 	uint32_t mask = (swivel == 1 ? 0 : 0xFFFFFFFFU << (33 - swivel));
 	if ((n->child[0]->aggregate & mask) != (n->aggregate & mask))
 	    return errh->error("%x: left child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
@@ -159,7 +159,7 @@ AggregateTree::node_ok(Node *n, int last_swivel, ErrorHandler *errh) const
 	int ok2 = node_ok(n->child[1], swivel, errh);
 	int local_nnz = (n->count ? 1 : 0);
 	return ok1 + ok2 + local_nnz;
-	
+
     } else if (n->child[0] || n->child[1])
 	return errh->error("%x: only one live child", n->aggregate);
     else
@@ -176,7 +176,7 @@ AggregateTree::ok(ErrorHandler *errh) const
     uint32_t nnz = node_ok(_root, -1, errh);
     if (errh->nerrors() == before && nnz != _num_nonzero)
 	errh->error("bad num_nonzero: nominally %u, calculated %u", _num_nonzero, nnz);
-    
+
     return (errh->nerrors() == before);
 }
 
@@ -248,7 +248,7 @@ AggregateTree::find_node(uint32_t a)
 		n = n->child[0];
 	}
     }
-    
+
     fprintf(stderr, "AggregateTree: out of memory!\n");
     return 0;
 }
@@ -283,11 +283,11 @@ AggregateTree::collapse_subtree(Node *root)
     if (root->child[0]) {
 	collapse_subtree(root->child[0]);
 	collapse_subtree(root->child[1]);
-	
+
 	int old_nnz = (root->count != 0) + (root->child[0]->count != 0) + (root->child[1]->count != 0);
 	root->count += root->child[0]->count + root->child[1]->count;
 	_num_nonzero += (root->count != 0) - old_nnz;
-	
+
 	free_node(root->child[0]);
 	free_node(root->child[1]);
 	root->child[0] = root->child[1] = 0;
@@ -595,11 +595,11 @@ AggregateTree::node_prefixize(Node *n, int prefix)
     if ((n->aggregate & mask) != n->aggregate) {
 	collapse_subtree(n);
 	n->aggregate &= mask;
-    
+
     } else if (n->child[0]) {
 	int swivel = ffs_msb(n->child[0]->aggregate ^ n->child[1]->aggregate);
 	//ErrorHandler::default_handler()->message("%d", swivel);
-	
+
 	if (swivel <= prefix) {
 	    node_prefixize(n->child[0], prefix);
 	    node_prefixize(n->child[1], prefix);
@@ -811,11 +811,11 @@ node_haar_energy(AggregateTree::Node *n, AggregateTree::Node **last,
 	    *last = 0;
 	}
     }
-    
+
 
     if (n->child[0]) {
 	amt += node_haar_energy(n->child[0], last, prefix_mask);
-	amt += node_haar_energy(n->child[1], last, prefix_mask);	
+	amt += node_haar_energy(n->child[1], last, prefix_mask);
     }
 
     return amt;
@@ -826,15 +826,15 @@ AggregateTree::haar_wavelet_energy_coeff(Vector<double> &out) const
 {
     AggregateTree copy(*this);
     out.assign(32, 0);
-    
+
     for (int p = 31; p >= 0; p--) {
 	Node *last = 0;
 	double sum_sq_diff = node_haar_energy(copy._root, &last, prefix_to_mask(p));
 	if (last)
 	    sum_sq_diff += ((double)last->count) * last->count;
-	
+
 	out[p] = sum_sq_diff / 4294967296.0;
-	
+
 	copy.prefixize(p);
     }
 }
@@ -1234,7 +1234,7 @@ AggregateTree::write_file(FILE *f, WriteFormat format, ErrorHandler *errh) const
 #endif
     } else if (format == WR_ASCII_IP)
 	fprintf(f, "!ip\n");
-    
+
     uint32_t buf[1024];
     int pos = 0;
     write_nodes(_root, f, format, buf, pos, 1024, errh);

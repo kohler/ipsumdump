@@ -155,12 +155,12 @@ AggregateWTree::node_ok(WNode *n, int last_swivel, uint32_t *nnz_ptr,
     uint32_t local_count = node_local_count(n);
     if (n->depth != last_swivel)
 	errh->error("%x: bad depth %d <= %d", n->aggregate, n->depth, last_swivel);
-    
+
     if (n->wchild[0] && n->wchild[1]) {
 	int swivel = ffs_msb(n->wchild[0]->aggregate ^ n->wchild[1]->aggregate);
 	if (swivel <= last_swivel)
 	    return errh->error("%x: bad swivel %d <= %d (%x-%x)", n->aggregate, swivel, last_swivel, n->wchild[0]->aggregate, n->wchild[1]->aggregate);
-	
+
 	uint32_t mask = (swivel == 1 ? 0 : 0xFFFFFFFFU << (33 - swivel));
 	if ((n->wchild[0]->aggregate & mask) != (n->aggregate & mask))
 	    return errh->error("%x: left child doesn't match upper bits (swivel %d)", n->aggregate, swivel);
@@ -189,12 +189,12 @@ AggregateWTree::node_ok(WNode *n, int last_swivel, uint32_t *nnz_ptr,
 	if (left_count + right_count + local_count != n->full_count
 	    && left_count != NODE_OK_ERROR && right_count != NODE_OK_ERROR)
 	    return errh->error("%x: bad full count: nominally %u, calculated %u", n->aggregate, n->full_count, left_count + right_count + local_count);
-	
+
 	return left_count + right_count + local_count;
-	
+
     } else if (n->wchild[0] || n->wchild[1])
 	return errh->error("%x: only one live child", n->aggregate);
-    
+
     else if (local_count != n->full_count)
 	return errh->error("%x: bad full count for leaf: nominally %u, calculated %u", n->aggregate, n->full_count, local_count);
 
@@ -253,7 +253,7 @@ AggregateWTree::make_peer(uint32_t a, WNode *n)
     *down[1 - bitvalue] = *n;	/* copy orig node down one level */
 
     down[0]->depth = down[1]->depth = swivel;
-    
+
     n->aggregate = (down[0]->aggregate & mask);
     if (down[0]->aggregate == n->aggregate && _topheavy) {
 	n->count = down[0]->count;
@@ -288,13 +288,13 @@ AggregateWTree::add(uint32_t a, int32_t delta)
 {
     WNode *stack[32];
     int pos = 0;
-    
+
     // straight outta tcpdpriv
     WNode *n = _root;
     while (n) {
-	
+
 	stack[pos++] = n;
-	
+
 	if (n->aggregate == a) {
 	    if (!_topheavy && n->wchild[0]) { // take left child by definition
 		n = n->wchild[0];
@@ -317,7 +317,7 @@ AggregateWTree::add(uint32_t a, int32_t delta)
 		n = n->wchild[0];
 	}
     }
-    
+
     fprintf(stderr, "AggregateWTree: out of memory!\n");
 }
 
@@ -386,7 +386,7 @@ AggregateWTree::pick_random_active_node(WNode *stack[], int *store_pos) const
     // return early if no nodes whatsoever in tree
     if (_num_nonzero == 0)
 	return 0;
-    
+
     int pos = 0;
     WNode *n = _root;
     uint32_t v = ((uint32_t)random()) % (_root->full_count);
@@ -611,7 +611,7 @@ AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33],
     // collect nonzero nodes with correct depth
     Vector<WNode *> s;
     collect_active_depth(q, s);
-    
+
     //
     for (int p = q + 1; p <= 32; p++) {
 	assert((uint32_t) s.size() == dp[p-1][q]);
@@ -623,7 +623,7 @@ AggregateWTree::fake_by_discriminating_prefix(int q, const uint32_t dp[33][33],
 #else
 	uint32_t random_delta = (uint32_t) (dp[p][q] * (1 - randomness));
 #endif
-	
+
 	for (uint32_t i = dp[p][q]; i < dp[p-1][q]; i++) {
 	    // pick random element of s
 #if 1
@@ -707,7 +707,7 @@ construct_branch(int depth)
     int n = (1 << depth);
     uint32_t *val = branches[depth].val = new uint32_t[1 << n];
     branches[depth].off = new uint32_t[n + 1];
-    
+
     int k = 0;
     for (int i = 0; i <= n; i++) {
 	branches[depth].off[i] = k;
@@ -739,11 +739,11 @@ AggregateWTree::fake_by_branching_counts(int p, int depth,
 
     if (!branches[depth].val)
 	construct_branch(depth);
-    
+
     uint32_t nnz_v = 0;
     for (int i = 1; i < v.size(); i++)
 	nnz_v += v[i];
-    
+
     if (p == 0) {
 	assert(_root->count == 0 && !_root->wchild[0]);
 	assert(nnz_v == 0 || nnz_v == 1);
@@ -756,14 +756,14 @@ AggregateWTree::fake_by_branching_counts(int p, int depth,
     // collect nonzero nodes with correct depth
     Vector<WNode *> s;
     collect_active(s);
-    
+
     //
     uint32_t mask_delta = (1 << (32 - p - depth));
     for (int count = 0; count < v.size(); count++) {
 	assert((uint32_t) s.size() >= v[count]);
 	const uint32_t *brval = branches[depth].val + branches[depth].off[count];
 	const uint32_t brcount = branches[depth].count[count];
-	
+
 	for (uint32_t k = 0; k < v[count]; k++) {
 	    // pick random element of s
 	    int which = (randomized ? ((uint32_t)random()) % s.size() : s.size() - 1);
@@ -776,7 +776,7 @@ AggregateWTree::fake_by_branching_counts(int p, int depth,
 		if (value & 1)
 		    add(n->aggregate + (i * mask_delta), 1);
 	    add(n->aggregate, -1);
-	    
+
 	    s[which] = s.back();
 	    s.pop_back();
 	}
@@ -814,7 +814,7 @@ AggregateWTree::node_fake_dirichlet(WNode *n, WNode *stack[], int stack_pos,
     assert(a->depth == b->depth);
     uint32_t full_subtree = (1U << (32 - a->depth));
     assert(a->full_count <= full_subtree && b->full_count <= full_subtree);
-    
+
     int which;
     if ((!a->full_count && !b->full_count) || b->full_count == full_subtree)
 	which = 0;
@@ -908,7 +908,7 @@ AggregateWTree::write_file(FILE *f, AggregateTree::WriteFormat format, ErrorHand
 #endif
     } else if (format == AggregateTree::WR_ASCII_IP)
 	fprintf(f, "!ip\n");
-    
+
     uint32_t buf[1024];
     int pos = 0;
     AggregateTree::write_nodes(_root, f, format, buf, pos, 1024, errh);
@@ -925,7 +925,7 @@ int
 AggregateWTree::write_hex_file(FILE *f, ErrorHandler *errh) const
 {
     fprintf(f, "!num_nonzero %u\n", _num_nonzero);
-    
+
     AggregateTree::write_hex_nodes(_root, f, errh);
 
     if (ferror(f))

@@ -145,7 +145,7 @@ static const Clp_Option options[] = {
     { "dag-ppp", 0, READ_DAG_PPP_DUMP_OPT, 0, 0 },
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
-    
+
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ValString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ValString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
@@ -432,9 +432,9 @@ add_source(StringAccum &sa, int num, int action, const Options &opt)
     uint32_t result = 0;
     const char *force_ip = (opt.force_ip ? ", FORCE_IP true" : "");
     sa << "src" << num << " :: ";
-    
+
     switch (action) {
-	
+
       case INTERFACE_OPT:
 	sa << "FromDevice(" << cp_quote(opt.filename)
 	   << ", SNIFFER true, SNAPLEN " << opt.snaplen << force_ip;
@@ -546,7 +546,7 @@ main(int argc, char *argv[])
 	options.force_ip = false;
     options.promisc = true;
     options.mmap = options.snaplen = -1;
-    
+
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -556,11 +556,11 @@ main(int argc, char *argv[])
 		die_usage("'--output' already specified");
 	    output = clp->vstr;
 	    break;
-	    
+
 	  case INTERFACE_OPT:
 	    quiet = true;
 	    goto do_action;
-	    
+
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_ASCII_TCPDUMP_OPT:
@@ -572,7 +572,7 @@ main(int argc, char *argv[])
 		die_usage("data source option already specified");
 	    action = opt;
 	    break;
-	    
+
 	  case READ_DAG_DUMP_OPT:
 	    if (action)
 		die_usage("data source option already specified");
@@ -580,7 +580,7 @@ main(int argc, char *argv[])
 	    if (clp->have_val)
 		options.dag_encap = clp->vstr;
 	    break;
-	    
+
 	  case IPSUMDUMP_FORMAT_OPT:
 	    if (options.ipsumdump_format)
 		die_usage("IP summary dump format already specified");
@@ -589,7 +589,7 @@ main(int argc, char *argv[])
 	    action = READ_IPSUMDUMP_OPT;
 	    options.ipsumdump_format = clp->vstr;
 	    break;
-	    
+
 	  case WRITE_DUMP_OPT:
 	    if (write_dump)
 		die_usage("'--write-tcpdump' already specified");
@@ -639,7 +639,7 @@ main(int argc, char *argv[])
 	      for (int i = 0; i < len; i++)
 		  if (data[i] == ',')
 		      data[i] = ' ';
-	      
+
 	      Vector<String> v;
 	      cp_spacevec(arg, v);
 
@@ -695,11 +695,11 @@ main(int argc, char *argv[])
 	  case HEADER_OPT:
 	    header = !clp->negated;
 	    break;
-	    
+
 	  case CONFIG_OPT:
 	    config = true;
 	    break;
-	    
+
 	  case HELP_OPT:
 	    usage();
 	    exit(0);
@@ -727,7 +727,7 @@ particular purpose.\n");
 	  case Clp_NotOption:
 	    files.push_back(clp->vstr);
 	    break;
-	    
+
 	  case Clp_BadOption:
 	    die_usage();
 	    break;
@@ -742,10 +742,10 @@ particular purpose.\n");
 		options.snaplen = 2000;
 	    options.force_ip = true;
 	    break;
-	    
+
 	}
     }
-  
+
   done:
     // check file usage
     if (!output)
@@ -776,7 +776,7 @@ particular purpose.\n");
 	collate = false;
     if (files.size() == 0)
 	files.push_back("-");
-    
+
     // source elements
     Vector<uint32_t> source_flags;
     uint32_t any_source_flags = 0;
@@ -839,7 +839,7 @@ particular purpose.\n");
 	    sa << " src" << i;
 	sa << ", SNAPLEN " << options.snaplen << ")\n";
     }
-    
+
     // elements to dump summary log
     if (log_contents.size() == 0) {
 	if (!write_dump) {
@@ -894,7 +894,7 @@ particular purpose.\n");
     // set-uid-root privilege
     if (geteuid() != getuid() || getegid() != getgid())
 	sa << "ChangeUID();\n";
-    
+
     sa << "manager :: DriverManager(";
     int stop_driver_count = 1;
     if (action != INTERFACE_OPT)
@@ -934,13 +934,13 @@ particular purpose.\n");
     router = click_read_router(sa.take_string(), true, (verbose ? errh : &verrh));
     if (!router)
 	exit(1);
-    
+
     // output sample probability if appropriate
     if (options.do_sample) {
 	String sample_elt = (source_flags[0] & Options::SAMPLED ? "src0" : "samp0");
 	write_sampling_prob_message(router, sample_elt);
     }
-    
+
     // run driver
     router->activate(errh);
     started = true;
@@ -974,7 +974,7 @@ particular purpose.\n");
 		fprintf(stderr, "%s -> %s\n", addr.unparse_with_mask(mask).c_str(), new_addr.unparse_with_mask(mask).c_str());
 	}
     }
-    
+
     // exit
     delete router;
     exit(0);

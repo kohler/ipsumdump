@@ -147,13 +147,13 @@ static const Clp_Option options[] = {
   { "container-sizes", 0, AGG_SIZES_ACT, Clp_ValUnsigned, 0 },
   { "container-addresses", 0, AGG_ADDRS_ACT, Clp_ValUnsigned, 0 },
   { "container-addrs", 0, AGG_ADDRS_ACT, Clp_ValUnsigned, 0 },
-  
+
   { "counts", 0, SIZES_ACT, 0, 0 },
   { "sorted-counts", 0, SORTED_SIZES_ACT, 0, 0 },
   { "count-counts", 0, SIZE_COUNTS_ACT, 0, 0 },
   { "container-counts", 0, AGG_SIZES_ACT, Clp_ValUnsigned, 0 },
   { "container-labels", 0, AGG_ADDRS_ACT, Clp_ValUnsigned, 0 },
-  
+
   { "balance", 0, BALANCE_ACT, Clp_ValUnsigned, 0 },
   { "balance-histogram", 0, BALANCE_HISTOGRAM_ACT, CLP_TWO_UINTS_TYPE, 0 },
   { "branching-counts", 0, BRANCHING_ACT, CLP_TWO_UINTS_TYPE, 0 },
@@ -162,7 +162,7 @@ static const Clp_Option options[] = {
   { "fake-by-branching-counts", 0, FAKE_BY_BRANCHING_ACT, Clp_ValUnsigned, 0 },
   { "fake-by-dirichlet", 0, FAKE_BY_DIRICHLET_ACT, 0, 0 },
   { "correlation-size-container-addresses", 0, CORR_SIZE_AGG_ADDR_ACT, Clp_ValUnsigned, 0 },
-  
+
 };
 
 static const char *program_name;
@@ -364,12 +364,12 @@ read_next_file(AggregateTree &tree, ErrorHandler *errh, bool recurse = false)
 	errh->error("out of files!");
 	return;
     }
-    
+
     if (!recurse)
 	last_filename = "";
     else
 	last_filename += " ";
-    
+
     if (files[files_pos] == "(+" || files[files_pos] == "(|") {
 	last_filename += "(+";
 	files_pos++;
@@ -379,12 +379,12 @@ read_next_file(AggregateTree &tree, ErrorHandler *errh, bool recurse = false)
 	    errh->warning("missing ')' at end of file list");
 	files_pos++;
 	last_filename += " )";
-	
+
     } else if (files[files_pos] == "(&") {
 	last_filename += "(&";
 	files_pos++;
 	AggregateTree tree2;
-	
+
 	bool read_yet = false;
 	while (files_pos < files.size() && files[files_pos] != ")")
 	    if (!read_yet)
@@ -394,18 +394,18 @@ read_next_file(AggregateTree &tree, ErrorHandler *errh, bool recurse = false)
 		read_next_file(tree3, errh, true);
 		tree2.keep_common_hosts(tree3, true);
 	    }
-	
+
 	tree += tree2;
 	if (files_pos >= files.size())
 	    errh->warning("missing ')' at end of file list");
 	files_pos++;
 	last_filename += " )";
-	
+
     } else if (files[files_pos] == "(-") {
 	last_filename += "(-";
 	files_pos++;
 	AggregateTree tree2;
-	
+
 	bool read_yet = false;
 	while (files_pos < files.size() && files[files_pos] != ")")
 	    if (!read_yet)
@@ -415,19 +415,19 @@ read_next_file(AggregateTree &tree, ErrorHandler *errh, bool recurse = false)
 		read_next_file(tree3, errh, true);
 		tree2.drop_common_hosts(tree3);
 	    }
-	
+
 	tree += tree2;
 	if (files_pos >= files.size())
 	    errh->warning("missing ')' at end of file list");
 	files_pos++;
 	last_filename += " )";
-	
+
     } else if (files[files_pos] == "(^") {
 	last_filename += "(^";
 	files_pos++;
 	AggregateTree tree_or;
 	AggregateTree tree_or1;
-	
+
 	bool read_yet = false;
 	while (files_pos < files.size() && files[files_pos] != ")")
 	    if (!read_yet) {
@@ -447,7 +447,7 @@ read_next_file(AggregateTree &tree, ErrorHandler *errh, bool recurse = false)
 	    errh->warning("missing ')' at end of file list");
 	files_pos++;
 	last_filename += " )";
-	
+
     } else {
 	read_aggregates(tree, files[files_pos], errh);
 	last_filename += files[files_pos];
@@ -467,7 +467,7 @@ correlation_coefficient(const Vector<uint32_t> &a, const Vector<uint32_t> &b)
     assert(a.size() == b.size());
     double a_sum = 0, b_sum = 0, a2_sum = 0, b2_sum = 0, ab_sum = 0;
     uint32_t n = a.size();
-    
+
     for (uint32_t i = 0; i < n; i++) {
 	a_sum += a[i];
 	a2_sum += (double) a[i] * a[i];
@@ -488,14 +488,14 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 {
     (void) errh;
     assert(&tree);
-    
+
     // go through earlier actions
     for (int j = 0; j < actions.size(); j++) {
 	int action = actions[j];
 	uint32_t action_extra = extras[j];
 	uint32_t action_extra2 = extras2[j];
 	switch (action) {
-		
+
 	  case PREFIX_ACT:
 	    tree.prefixize(action_extra);
 	    break;
@@ -507,7 +507,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	  case SAMPLE_ACT:
 	    tree.sample(action_extra / (double)DOUBLE_FACTOR);
 	    break;
-	    
+
 	  case CUT_SMALLER_ACT:
 	    tree.cut_smaller(action_extra);
 	    break;
@@ -545,11 +545,11 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	  case CUT_SMALLER_ADDR_AGG_ACT:
 	    tree.cut_smaller_host_aggregates(action_extra, action_extra2);
 	    break;
-	    
+
 	  case CUT_LARGER_ADDR_AGG_ACT:
 	    tree.cut_larger_host_aggregates(action_extra, action_extra2);
 	    break;
-	    
+
 	  case CULL_ADDRS_ACT: {
 	      AggregateWTree wtree(tree, AggregateWTree::COUNT_ADDRS);
 	      wtree.cull_addresses(action_extra);
@@ -557,7 +557,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      tree = wtree;
 	      break;
 	  }
-	  
+
 	  case CULL_ADDRS_BY_PACKETS_ACT: {
 	      AggregateWTree wtree(tree, AggregateWTree::COUNT_PACKETS);
 	      wtree.cull_addresses_by_packets(action_extra);
@@ -565,7 +565,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      tree = wtree;
 	      break;
 	  }
-	  
+
 	  case CULL_PACKETS_ACT: {
 	      AggregateWTree wtree(tree, AggregateWTree::COUNT_PACKETS);
 	      wtree.cull_packets(action_extra);
@@ -582,7 +582,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 		  if (p > 0)
 		      wtree.prefixize(p - 1);
 	      }
-	      
+
 	      AggregateWTree new_tree(AggregateWTree::COUNT_ADDRS_LEAF);
 	      double randomness = (double)action_extra / DOUBLE_FACTOR;
 	      for (int i = 0; i <= 32; i++)
@@ -624,14 +624,14 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 		  if (s >= ends || (*s != '=' && *s != '>' && *s != ':') || p1 == 0 || p1 > 31)
 		      errh->fatal("syntax error 1 in --remap-prefixes argument (%c)", *s);
 		  s++;
-		  
+
 		  int v2 = 0, p2 = 0;
 		  while (s < ends && (*s == '0' || *s == '1'))
 		      v2 = (v2 << 1) + (*s - '0'), p2++, s++;
 		  if ((s < ends && *s != ',') || p2 != p1)
 		      errh->fatal("syntax error 2 in --remap-prefixes argument (%c)", *s);
 		  s++;
-		  
+
 		  x1.push_back(v1);
 		  x2.push_back(v2);
 		  xp.push_back(p1);
@@ -670,7 +670,7 @@ process_tree_actions(AggregateTree &tree, ErrorHandler *errh)
 	      tree = new_tree;
 	      break;
 	  }
-	      
+
 	}
     }
 }
@@ -679,13 +679,13 @@ static void
 process_actions(AggregateTree &tree, ErrorHandler *errh)
 {
     process_tree_actions(tree, errh);
-    
+
     // output result of final action
     int action = actions.back();
     uint32_t action_extra = extras.back();
     uint32_t action_extra2 = extras2.back();
     switch (action) {
-	
+
       case NNZ_ACT:
 	fprintf(out, "%u\n", tree.num_nonzero());
 	break;
@@ -784,7 +784,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case CORR_SIZE_AGG_ADDR_ACT: {
 	  Vector<uint32_t> sizes;
 	  tree.active_counts(sizes);
-	  
+
 	  AggregateTree agg_tree(tree);
 	  agg_tree.posterize();
 	  agg_tree.prefixize(action_extra);
@@ -834,7 +834,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  write_vector(v, out);
 	  break;
       }
-      
+
       case ALL_BRANCHING_ACT: {
 	  Vector<uint32_t> v;
 	  for (uint32_t i = 0; i <= 32 - action_extra; i++) {
@@ -843,17 +843,17 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  }
 	  break;
       }
-      
+
       case BALANCE_HISTOGRAM_ACT: {
 	  Vector<uint32_t> sizes;
 	  tree.balance_histogram(action_extra, action_extra2, sizes);
-	  
+
 	  // print number of aggregates to help users
 	  uint32_t total = 0;
 	  for (int i = 0; i < sizes.size(); i++)
 	      total += sizes[i];
 	  fprintf(out, "# nnz %u\n", total);
-	  
+
 	  fprintf(out, "0 0 %u\n", sizes[0]);
 	  double step = 1. / (double)action_extra2;
 	  for (int i = 1; i < sizes.size() - 1; i++)
@@ -861,7 +861,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
 	  fprintf(out, "1 1 %u\n", sizes.back());
 	  break;
       }
-      
+
       case PREFIX_ACT:
       case POSTERIZE_ACT:
       case SAMPLE_ACT:
@@ -881,7 +881,7 @@ process_actions(AggregateTree &tree, ErrorHandler *errh)
       case NO_ACT:
 	tree.write_file(out, output_format, errh);
 	break;
-	
+
     }
 }
 
@@ -892,7 +892,7 @@ main(int argc, char *argv[])
 	(argc, argv, sizeof(options) / sizeof(options[0]), options);
     program_name = Clp_ProgramName(clp);
     Clp_AddType(clp, CLP_TWO_UINTS_TYPE, 0, parse_two_uints, 0);
-    
+
     cp_va_static_initialize();
     ErrorHandler *errh = new FileErrorHandler(stderr, "");
     ErrorHandler::static_initialize(errh);
@@ -915,15 +915,15 @@ main(int argc, char *argv[])
 	  case BINARY_OPT:
 	    output_format = AggregateTree::WR_BINARY;
 	    break;
-	    
+
 	  case ASCII_OPT:
 	    output_format = AggregateTree::WR_ASCII;
 	    break;
-	    
+
 	  case ASCII_IP_OPT:
 	    output_format = AggregateTree::WR_ASCII_IP;
 	    break;
-	    
+
 	  case AND_OPT:
 	  case OR_OPT:
 	  case EACH_OPT:
@@ -935,7 +935,7 @@ main(int argc, char *argv[])
 		die_usage("combiner option already specified");
 	    combiner = opt;
 	    break;
-	    
+
 	  case READ_FILE_OPT:
 	    files.push_back(clp->vstr);
 	    break;
@@ -1020,7 +1020,7 @@ particular purpose.\n");
 		die_usage("'" + optname + "' prob should be between 0 and 1");
 	    add_action(opt, (uint32_t) (clp->val.d * DOUBLE_FACTOR));
 	    break;
-	    
+
 	  case CUT_SMALLER_ACT:
 	  case CUT_LARGER_ACT:
 	  case CULL_ADDRS_ACT:
@@ -1040,11 +1040,11 @@ particular purpose.\n");
 	  case REMAP_PREFIXES_ACT:
 	    add_action(opt, 0, 0, clp->vstr);
 	    break;
-	    
+
 	  case Clp_NotOption:
 	    files.push_back(clp->vstr);
 	    break;
-	    
+
 	  case Clp_BadOption:
 	    die_usage();
 	    break;
@@ -1055,10 +1055,10 @@ particular purpose.\n");
 	  default:
 	    assert(0);
 	    break;
-	    
+
 	}
     }
-  
+
   done:
     // check file usage
     if (files.size() == 0)
@@ -1189,7 +1189,7 @@ particular purpose.\n");
       }
 
     }
-    
-    
+
+
     exit(0);
 }

@@ -109,7 +109,7 @@ static const Clp_Option options[] = {
     { "bro-conn-summary", 0, READ_BROCONN_OPT, 0, 0 },
     { "netflow-summary", 0, READ_NETFLOW_SUMMARY_OPT, 0, 0 },
     { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
-    
+
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ValString, 0 },
     { "filter", 'f', FILTER_OPT, Clp_ValString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
@@ -134,7 +134,7 @@ static const Clp_Option options[] = {
     { "address-pairs", 0, AGG_ADDRPAIR_OPT, 0, 0 },
     { "unidirectional-address-pairs", 0, AGG_UNI_ADDRPAIR_OPT, 0, 0 },
     { "uni-address-pairs", 0, AGG_UNI_ADDRPAIR_OPT, 0, 0 },
-    
+
     { "packets", 0, AGG_PACKETS_OPT, 0, 0 },
     { "bytes", 'B', AGG_BYTES_OPT, 0, 0 },
     { "time-offset", 'T', TIME_OFFSET_OPT, CLP_TIMESTAMP_TYPE, 0 },
@@ -307,9 +307,9 @@ add_source(StringAccum &sa, int num, int action, const Options &opt)
 {
     uint32_t result = 0;
     sa << "src" << num << " :: ";
-    
+
     switch (action) {
-	
+
       case INTERFACE_OPT:
 	sa << "FromDevice(" << cp_quote(opt.filename)
 	   << ", SNIFFER true, SNAPLEN " << opt.snaplen << ", FORCE_IP true";
@@ -432,7 +432,7 @@ main(int argc, char *argv[])
     options.anonymize = options.multipacket = options.do_sample = options.mirror = false;
     options.promisc = true;
     options.mmap = options.snaplen = -1;
-    
+
     while (1) {
 	int opt = Clp_Next(clp);
 	switch (opt) {
@@ -442,11 +442,11 @@ main(int argc, char *argv[])
 		die_usage("'--output' already specified");
 	    output = clp->vstr;
 	    break;
-	    
+
 	  case INTERFACE_OPT:
 	    quiet = true;
 	    goto do_action;
-	    
+
 	  case READ_DUMP_OPT:
 	  case READ_NETFLOW_SUMMARY_OPT:
 	  case READ_IPSUMDUMP_OPT:
@@ -469,7 +469,7 @@ main(int argc, char *argv[])
 	    if (clp->have_val)
 		options.dag_encap = clp->vstr;
 	    break;
-	    
+
 	  case IPSUMDUMP_FORMAT_OPT:
 	    if (options.ipsumdump_format)
 		die_usage("'--format' already specified");
@@ -478,7 +478,7 @@ main(int argc, char *argv[])
 	    action = READ_IPSUMDUMP_OPT;
 	    options.ipsumdump_format = clp->vstr;
 	    break;
-	    
+
 	  case WRITE_DUMP_OPT:
 	    if (write_dump)
 		die_usage("'--write-tcpdump' already specified");
@@ -530,15 +530,15 @@ main(int argc, char *argv[])
 	  case QUIET_OPT:
 	    quiet = !clp->negated;
 	    break;
-	    
+
 	  case TIME_OFFSET_OPT:
 	    time_offset = *((const Timestamp *)&clp->val);
 	    break;
-	    
+
 	  case START_TIME_OPT:
 	    start_time = *((const Timestamp *)&clp->val);
 	    break;
-	    
+
 	  case INTERVAL_OPT:
 	    interval = *((const Timestamp *)&clp->val);
 	    break;
@@ -548,13 +548,13 @@ main(int argc, char *argv[])
 		die_usage("aggregate specified twice");
 	    agg = "ip src";
 	    break;
-	    
+
 	  case AGG_DST_OPT:
 	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
 	    agg = "ip dst";
 	    break;
-	    	    
+
 	  case AGG_LENGTH_OPT:
 	    if (agg || agg_flows)
 		die_usage("aggregate specified twice");
@@ -610,11 +610,11 @@ main(int argc, char *argv[])
 		die_usage("supply at most one of the '--split' options");
 	    multi_output = 0;
 	    break;
-	    
+
 	  case CONFIG_OPT:
 	    config = true;
 	    break;
-	    
+
 	  case HELP_OPT:
 	    usage();
 	    exit(0);
@@ -637,7 +637,7 @@ particular purpose.\n");
 	  case Clp_NotOption:
 	    files.push_back(clp->vstr);
 	    break;
-	    
+
 	  case Clp_BadOption:
 	    die_usage();
 	    break;
@@ -648,10 +648,10 @@ particular purpose.\n");
 	  default:
 	    die_usage();
 	    break;
-	    
+
 	}
     }
-  
+
   done:
     // check file usage
     if (!output)
@@ -668,7 +668,7 @@ particular purpose.\n");
 	agg = "ip " + agg;
     if (agg.substring(0, 3) == "ip_")
 	agg = "ip " + agg.substring(3);
-    
+
     // set random seed if appropriate
     if (do_seed && (options.do_sample || options.anonymize))
 	click_random_srandom();
@@ -709,7 +709,7 @@ particular purpose.\n");
     if (files.size() == 0)
 	files.push_back("-");
     options.nfiles = files.size();
-    
+
     // prepare ipsumdump format
     if (options.ipsumdump_format) {
 	if (action != READ_IPSUMDUMP_OPT)
@@ -794,7 +794,7 @@ particular purpose.\n");
 	    sa << " src" << i;
 	sa << ", SNAPLEN " << options.snaplen << ")\n";
     }
-    
+
     // elements to aggregate
     bool agg_is_ip = false;
     if (agg_flows) {
@@ -855,11 +855,11 @@ particular purpose.\n");
 	    sa << ", CHECK_STDOUT true";
 	sa << ");\n";
     }
-    
+
     // set-uid-root privilege
     if (geteuid() != getuid() || getegid() != getgid())
 	sa << "ChangeUID();\n";
-    
+
     int stop_driver_count = files.size() + (collate ? 1 : 0) + 1;
     sa << "manager :: DriverManager(pause " << (stop_driver_count - 1);
     // manipulate progress bar
@@ -919,7 +919,7 @@ particular purpose.\n");
     Router *router = click_read_router(sa.take_string(), true, (verbose ? errh : &verrh));
     if (!router)
 	exit(1);
-    
+
     // run driver
     router->activate(errh);
     router->master()->thread(0)->driver();

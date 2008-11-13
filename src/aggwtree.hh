@@ -26,7 +26,7 @@ class AggregateWTree { public:
     uint32_t num_active() const			{ return _num_nonzero; }
     uint32_t num_nonzero() const		{ return _num_nonzero; }
     uint32_t nnz() const			{ return _num_nonzero; }
-    
+
     void add(uint32_t aggregate, int32_t count = 1);
 
     void cull_addresses(uint32_t nnz);
@@ -48,7 +48,7 @@ class AggregateWTree { public:
     void fake_by_discriminating_prefix(int, const uint32_t[33][33], double randomness);
     void fake_by_branching_counts(int p, int depth, const Vector<uint32_t> &, bool=true);
     void fake_by_dirichlet(uint32_t nnz);
-    
+
     int read_file(FILE *, ErrorHandler *);
     int write_file(FILE *, AggregateTree::WriteFormat, ErrorHandler *) const;
     AggregateTree::WriteFormat read_format() const { return _read_format; }
@@ -57,7 +57,7 @@ class AggregateWTree { public:
     AggregateWTree &operator=(const AggregateWTree &);
 
   public:
-    
+
     WNode *_root;
     WNode *_free;
     Vector<WNode *> _blocks;
@@ -93,9 +93,9 @@ class AggregateWTree { public:
     void node_fake_dirichlet(WNode *, WNode *stack[], int, uint32_t);
 
     void read_packed_file(FILE *, int file_byte_order);
-    
+
     friend class AggregateTree;
-    
+
 };
 
 inline AggregateWTree::WNode *

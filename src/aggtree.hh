@@ -9,7 +9,7 @@ struct AggregateWTree_WNode;
 class AggregateTree { public:
 
     enum WriteFormat { WR_UNKNOWN = -1, WR_ASCII = 0, WR_BINARY = 1, WR_ASCII_IP = 2 };
-    
+
     AggregateTree();
     AggregateTree(const AggregateTree &);
     AggregateTree(const AggregateWTree &);
@@ -20,13 +20,13 @@ class AggregateTree { public:
     uint32_t num_nonzero() const		{ return _num_nonzero; }
     uint32_t nnz() const			{ return _num_nonzero; }
     uint32_t nnz_match(uint32_t mask, uint32_t value) const;
-    
+
     inline void add(uint32_t aggregate, int32_t count = 1);
     void zero_aggregate(int, uint32_t);
     void zero_masked_aggregate(uint32_t, uint32_t);
 
     void posterize();
-    
+
     void prefixize(int prefix_len);
     void make_prefix(int prefix_len, AggregateTree &) const;
 
@@ -39,7 +39,7 @@ class AggregateTree { public:
     void cut_larger_host_aggregates(int, uint32_t);
 
     void make_mapped(int prefix_len, const Vector<uint32_t> &map, AggregateTree &) const;
-    
+
     void num_active_prefixes(Vector<uint32_t> &) const;
     void num_active_left_prefixes(Vector<uint32_t> &) const;
 
@@ -47,7 +47,7 @@ class AggregateTree { public:
 
     void active_counts(Vector<uint32_t> &) const;
     void randomly_assign_counts(const Vector<uint32_t> &);
-    
+
     void sum_and_sum_sq(double *, double *) const;
 
     void balance(int prefix_len, FILE *) const;
@@ -56,13 +56,13 @@ class AggregateTree { public:
     void branching_counts(int p, int layers_down, Vector<uint32_t> &) const;
     void subtree_counts(int p, int layers_down, Vector<uint32_t> &) const;
     void conditional_split_counts(int p, Vector<uint32_t> &) const;
-    
+
     void keep_common_hosts(const AggregateTree &, bool add = false);
     void drop_common_hosts(const AggregateTree &);
     void drop_common_unequal_hosts(const AggregateTree &);
     void add_new_hosts(const AggregateTree &);
     void take_nonzero_sizes(const AggregateTree &, uint32_t mask =0xFFFFFFFFU);
-    
+
     int read_file(FILE *, ErrorHandler *);
     WriteFormat read_format() const		{ return _read_format; }
     int write_file(FILE *, WriteFormat, ErrorHandler *) const;
@@ -81,7 +81,7 @@ class AggregateTree { public:
     };
 
   private:
-    
+
     Node *_root;
     Node *_free;
     enum { BLOCK_SIZE = 1024 };
@@ -122,7 +122,7 @@ class AggregateTree { public:
     static void write_hex_nodes(Node *, FILE *, ErrorHandler *);
 
     friend class AggregateWTree;
-    
+
 };
 
 inline AggregateTree::Node *
