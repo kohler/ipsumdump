@@ -4,7 +4,7 @@
  * Eddie Kohler
  *
  * Copyright (c) 2001-2004 International Computer Science Institute
- * Copyright (c) 2004-2006 Regents of the University of California
+ * Copyright (c) 2004-2008 Regents of the University of California
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -160,7 +160,7 @@ die_usage(String specific = String())
     if (specific)
 	errh->error("%s: %s", program_name, specific.c_str());
     errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
-Try '%s --help' for more information.",
+Try %<%s --help%> for more information.",
 		program_name, program_name);
     // should not get here, but just in case...
     exit(1);
@@ -244,7 +244,7 @@ parse_timestamp(Clp_Parser *clp, const char *arg, int complain, void *)
     if (cp_time(arg, (Timestamp *)&clp->val))
 	return 1;
     else if (complain)
-	return Clp_OptionError(clp, "'%O' expects a time value, not '%s'", arg);
+	return Clp_OptionError(clp, "%<%O%> expects a time value, not %<%s%>", arg);
     else
 	return 0;
 }
@@ -439,7 +439,7 @@ main(int argc, char *argv[])
 
 	  case OUTPUT_OPT:
 	    if (output)
-		die_usage("'--output' already specified");
+		die_usage("%<--output%> already specified");
 	    output = clp->vstr;
 	    break;
 
@@ -472,22 +472,22 @@ main(int argc, char *argv[])
 
 	  case IPSUMDUMP_FORMAT_OPT:
 	    if (options.ipsumdump_format)
-		die_usage("'--format' already specified");
+		die_usage("%<--format%> already specified");
 	    else if (action && action != READ_IPSUMDUMP_OPT)
-		die_usage("'--format' only useful with '--ipsumdump'");
+		die_usage("%<--format%> only useful with %<--ipsumdump%>");
 	    action = READ_IPSUMDUMP_OPT;
 	    options.ipsumdump_format = clp->vstr;
 	    break;
 
 	  case WRITE_DUMP_OPT:
 	    if (write_dump)
-		die_usage("'--write-tcpdump' already specified");
+		die_usage("%<--write-tcpdump%> already specified");
 	    write_dump = clp->vstr;
 	    break;
 
 	  case FILTER_OPT:
 	    if (options.filter)
-		die_usage("'--filter' already specified");
+		die_usage("%<--filter%> already specified");
 	    options.filter = clp->vstr;
 	    break;
 
@@ -513,7 +513,7 @@ main(int argc, char *argv[])
 	    else {
 		options.do_sample = true;
 		if (clp->val.d < 0 || clp->val.d > 1)
-		    die_usage("'--sample' probability must be between 0 and 1");
+		    die_usage("%<--sample%> probability must be between 0 and 1");
 		options.sample = clp->val.d;
 	    }
 	    break;
@@ -581,7 +581,7 @@ main(int argc, char *argv[])
 	  case AGG_BYTES_OPT:
 	  case AGG_PACKETS_OPT:
 	    if (aggctr_pb)
-		die_usage("'--bytes' or '--packets' specified twice");
+		die_usage("%<--bytes%> or %<--packets%> specified twice");
 	    aggctr_pb = "BYTES " + cp_unparse_bool(opt == AGG_BYTES_OPT);
 	    break;
 
@@ -607,7 +607,7 @@ main(int argc, char *argv[])
 
 	  multi_output:
 	    if (multi_output >= 0)
-		die_usage("supply at most one of the '--split' options");
+		die_usage("supply at most one of the %<--split%> options");
 	    multi_output = 0;
 	    break;
 
@@ -623,7 +623,7 @@ main(int argc, char *argv[])
 	  case VERSION_OPT:
 	    printf("Ipaggcreate %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
 	    printf("Copyright (c) 2001-2002 International Computer Science Institute\n\
-Copyright (c) 2004-2006 Regents of the University of California\n\
+Copyright (c) 2004-2008 Regents of the University of California\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -657,7 +657,7 @@ particular purpose.\n");
     if (!output)
 	output = "-";
     if (multi_output >= 0 && !check_multi_output(output))
-	p_errh->fatal("When generating multiple files, you must supply '--output',\nwhich should contain exactly one '%%d' or equivalent.");
+	p_errh->fatal("When generating multiple files, you must supply %<--output%>,\nwhich should contain exactly one %<%%d%> or equivalent.");
     if (output == "-" && write_dump == "-")
 	p_errh->fatal("standard output used for both summary output and tcpdump output");
 
@@ -676,17 +676,15 @@ particular purpose.\n");
     // figure out time argument
     StringAccum time_config_sa;
     if (start_time && time_offset)
-	p_errh->fatal("specify at most one of '--start-time' and '--time-offset'");
+	p_errh->fatal("specify at most one of %<--start-time%> and %<--time-offset%>");
     else if (time_offset)
 	time_config_sa << ", START_AFTER " << time_offset;
     else if (start_time)
 	time_config_sa << ", START " << start_time;
     if (interval && options.split_time)
-	p_errh->fatal("supply at most one of '--interval' and '--split-time'");
+	p_errh->fatal("supply at most one of %<--interval%> and %<--split-time%>");
     else if (interval)
 	time_config_sa << ", INTERVAL " << interval;
-    else if (options.split_time)
-	time_config_sa << ", INTERVAL " << options.split_time;
     if (time_config_sa)
 	options.time_config = time_config_sa.take_string().substring(2);
 
@@ -698,9 +696,9 @@ particular purpose.\n");
 	action = READ_DUMP_OPT;
     if (action == INTERFACE_OPT) {
 	if (files.size() == 0)
-	    p_errh->fatal("'-i' option requires at least one DEVNAME");
+	    p_errh->fatal("%<-i%> option requires at least one DEVNAME");
 	else if (collate)
-	    p_errh->fatal("'--collate' may not be used with '--interface'");
+	    p_errh->fatal("%<--collate%> may not be used with %<--interface%>");
     }
     if (options.snaplen < 0)
 	options.snaplen = (write_dump ? 2000 : 68);
@@ -713,7 +711,7 @@ particular purpose.\n");
     // prepare ipsumdump format
     if (options.ipsumdump_format) {
 	if (action != READ_IPSUMDUMP_OPT)
-	    die_usage("'--format' option requires '--ipsumdump'");
+	    die_usage("%<--format%> option requires %<--ipsumdump%>");
     } else if (action == READ_TUDUMP_OPT) {
 	options.ipsumdump_format = "timestamp ip_src sport ip_dst dport proto payload_len";
 	action = READ_IPSUMDUMP_OPT;
@@ -721,7 +719,7 @@ particular purpose.\n");
 	if (agg.substring(0, 6) == "ip src" || agg.substring(0, 6) == "ip dst")
 	    options.ipsumdump_format = "ip_" + agg.substring(3, 3);
 	else
-	    die_usage("can't aggregate '" + agg + "' with '--ip-addresses'");
+	    die_usage("can%,t aggregate %<" + agg + "%> with %<--ip-addresses%>");
 	action = READ_IPSUMDUMP_OPT;
     } else if (action == READ_BROCONN_OPT) {
 	options.ipsumdump_format = "timestamp ip_src ip_dst direction";
@@ -780,7 +778,7 @@ particular purpose.\n");
 	if (options.time_config && !(all_source_flags & Options::TIMED))
 	    sa << options.time_config << ", ";
 	if (options.split_time) {
-	    sa << "END_CALL trigger.run";
+	    sa << "INTERVAL " << options.split_time << ", END_CALL trigger.run";
 	    output_calls.push_back("time.extend_interval " + options.split_time.unparse());
 	} else
 	    sa << "STOP true";
@@ -874,8 +872,12 @@ particular purpose.\n");
 
     // write script
     sa << "\ntrigger :: Script(TYPE PASSIVE";
-    if (multi_output >= 0)
-	sa << ",\n\tinit onum 0, goto done $(eq $(ac.nagg) 0),\n\tset onum $(add $onum 1)";
+    if (multi_output >= 0) {
+	sa << ",\n\tinit onum 0,";
+	if (!options.split_time)
+	    sa << " goto done $(eq $(ac.nagg) 0),";
+	sa << "\n\tset onum $(add $onum 1)";
+    }
 
     // banner
     {
@@ -885,7 +887,7 @@ particular purpose.\n");
 	argsa.pop_back();
 	bsa << "!creator " << cp_quote(argsa.take_string()) << "\n";
 	bsa << "!counts " << (aggctr_pb == "BYTES false" ? "packets\n" : "bytes\n");
-	sa << ",\n\twrite ac.banner \""
+	sa << ",\n\twriteq ac.banner \""
 	   << cp_expand_in_quotes(bsa.take_string(), '\"')
 	   << "!times $(tr.range) $(tr.interval)\\n";
 	if (multi_output >= 0)
@@ -915,7 +917,7 @@ particular purpose.\n");
 
     // lex configuration
     BailErrorHandler berrh(errh);
-    VerboseFilterErrorHandler verrh(&berrh, ErrorHandler::ERRVERBOSITY_CONTEXT + 1);
+    PrefixErrorHandler verrh(&berrh, String::make_stable("{context:no}"));
     Router *router = click_read_router(sa.take_string(), true, (verbose ? errh : &verrh));
     if (!router)
 	exit(1);

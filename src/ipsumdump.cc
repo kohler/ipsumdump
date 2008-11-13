@@ -930,7 +930,7 @@ particular purpose.\n");
 
     // lex configuration
     BailErrorHandler berrh(errh);
-    VerboseFilterErrorHandler verrh(&berrh, ErrorHandler::ERRVERBOSITY_CONTEXT + 1);
+    PrefixErrorHandler verrh(&berrh, String::make_stable("{context:no}"));
     router = click_read_router(sa.take_string(), true, (verbose ? errh : &verrh));
     if (!router)
 	exit(1);

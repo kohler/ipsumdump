@@ -142,7 +142,7 @@ AggregateWTree::kill_all_nodes()
 // check to see tree is OK
 //
 
-static uint32_t NODE_OK_ERROR = (uint32_t)ErrorHandler::ERROR_RESULT;
+static uint32_t NODE_OK_ERROR = (uint32_t)ErrorHandler::error_result;
 
 uint32_t
 AggregateWTree::node_ok(WNode *n, int last_swivel, uint32_t *nnz_ptr,
