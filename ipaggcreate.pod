@@ -256,8 +256,8 @@ The four B<--split> options generate multiple aggregate output files based
 on characteristics of the input.  To use B<--split>, you must supply an
 explicit B<--output> filename containing a "C<%d>"-style template; a file
 number is plugged in to that template.  For example, the template
-"C<file%03.txt>" will generate files "C<file001.txt>", "C<file002.txt>",
-and so forth.
+C<file%03d.txt> will generate files C<file001.txt>, C<file002.txt>, and so
+forth.
 
 =over 4
 

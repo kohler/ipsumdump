@@ -62,7 +62,8 @@ IPSUMDUMP_OBJS = \
 IPAGGCREATE_ELEMENT_OBJS = \
 	fromdagdump.o fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
 	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o kernelfilter.o \
-	ipsumdumpinfo.o \
+	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_icmp.o ipsumdump_ip.o \
+	ipsumdump_link.o ipsumdump_payload.o ipsumdump_tcp.o ipsumdump_udp.o \
 	aggcounter.o aggregateip.o aggregateipaddrpair.o aggregateipflows.o \
 	aggregatelen.o aggregatenotifier.o aggregatepaint.o \
 	anonipaddr.o changeuid.o classifier.o counter.o drivermanager.o \

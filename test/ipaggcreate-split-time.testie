@@ -1,0 +1,56 @@
+%script
+ipaggcreate --split-time=1 --ipsumdump F --output=O%d
+
+%file F
+!data timestamp ip_dst count
+0.1 1.0.0.1 3
+0.2 1.0.0.2 4
+1.1 1.0.0.1 3
+1.2 1.0.0.2 40
+5.11 1.0.0.3 20
+
+%expect O1
+!IPAggregate 1.{{\d+}}
+!section 1
+!num_nonzero 2
+!ip
+1.0.0.1 3
+1.0.0.2 4
+
+%expect O2
+!IPAggregate 1.{{\d+}}
+!section 2
+!num_nonzero 2
+!ip
+1.0.0.1 3
+1.0.0.2 40
+
+%expect O3
+!IPAggregate 1.{{\d+}}
+!section 3
+!num_nonzero 0
+!ip
+
+%expect O4
+!IPAggregate 1.{{\d+}}
+!section 4
+!num_nonzero 0
+!ip
+
+%expect O5
+!IPAggregate 1.{{\d+}}
+!section 5
+!num_nonzero 0
+!ip
+
+%expect O6
+!IPAggregate 1.{{\d+}}
+!section 6
+!num_nonzero 1
+!ip
+1.0.0.3 20
+
+%ignore O1 O2 O3 O4 O5 O6
+!creator{{.*}}
+!counts packets
+!times {{[\d.]+}} {{[\d.]+}} {{[\d.]+}}

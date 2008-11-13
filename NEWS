@@ -1,5 +1,12 @@
 Ipsumdump NEWS
 
+Version 1.72   13.Nov.2008
+
+* ipaggcreate: '--split-time' works correctly, and does not drop packets
+  when switching from time bucket to time bucket.  Problem reported by
+  Damien Ancelin.
+
+
 Version 1.71   8.Oct.2008
 
 * Generate correct MD5 checksums for packets with link-level headers and
