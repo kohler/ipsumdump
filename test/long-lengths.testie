@@ -1,0 +1,20 @@
+%script
+ipsumdump --ipsumdump -tsdl X
+ipsumdump -b --ipsumdump -tsdl X | ipsumdump --ipsumdump -tsdl
+
+%file X
+!data timestamp src dst ip_len
+1.0 1.0.0.1 2.0.0.2 20
+1.1 1.0.0.2 2.0.0.2 20000
+1.2 1.0.0.3 2.0.0.2 20000000
+
+%expect stdout
+1.000000 1.0.0.1 2.0.0.2 20
+1.100000 1.0.0.2 2.0.0.2 20000
+1.200000 1.0.0.3 2.0.0.2 20000000
+1.000000 1.0.0.1 2.0.0.2 20
+1.100000 1.0.0.2 2.0.0.2 20000
+1.200000 1.0.0.3 2.0.0.2 20000000
+
+%ignore stdout
+!{{.*}}
