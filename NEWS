@@ -1,5 +1,14 @@
 Ipsumdump NEWS
 
+Version 1.73   3.Dec.2008
+
+* Fix reading timestamps from binary ipsumdump files.  Problem reported by
+  Damien Ancelin.
+
+* Changes to the way lengths of 2^16 or more are represented.  Issue
+  reported by Damien Ancelin.
+
+
 Version 1.72   13.Nov.2008
 
 * ipaggcreate: '--split-time' works correctly, and does not drop packets
