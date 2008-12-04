@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.75   3.Dec.2008
+
+* Some bug fixes for problems caught by Click tests.
+
+
 Version 1.74   3.Dec.2008
 
 * ipaggcreate: Control-C will lead to output.  Reported by Martin Duke.
