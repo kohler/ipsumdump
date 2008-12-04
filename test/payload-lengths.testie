@@ -1,0 +1,41 @@
+%script
+ipsumdump --ipsumdump -lL X > Y
+ipsumdump --ipsumdump -b -lL X | ipsumdump --ipsumdump -lL > Z
+
+echo xxx 1>&2
+ipsumdump --ipsumdump -lL XX > YY
+
+%file X
+!data ip_len payload_len
+1500 1460
+1500 1448
+1500 1448
+1500 1460
+1500 1460
+1500 1460
+40 0
+40 0
+1500 1448
+1500 1460
+
+%expect Y Z
+1500 1460
+1500 1448
+1500 1448
+1500 1460
+1500 1460
+1500 1460
+40 0
+40 0
+1500 1448
+1500 1460
+
+%file XX
+!data proto ip_len
+T 1500
+
+%expect YY
+1500 1460
+
+%ignore Y Z YY
+!{{.*}}
