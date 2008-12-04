@@ -869,7 +869,8 @@ particular purpose.\n");
     sa << ", write trigger.run, label stop);\n";
 
     // Signals.  Do not catch SIGPIPE; it kills us immediately
-    sa << "Script(TYPE SIGNAL INT TERM, write manager.goto stop, exit);\n";
+    sa << "Script(TYPE SIGNAL INT TERM, write trigger.run, "
+       << "write manager.goto stop, exit);\n";
 
     // write script
     sa << "\ntrigger :: Script(TYPE PASSIVE";

@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.74   3.Dec.2008
+
+* ipaggcreate: Control-C will lead to output.  Reported by Martin Duke.
+
+
 Version 1.73   3.Dec.2008
 
 * Fix reading timestamps from binary ipsumdump files.  Problem reported by
