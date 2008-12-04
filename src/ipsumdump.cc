@@ -714,6 +714,7 @@ main(int argc, char *argv[])
 	    printf("Ipsumdump %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
 	    printf("Copyright (c) 2001-2003 International Computer Science Institute\n\
 Copyright (c) 2004-2008 Regents of the University of California\n\
+Copyright (c) 2008 Meraki, Inc.\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

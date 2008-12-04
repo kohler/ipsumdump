@@ -8,6 +8,11 @@ Version 1.73   3.Dec.2008
 * Changes to the way lengths of 2^16 or more are represented.  Issue
   reported by Damien Ancelin.
 
+* Summary dump sources correctly represent packets with different IP and
+  payload lengths.  In particular, a TCP packet with IP length 1500 and
+  payload length 1448 implies 12 bytes of option.  Now we add 12 bytes of
+  empty option to represent that.  Issue reported by Damien Ancelin.
+
 
 Version 1.72   13.Nov.2008
 
