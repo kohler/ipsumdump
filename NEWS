@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.76   4.Dec.2008
+
+* Fix handling of lengths between 2^16 and 2^16+7.  Problem reported by
+  Damien Ancelin.  Thanks, Damien Ancelin!
+
+
 Version 1.75   3.Dec.2008
 
 * Some bug fixes for problems caught by Click tests.
