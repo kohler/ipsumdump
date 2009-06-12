@@ -5,6 +5,7 @@
  *
  * Copyright (c) 2001-4 International Computer Science Institute
  * Copyright (c) 2004-8 Regents of the University of California
+ * Copyright (c) 2001-2009 Eddie Kohler
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -64,6 +65,7 @@
 #define HEADER_OPT		321
 #define HELP_DATA_OPT		322
 #define NO_PAYLOAD_OPT		323
+#define SKIP_PACKETS_OPT	324
 
 // sources
 #define INTERFACE_OPT		400
@@ -163,6 +165,7 @@ static const Clp_Option options[] = {
     { "quiet", 'q', QUIET_OPT, 0, Clp_Negate },
     { "bad-packets", 0, BAD_PACKETS_OPT, 0, Clp_Negate },
     { "interval", 0, INTERVAL_OPT, CLP_TIMESTAMP_TYPE, 0 },
+    { "skip-packets", 0, SKIP_PACKETS_OPT, Clp_ValUnsigned, Clp_Negate },
     { "limit-packets", 0, LIMIT_PACKETS_OPT, Clp_ValUnsigned, Clp_Negate },
     { "no-payload", 0, NO_PAYLOAD_OPT, 0, 0 },
 
@@ -224,7 +227,7 @@ die_usage(String specific = String())
     if (specific)
 	errh->error("%s: %s", program_name, specific.c_str());
     errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
-Try '%s --help' or '%s --help-data' for more information.",
+Try %<%s --help%> or %<%s --help-data%> for more information.",
 		program_name, program_name);
     // should not get here, but just in case...
     exit(1);
@@ -233,7 +236,8 @@ Try '%s --help' or '%s --help-data' for more information.",
 void
 usage_data()
 {
-  printf("\
+    FileErrorHandler merrh(stdout);
+    merrh.message("\
 Generic options:\n\
   -t, --timestamp            Include packet timestamp.\n\
   -T, --first-timestamp      Include flow-begin timestamp.\n\
@@ -249,7 +253,7 @@ IP options:\n\
   -d, --dst                  Include IP destination address.\n\
   -l, --length               Include IP length.\n\
   -p, --protocol             Include IP protocol.\n\
-  -g, --fragment             Include IP fragment flags ('F' or '.').\n\
+  -g, --fragment             Include IP fragment flags (%<F%> or %<.%>).\n\
   -G, --fragment-offset      Include IP fragment offset.\n\
       --ip-id                Include IP ID.\n\
       --ip-sum               Include IP checksum.\n\
@@ -258,7 +262,7 @@ IP options:\n\
       --ip-tos               Include IP type of service.\n\
       --ip-hl                Include IP header length.\n\
       --capture-length       Include length of captured IP data.\n\n");
-  printf("\
+    merrh.message("\
 Transport options:\n\
   -S, --sport                Include TCP/UDP source port.\n\
   -D, --dport                Include TCP/UDP destination port.\n\
@@ -290,8 +294,9 @@ ICMP options:\n\
 void
 usage()
 {
-  printf("\
-'Ipsumdump' reads IP packets from tcpdump(1) files, or network interfaces,\n\
+    FileErrorHandler merrh(stdout);
+    merrh.message("\
+%<Ipsumdump%> reads IP packets from tcpdump(1) files, or network interfaces,\n\
 and summarizes their contents in an ASCII file.\n\
 \n\
 Usage: %s [DATA OPTIONS] [-i DEVNAMES | FILES] > SUMMARYFILE\n\
@@ -305,7 +310,7 @@ Selected data options (--help-data lists more):\n\
   -l, --length               Include IP length.\n\
   -p, --protocol             Include IP protocol.\n\
 \n", program_name);
-  printf("\
+    merrh.message("\
 Source options (give exactly one):\n\
   -r, --tcpdump              Read tcpdump(1) FILES (default).\n\
   -i, --interface            Read network devices DEVNAMES until interrupted.\n\
@@ -316,7 +321,7 @@ Source options (give exactly one):\n\
       --netflow-summary      Read summarized NetFlow FILES.\n\
       --tcpdump-text         Read tcpdump(1) text output FILES.\n\
 \n");
-  printf("\
+    merrh.message("\
 Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -b, --binary               Create binary output file.\n\
@@ -325,27 +330,28 @@ Other options:\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
       --no-promiscuous       Do not put interfaces into promiscuous mode.\n\
-      --bad-packets          Print '!bad' messages for bad headers.\n\
+      --bad-packets          Print %<!bad%> messages for bad headers.\n\
       --sample PROB          Sample packets with PROB probability.\n\
       --multipacket          Produce multiple entries for a flow identifier\n\
                              representing multiple packets (NetFlow only).\n");
-  printf("\
+    merrh.message("\
       --collate              Collate packets from data sources by timestamp.\n\
       --interval TIME        Stop after TIME has elapsed in trace time.\n\
+      --skip-packets N       Skip the first N packets.\n\
       --limit-packets N      Stop after processing N packets.\n\
       --map-address ADDRS    When done, print to stderr the anonymized IP\n\
                              addresses and/or prefixes corresponding to ADDRS.\n\
       --record-counts TIME   Record packet counts every TIME seconds in output.\n\
       --random-seed SEED     Set random seed to SEED (default is random).\n\
-      --no-mmap              Don't memory-map input files.\n\
-      --no-headers           Don't print summary dump headers.\n\
-  -q, --quiet                Don't print progress bar.\n\
+      --no-mmap              Don%,t memory-map input files.\n\
+      --no-headers           Don%,t print summary dump headers.\n\
+  -q, --quiet                Don%,t print progress bar.\n\
       --config               Output Click configuration and exit.\n\
   -V, --verbose              Report errors verbosely.\n\
   -h, --help                 Print this message and exit.\n\
   -v, --version              Print version number and exit.\n\
 \n\
-Report bugs to <kohler@cs.ucla.edu>.\n");
+Report bugs to <ekohler@gmail.com>.\n");
 }
 
 static void
@@ -538,6 +544,7 @@ main(int argc, char *argv[])
     bool write_dump_payload = true;
     Vector<String> files;
     const char *record_drops = 0;
+    unsigned skip_packets = 0;
     unsigned limit_packets = 0;
     Timestamp interval;
 
@@ -622,6 +629,10 @@ main(int argc, char *argv[])
 
 	  case WRITE_DROPS_OPT:
 	    record_drops = clp->vstr;
+	    break;
+
+	  case SKIP_PACKETS_OPT:
+	    skip_packets = (clp->negated ? 0 : clp->val.u);
 	    break;
 
 	  case LIMIT_PACKETS_OPT:
@@ -715,6 +726,7 @@ main(int argc, char *argv[])
 	    printf("Copyright (c) 2001-2003 International Computer Science Institute\n\
 Copyright (c) 2004-2008 Regents of the University of California\n\
 Copyright (c) 2008 Meraki, Inc.\n\
+Copyright (c) 2001-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -767,9 +779,9 @@ particular purpose.\n");
 	action = READ_DUMP_OPT;
     if (action == INTERFACE_OPT) {
 	if (files.size() == 0)
-	    p_errh->fatal("'-i' option requires at least one DEVNAME");
+	    p_errh->fatal("%<-i%> option requires at least one DEVNAME");
 	else if (collate)
-	    p_errh->fatal("'--collate' may not be used with '--interface'");
+	    p_errh->fatal("%<--collate%> may not be used with %<--interface%>");
     }
     if (options.snaplen < 0)
 	options.snaplen = (write_dump ? 2000 : 68);
@@ -821,14 +833,23 @@ particular purpose.\n");
     if (action != INTERFACE_OPT && interval) {
 	sa << "  -> TimeFilter(INTERVAL " << interval << ", END_CALL manager.goto stop)\n";
 	if (files.size() > 1 && !collate) {
-	    p_errh->warning("'--collate' missing");
-	    p_errh->message("('--interval' works best with '--collate' when you have\nmultiple data sources.)");
+	    p_errh->warning("%<--collate%> missing");
+	    p_errh->message("(%<--interval%> works best with %<--collate%> when you have\nmultiple data sources.)");
 	}
     }
-    if (limit_packets) {
-	sa << "  -> switch :: Switch\n"
-	   << "  -> Counter(COUNT_CALL " << limit_packets << " switch_stop.run)\n";
-	script_sa << "switch_stop :: Script(TYPE PASSIVE, write switch.switch -1, write manager.goto stop);\n";
+    if (skip_packets || limit_packets) {
+	const char *goswitch;
+	sa << "  -> switch :: Switch\n";
+	if (skip_packets) {
+	    sa << "  -> Counter(COUNT_CALL " << skip_packets << " switch.switch 1) -> Discard;\n";
+	    goswitch = "switch [1]";
+	} else
+	    goswitch = " ";
+	if (limit_packets) {
+	    sa << goswitch << " -> Counter(COUNT_CALL " << limit_packets << " switch_stop.run)\n";
+	    script_sa << "switch_stop :: Script(TYPE PASSIVE, write switch.switch -1, write manager.goto stop);\n";
+	} else
+	    sa << goswitch;
     }
 
     // elements to write tcpdump file
@@ -844,7 +865,7 @@ particular purpose.\n");
     // elements to dump summary log
     if (log_contents.size() == 0) {
 	if (!write_dump) {
-	    errh->warning("no dump content options, so I'm not creating a summary dump");
+	    errh->warning("no dump content options, so I%,m not creating a summary dump");
 	    sa << "  -> Discard;\n";
 	}
 	output = "";		// we're not using the normal output file
