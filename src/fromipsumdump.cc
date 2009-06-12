@@ -146,7 +146,7 @@ FromIPSummaryDump::initialize(ErrorHandler *errh)
     // make sure notifier is initialized
     if (!output_is_push(0))
 	_notifier.initialize(Notifier::EMPTY_NOTIFIER, router());
-    _timer.initialize(router());
+    _timer.initialize(this);
 
     if (_ff.initialize(errh) < 0)
 	return -1;
@@ -244,11 +244,12 @@ FromIPSummaryDump::bang_proto(const String &line, const char *type,
 {
     Vector<String> words;
     cp_spacevec(line, words);
-    int proto;
+    int32_t proto;
 
     if (words.size() != 2)
 	_ff.error(errh, "bad %s", type);
-    else if (cp_integer(words[1], &proto) && proto < 256)
+    else if (NameInfo::query_int(NameInfo::T_IP_PROTO, this, words[1], &proto)
+	     && proto < 256)
 	_default_proto = proto;
     else if (words[1] == "T")
 	_default_proto = IP_PROTO_TCP;
@@ -330,6 +331,10 @@ set_checksums(WritablePacket *q, click_ip *iph)
 	udph->uh_sum = 0;
 	unsigned csum = click_in_cksum((uint8_t *)udph, q->transport_length());
 	udph->uh_sum = click_in_cksum_pseudohdr(csum, iph, q->transport_length());
+    } else if (iph->ip_p == IP_PROTO_ICMP) {
+	click_icmp *icmph = q->icmp_header();
+	icmph->icmp_cksum = 0;
+	icmph->icmp_cksum = click_in_cksum((const uint8_t *) icmph, q->transport_length());
     }
 }
 
