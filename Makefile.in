@@ -134,7 +134,7 @@ distdir: $(srcdir)/configure
 	  done; \
 	done
 	@cd $(libclick) && $(MAKE) distdir
-	mv $(libclick)/$(libclick) $(distdir)
+	mv $(libclick)/`echo $(libclick) | sed 's/rc[0-9]*//'` $(distdir)/$(libclick)
 
 
 .PHONY: all always $(libclick) src ipsumdump ipaggcreate ipaggmanip \
