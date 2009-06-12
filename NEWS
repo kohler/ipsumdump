@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.77   12.Jun.2009
+
+* Add --skip-packets option (Kevin Fall request).
+
+
 Version 1.76   4.Dec.2008
 
 * Fix handling of lengths between 2^16 and 2^16+7.  Problem reported by

@@ -949,6 +949,7 @@ main(int argc, char *argv[])
 	    printf("ipaggmanip %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
 	    printf("Copyright (c) 2001-2003 International Computer Science Institute\n\
 Copyright (c) 2004-2006 Regents of the University of California\n\
+Copyright (c) 2001-2009 Eddie Kohler\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
