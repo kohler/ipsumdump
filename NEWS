@@ -1,5 +1,15 @@
 Ipsumdump NEWS
 
+Version 1.78   24.Sep.2009
+
+* Fix length calculations for short frames with short capture lengths.
+  Specifically, Ethernet padding could sometimes be added to the IP length,
+  if the Ethernet padding wasn't part of the capture length.  This was due
+  to the way we handle "extra length" annotations, a source of many issues.
+  The current logic passes our current tests.  Problem reported by Mark
+  Allman.
+
+
 Version 1.77   12.Jun.2009
 
 * Add --skip-packets option (Kevin Fall request).
