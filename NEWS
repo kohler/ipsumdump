@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.79   1.Oct.2010
+
+* Add --wire-length data type (Mark Allman request).
+
+
 Version 1.78   24.Sep.2009
 
 * Fix length calculations for short frames with short capture lengths.
