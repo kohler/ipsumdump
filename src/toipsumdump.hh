@@ -56,6 +56,8 @@ contain those fields. Valid field names, with examples, are:
    ip_hl        IP header length in bytes: '20'
    ip_id        IP ID: '48759'
    ip_tos       IP type of service: '29'
+   ip_dscp      IP Differentiated Services code point: '29'
+   ip_ecn       IP ECN capability: 'no', 'ect1', 'ect2', 'ce'
    ip_ttl       IP time-to-live: '254'
    ip_sum       IP checksum: '43812'
    ip_opt       IP options (see below)
@@ -101,6 +103,7 @@ contain those fields. Valid field names, with examples, are:
                 TIMESTAMP_ANNO): '996033261.451094'
    eth_src      Ethernet source: '00-0A-95-A6-D9-BC'
    eth_dst      Ethernet source: '00-0A-95-A6-D9-BC'
+   wire_len     Packet wire length: '54'
 
 If a field does not apply to a particular packet -- for example, 'C<sport>' on
 an ICMP packet -- ToIPSummaryDump prints a single dash for that value.

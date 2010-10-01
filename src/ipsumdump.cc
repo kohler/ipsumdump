@@ -5,7 +5,7 @@
  *
  * Copyright (c) 2001-4 International Computer Science Institute
  * Copyright (c) 2004-8 Regents of the University of California
- * Copyright (c) 2001-2009 Eddie Kohler
+ * Copyright (c) 2001-2010 Eddie Kohler
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -87,7 +87,7 @@ static const char* const field_names[] = {
     "link", "udp_len", "ip_opt", "ip_sum", "tcp_window", // 20-24
     "payload_md5", "eth_src", "eth_dst", "icmp_type", "icmp_code", // 25-29
     "ip_ttl", "icmp_type_name", "icmp_code_name", "ip_tos", "ip_hl", // 30-34
-    "payload_md5_hex"					// 35
+    "payload_md5_hex", "wire_len"			// 35-36
 };
 
 // data
@@ -128,6 +128,7 @@ static const char* const field_names[] = {
 #define IP_TOS_OPT		1033
 #define IP_HL_OPT		1034
 #define PAYLOAD_MD5_HEX_OPT	1035
+#define WIRE_LEN_OPT		1036
 
 #define CLP_TIMESTAMP_TYPE	(Clp_ValFirstUser)
 
@@ -206,6 +207,7 @@ static const Clp_Option options[] = {
     { "tcp-window", 'W', TCP_WINDOW_OPT, 0, 0 },
     { "timestamp", 't', TIMESTAMP_OPT, 0, 0 },
     { "udp-length", 0, UDP_LEN_OPT, 0, 0 },
+    { "wire-length", 0, WIRE_LEN_OPT, 0, 0 },
     { "eth-src", 0, ETH_SRC_OPT, 0, 0 },
     { "eth-dst", 0, ETH_DST_OPT, 0, 0 },
     { "icmp-type", 0, ICMP_TYPE_OPT, 0, Clp_PreferredMatch },
@@ -242,6 +244,7 @@ Generic options:\n\
   -t, --timestamp            Include packet timestamp.\n\
   -T, --first-timestamp      Include flow-begin timestamp.\n\
   -c, --packet-count         Include packet count (usually 1).\n\
+      --wire-length          Include wire length (with link header/trailer).\n\
       --link                 Include link number (NLANR/NetFlow).\n\
 \n\
 Ethernet options:\n\

@@ -157,6 +157,12 @@ summary logs -- record information about flows, not packets.  A flow
 represents multiple packets; the packet count says exactly how many. 
 Example: C<1>.  See also B<--multipacket>, below.
 
+=item B<--wire-length>
+
+Include wire length in the dump.  This is the packet's length in the
+capture file, including any link headers and packet trailers.  This is
+usually larger than B<--length>, which returns the IP length.
+
 =item B<--link>
 
 Include the link number in the dump.  TSH-format NLANR logs, NetFlow
@@ -198,7 +204,7 @@ Include IP destination address in the dump. Example: C<18.26.4.44>.
 =item B<--length>, B<-l>
 
 Include IP packet length in the dump, not including any link-level headers.
-Example: C<72>.
+Example: C<72>.  See also B<--wire-length>.
 
 =item B<--protocol>, B<-p>
 
