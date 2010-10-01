@@ -51,10 +51,10 @@ IPSUMDUMP_ELEMENT_OBJS = \
 	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_icmp.o ipsumdump_ip.o \
 	ipsumdump_link.o ipsumdump_payload.o ipsumdump_tcp.o ipsumdump_udp.o \
 	toipsumdump.o todump.o \
-	anonipaddr.o changeuid.o classifier.o counter.o drivermanager.o \
-	discard.o fakepcap.o ipfilter.o ipnameinfo.o progressbar.o \
-	randomsample.o script.o switch.o tee.o timefilter.o timesortedsched.o \
-	truncateippayload.o unqueue.o
+	anonipaddr.o changeuid.o classification.o classifier.o counter.o \
+	drivermanager.o discard.o fakepcap.o ipfilter.o ipnameinfo.o \
+	progressbar.o randomsample.o script.o switch.o tee.o timefilter.o \
+	timesortedsched.o truncateippayload.o unqueue.o
 
 IPSUMDUMP_OBJS = \
 	$(IPSUMDUMP_ELEMENT_OBJS) ipsumdump.o sd_elements.o
@@ -66,10 +66,10 @@ IPAGGCREATE_ELEMENT_OBJS = \
 	ipsumdump_link.o ipsumdump_payload.o ipsumdump_tcp.o ipsumdump_udp.o \
 	aggcounter.o aggregateip.o aggregateipaddrpair.o aggregateipflows.o \
 	aggregatelen.o aggregatenotifier.o aggregatepaint.o \
-	anonipaddr.o changeuid.o classifier.o counter.o drivermanager.o \
-	discard.o fakepcap.o ipfieldinfo.o ipfilter.o ipmirror.o ipnameinfo.o \
-	progressbar.o randomsample.o script.o tee.o timefilter.o timerange.o \
-	todump.o
+	anonipaddr.o changeuid.o classification.o classifier.o counter.o \
+	drivermanager.o discard.o fakepcap.o ipfieldinfo.o ipfilter.o \
+	ipmirror.o ipnameinfo.o progressbar.o randomsample.o script.o tee.o \
+	timefilter.o timerange.o todump.o
 
 IPAGGCREATE_OBJS = \
 	$(IPAGGCREATE_ELEMENT_OBJS) ipaggcreate.o ac_elements.o

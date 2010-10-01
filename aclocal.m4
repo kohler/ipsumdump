@@ -11,4 +11,4 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
-m4_include([libclick-1.7.0rc1/m4/click.m4])
+m4_include([libclick-1.8.0/m4/click.m4])
