@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.80   14.Feb.2011
+
+* Fix --wire-length in presence of IP-related arguments (Dan Levin report).
+
+
 Version 1.79   1.Oct.2010
 
 * Add --wire-length data type (Mark Allman request).

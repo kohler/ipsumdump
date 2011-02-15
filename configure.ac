@@ -1,12 +1,12 @@
 dnl -*- mode: shell-script; -*-
-dnl the usual `configure.in' boilerplate
+dnl the usual 'configure.in' boilerplate
 dnl
 
 AC_INIT(config.h.in)
 AC_CONFIG_HEADER(config.h)
 AC_SUBST(ac_configure_args)
 
-IPSUMDUMP_VERSION=1.79
+IPSUMDUMP_VERSION=1.80
 AC_DEFINE_UNQUOTED(IPSUMDUMP_VERSION, "$IPSUMDUMP_VERSION")
 AC_SUBST(IPSUMDUMP_VERSION)
 
@@ -77,7 +77,7 @@ AC_SUBST(clickbuilddir)
 
 
 dnl
-dnl The rest of this file is based on Click `configure.in'. You shouldn't
+dnl The rest of this file is based on Click 'configure.in'. You should not
 dnl generally need to change it, although you may want to add to it.
 dnl
 
@@ -96,7 +96,7 @@ CLICK_PROG_AUTOCONF
 CLICK_PROG_GMAKE
 
 if test -z "$GMAKE"; then
-    AC_MSG_WARN([can't find GNU make, not tracking dependencies])
+    AC_MSG_WARN([cannot find GNU make, not tracking dependencies])
 fi
 
 

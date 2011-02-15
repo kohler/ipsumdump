@@ -2111,7 +2111,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 
 
-IPSUMDUMP_VERSION=1.79
+IPSUMDUMP_VERSION=1.80
 cat >>confdefs.h <<_ACEOF
 #define IPSUMDUMP_VERSION "$IPSUMDUMP_VERSION"
 _ACEOF
@@ -4431,8 +4431,8 @@ $as_echo "$ac_cv_gnu_make" >&6; }
 
 
 if test -z "$GMAKE"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: can't find GNU make, not tracking dependencies" >&5
-$as_echo "$as_me: WARNING: can't find GNU make, not tracking dependencies" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot find GNU make, not tracking dependencies" >&5
+$as_echo "$as_me: WARNING: cannot find GNU make, not tracking dependencies" >&2;}
 fi
 
 
