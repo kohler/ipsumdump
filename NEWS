@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.81   29.Mar.2011
+
+* Fix compilation problems with later GCCs (José Pedro Oliveira report).
+
+
 Version 1.80   14.Feb.2011
 
 * Fix --wire-length in presence of IP-related arguments (Dan Levin report).

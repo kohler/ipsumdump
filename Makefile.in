@@ -52,10 +52,18 @@ install: always @LIBCLICK_TARGET@ stamp-h
 install-libclick: always
 	@cd $(libclick) && $(MAKE) install
 install-man: $(srcdir)/ipsumdump.1 $(srcdir)/ipaggcreate.1 $(srcdir)/ipaggmanip.1
-	$(mkinstalldirs) $(mandir) $(mandir)/man1
-	$(INSTALL_DATA) $(srcdir)/ipsumdump.1 $(mandir)/man1/ipsumdump.1
-	$(INSTALL_DATA) $(srcdir)/ipaggcreate.1 $(mandir)/man1/ipaggcreate.1
-	$(INSTALL_DATA) $(srcdir)/ipaggmanip.1 $(mandir)/man1/ipaggmanip.1
+	$(mkinstalldirs) $(mandir) $(DESTDIR)$(mandir)/man1
+	$(INSTALL_DATA) $(srcdir)/ipsumdump.1 $(DESTDIR)$(mandir)/man1/ipsumdump.1
+	$(INSTALL_DATA) $(srcdir)/ipaggcreate.1 $(DESTDIR)$(mandir)/man1/ipaggcreate.1
+	$(INSTALL_DATA) $(srcdir)/ipaggmanip.1 $(DESTDIR)$(mandir)/man1/ipaggmanip.1
+
+uninstall: always
+	@cd src && $(MAKE) uninstall
+	@$(MAKE) uninstall-man
+uninstall-man: always
+	-rm -f $(DESTDIR)$(mandir)/man1/ipsumdump.1
+	-rm -f $(DESTDIR)$(mandir)/man1/ipaggcreate.1
+	-rm -f $(DESTDIR)$(mandir)/man1/ipaggmanip.1
 
 elemlist elemlists: always
 	@cd src && $(MAKE) elemlist
@@ -140,5 +148,5 @@ distdir: $(srcdir)/configure
 .PHONY: all always $(libclick) src ipsumdump ipaggcreate ipaggmanip \
 	elemlist elemlists \
 	clean distclean dist distdir \
-	install install-doc install-man install-local install-include \
+	install install-man uninstall uninstall-man \
 	fetch-click
