@@ -594,6 +594,8 @@ LIBOBJS
 GMAKE
 SUBMAKE
 AUTOCONF
+CLICK_BUILD_INSTALL_IF_CHANGED
+CLICK_BUILD_INSTALL
 CLICKINSTALL
 INSTALL_IF_CHANGED
 INSTALL_DATA
@@ -2111,7 +2113,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 
 
-IPSUMDUMP_VERSION=1.81
+IPSUMDUMP_VERSION=1.82
 cat >>confdefs.h <<_ACEOF
 #define IPSUMDUMP_VERSION "$IPSUMDUMP_VERSION"
 _ACEOF
@@ -4380,6 +4382,10 @@ $as_echo "no" >&6; }
     rm -f conftest.1 conftest.2
 
     CLICKINSTALL=`echo "$INSTALL" | sed 's|^\$(.*)/|\$(clickdatadir)/|'`
+
+    CLICK_BUILD_INSTALL="$INSTALL"
+
+    CLICK_BUILD_INSTALL_IF_CHANGED="`echo "$INSTALL_IF_CHANGED" | sed 's|(INSTALL)|(CLICK_BUILD_INSTALL)|'`"
 
 
 

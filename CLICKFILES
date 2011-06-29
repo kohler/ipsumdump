@@ -1,7 +1,5 @@
 elements/userlevel/fromdump.cc
 elements/userlevel/fromdump.hh
-elements/userlevel/fromfile.cc
-elements/userlevel/fromfile.hh
 elements/userlevel/todump.cc
 elements/userlevel/todump.hh
 elements/userlevel/fakepcap.hh

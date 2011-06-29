@@ -46,7 +46,7 @@ mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 
 
 IPSUMDUMP_ELEMENT_OBJS = \
-	fromdagdump.o fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
+	fromdagdump.o fromdevice.o fromdump.o fromipsumdump.o \
 	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o kernelfilter.o \
 	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_icmp.o ipsumdump_ip.o \
 	ipsumdump_link.o ipsumdump_payload.o ipsumdump_tcp.o ipsumdump_udp.o \
@@ -60,7 +60,7 @@ IPSUMDUMP_OBJS = \
 	$(IPSUMDUMP_ELEMENT_OBJS) ipsumdump.o sd_elements.o
 
 IPAGGCREATE_ELEMENT_OBJS = \
-	fromdagdump.o fromdevice.o fromdump.o fromfile.o fromipsumdump.o \
+	fromdagdump.o fromdevice.o fromdump.o fromipsumdump.o \
 	fromnetflowsumdump.o fromnlanrdump.o fromtcpdump.o kernelfilter.o \
 	ipsumdumpinfo.o ipsumdump_anno.o ipsumdump_icmp.o ipsumdump_ip.o \
 	ipsumdump_link.o ipsumdump_payload.o ipsumdump_tcp.o ipsumdump_udp.o \

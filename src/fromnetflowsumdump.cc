@@ -19,7 +19,7 @@
 #include <click/config.h>
 
 #include "fromnetflowsumdump.hh"
-#include <click/confparse.hh>
+#include <click/args.hh>
 #include <click/router.hh>
 #include <click/standard/scheduleinfo.hh>
 #include <click/error.hh>
@@ -62,15 +62,15 @@ FromNetFlowSummaryDump::configure(Vector<String> &conf, ErrorHandler *errh)
     _multipacket = _timing = false;
     String link = "input";
 
-    if (cp_va_kparse(conf, this, errh,
-		     "FILENAME", cpkP+cpkM, cpFilename, &_ff.filename(),
-		     "STOP", 0, cpBool, &stop,
-		     "ACTIVE", 0, cpBool, &_active,
-		     "ZERO", 0, cpBool, &_zero,
-		     "MULTIPACKET", 0, cpBool, &_multipacket,
-		     "LINK", 0, cpWord, &link,
-		     "TIMING", 0, cpBool, &_timing,
-		     cpEnd) < 0)
+    if (Args(conf, this, errh)
+	.read_mp("FILENAME", FilenameArg(), _ff.filename())
+	.read("STOP", stop)
+	.read("ACTIVE", _active)
+	.read("ZERO", _zero)
+	.read("MULTIPACKET", _multipacket)
+	.read("LINK", WordArg(), link)
+	.read("TIMING", _timing)
+	.complete() < 0)
 	return -1;
 
     _stop = stop;
@@ -178,23 +178,23 @@ FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
 	int ok = 0;
 
 	// annotations
-	if (cp_integer(words[7], &j))
+	if (IntArg().parse(words[7], j))
 	    SET_FIRST_TIMESTAMP_ANNO(q, Timestamp(j, 0)), ok++;
-	if (cp_integer(words[8], &j)) {
+	if (IntArg().parse(words[8], j)) {
 	    if (j)
 		q->timestamp_anno().assign(j, 0);
 	    else
 		q->timestamp_anno() = FIRST_TIMESTAMP_ANNO(q);
 	    ok++;
 	}
-	if (cp_integer(words[5], &j))
+	if (IntArg().parse(words[5], j))
 	    SET_EXTRA_PACKETS_ANNO(q, j - 1), ok++;
-	uint32_t byte_count;
-	if (cp_integer(words[6], &byte_count))
+	uint32_t byte_count = 0;
+	if (IntArg().parse(words[6], byte_count))
 	    ok++;
 	uint32_t input = 0, output = 0;
-	if ((_link == 1 || cp_integer(words[3], &input))
-	    && (_link == 0 || cp_integer(words[4], &output))) {
+	if ((_link == 1 || IntArg().parse(words[3], input))
+	    && (_link == 0 || IntArg().parse(words[4], output))) {
 	    ok++;
 	    uint32_t m = (_link == 2 ? 15 : 255);
 	    input = (input < m ? input : m) << (_link == 2 ? 4 : 0);
@@ -203,19 +203,19 @@ FromNetFlowSummaryDump::read_packet(ErrorHandler *errh)
 	}
 
 	// IP header
-	ok += cp_ip_address(words[0], (unsigned char *)&iph->ip_src);
-	ok += cp_ip_address(words[1], (unsigned char *)&iph->ip_dst);
-	if (cp_integer(words[13], &j) && j <= 0xFF)
+	ok += IPAddressArg().parse(words[0], iph->ip_src);
+	ok += IPAddressArg().parse(words[1], iph->ip_dst);
+	if (IntArg().parse(words[13], j) && j <= 0xFF)
 	    iph->ip_p = j, ok++;
-	if (cp_integer(words[14], &j) && j <= 0xFF)
+	if (IntArg().parse(words[14], j) && j <= 0xFF)
 	    iph->ip_tos = j, ok++;
 
 	// TCP header
-	if (cp_integer(words[9], &j) && j <= 0xFFFF)
+	if (IntArg().parse(words[9], j) && j <= 0xFFFF)
 	    q->udp_header()->uh_sport = htons(j), ok++;
-	if (cp_integer(words[10], &j) && j <= 0xFFFF)
+	if (IntArg().parse(words[10], j) && j <= 0xFFFF)
 	    q->udp_header()->uh_dport = htons(j), ok++;
-	if (cp_integer(words[12], &j) && j <= 0xFF)
+	if (IntArg().parse(words[12], j) && j <= 0xFF)
 	    q->tcp_header()->th_flags = j, ok++;
 
 	if (ok < 10)
@@ -405,7 +405,7 @@ FromNetFlowSummaryDump::read_handler(Element *e, void *thunk)
     FromNetFlowSummaryDump *fd = static_cast<FromNetFlowSummaryDump *>(e);
     switch ((intptr_t)thunk) {
       case H_ACTIVE:
-	return cp_unparse_bool(fd->_active);
+	return BoolArg::unparse(fd->_active);
       case H_ENCAP:
 	return "IP";
       default:
@@ -421,7 +421,7 @@ FromNetFlowSummaryDump::write_handler(const String &s_in, Element *e, void *thun
     switch ((intptr_t)thunk) {
       case H_ACTIVE: {
 	  bool active;
-	  if (cp_bool(s, &active)) {
+	  if (BoolArg().parse(s, active)) {
 	      fd->_active = active;
 	      if (fd->output_is_push(0)) {
 		  if (active && !fd->_task.scheduled())
@@ -430,7 +430,7 @@ FromNetFlowSummaryDump::write_handler(const String &s_in, Element *e, void *thun
 		  fd->_notifier.set_active(active, true);
 	      return 0;
 	  } else
-	      return errh->error("`active' should be Boolean");
+	      return errh->error("type mismatch");
       }
       default:
 	return -EINVAL;
@@ -449,5 +449,5 @@ FromNetFlowSummaryDump::add_handlers()
 }
 
 CLICK_ENDDECLS
-ELEMENT_REQUIRES(userlevel FromFile)
+ELEMENT_REQUIRES(userlevel)
 EXPORT_ELEMENT(FromNetFlowSummaryDump)

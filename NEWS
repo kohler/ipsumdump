@@ -1,5 +1,11 @@
 Ipsumdump NEWS
 
+Version 1.82   29.Jun.2011
+
+* Fix compilation problems with later GCCs (José Pedro Oliveira report).
+  Also update Click.
+
+
 Version 1.81   29.Mar.2011
 
 * Fix compilation problems with later GCCs (José Pedro Oliveira report).
