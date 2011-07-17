@@ -891,8 +891,12 @@ particular purpose.\n");
 	argsa.pop_back();
 	bsa << "!creator " << cp_quote(argsa.take_string()) << "\n";
 	bsa << "!counts " << (aggctr_pb == "BYTES false" ? "packets\n" : "bytes\n");
-	sa << ",\n\twriteq ac.banner \""
-	   << cp_expand_in_quotes(bsa.take_string(), '\"');
+	sa << ",\n\twriteq ac.banner \"";
+	String b = cp_quote(bsa.take_string());
+	if (b && b[0] == '\"')
+	    sa.append(b.begin() + 1, b.end() - 1);
+	else
+	    sa << b;
 	if (options.split_time)
 	    sa << "!times $(time.start) $(time.end) " << options.split_time << "\\n";
 	else
