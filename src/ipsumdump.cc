@@ -236,22 +236,29 @@ Try %<%s --help%> or %<%s --help-data%> for more information.",
 }
 
 void
-usage_data()
+usage(bool data_only)
 {
     FileErrorHandler merrh(stdout);
+    if (!data_only)
+	merrh.message("\
+%<Ipsumdump%> reads IP packets from tcpdump(1) files, or network interfaces,\n\
+and summarizes their contents in an ASCII file.\n\
+\n\
+Usage: %s [DATA OPTIONS] [-i DEVNAMES | FILES] > SUMMARYFILE\n\n",
+		      program_name);
     merrh.message("\
-Generic options:\n\
+General data options:\n\
   -t, --timestamp            Include packet timestamp.\n\
   -T, --first-timestamp      Include flow-begin timestamp.\n\
   -c, --packet-count         Include packet count (usually 1).\n\
       --wire-length          Include wire length (with link header/trailer).\n\
       --link                 Include link number (NLANR/NetFlow).\n\
 \n\
-Ethernet options:\n\
+Ethernet data options:\n\
       --eth-src              Include Ethernet source address.\n\
       --eth-dst              Include Ethernet destination address.\n\
 \n\
-IP options:\n\
+IP data options:\n\
   -s, --src                  Include IP source address.\n\
   -d, --dst                  Include IP destination address.\n\
   -l, --length               Include IP length.\n\
@@ -266,7 +273,7 @@ IP options:\n\
       --ip-hl                Include IP header length.\n\
       --capture-length       Include length of captured IP data.\n\n");
     merrh.message("\
-Transport options:\n\
+Transport data options:\n\
   -S, --sport                Include TCP/UDP source port.\n\
   -D, --dport                Include TCP/UDP destination port.\n\
   -L, --payload-length       Include payload length (no IP/UDP/TCP headers).\n\
@@ -274,7 +281,7 @@ Transport options:\n\
       --payload-md5          Include MD5 checksum of packet payload.\n\
       --payload-md5-hex      Include MD5 payload checksum in md5sum hex format.\n\
 \n\
-TCP options:\n\
+TCP data options:\n\
   -F, --tcp-flags            Include TCP flags word.\n\
   -Q, --tcp-seq              Include TCP sequence number.\n\
   -K, --tcp-ack              Include TCP acknowledgement number.\n\
@@ -282,37 +289,19 @@ TCP options:\n\
   -O, --tcp-opt              Include TCP options.\n\
       --tcp-sack             Include TCP selective acknowledgement options.\n\
 \n\
-UDP options:\n\
+UDP data options:\n\
       --udp-length           Include UDP length.\n\n");
-  printf("\
-ICMP options:\n\
+    merrh.message("\
+ICMP data options:\n\
       --icmp-type            Include ICMP type.\n\
       --icmp-code            Include ICMP code.\n\
       --icmp-type-name       Include human-readable ICMP type.\n\
-      --icmp-code-name       Include human-readable ICMP code.\n\
-\n\
+      --icmp-code-name       Include human-readable ICMP code.\n\n");
+    if (data_only) {
+	merrh.message("\
       --help                 Print general help message.\n");
-}
-
-void
-usage()
-{
-    FileErrorHandler merrh(stdout);
-    merrh.message("\
-%<Ipsumdump%> reads IP packets from tcpdump(1) files, or network interfaces,\n\
-and summarizes their contents in an ASCII file.\n\
-\n\
-Usage: %s [DATA OPTIONS] [-i DEVNAMES | FILES] > SUMMARYFILE\n\
-\n\
-Selected data options (--help-data lists more):\n\
-  -t, --timestamp            Include packet timestamp.\n\
-  -s, --src                  Include IP source address.\n\
-  -d, --dst                  Include IP destination address.\n\
-  -S, --sport                Include TCP/UDP source port.\n\
-  -D, --dport                Include TCP/UDP destination port.\n\
-  -l, --length               Include IP length.\n\
-  -p, --protocol             Include IP protocol.\n\
-\n", program_name);
+	return;
+    }
     merrh.message("\
 Source options (give exactly one):\n\
   -r, --tcpdump              Read tcpdump(1) FILES (default).\n\
@@ -715,12 +704,12 @@ main(int argc, char *argv[])
 	    break;
 
 	  case HELP_OPT:
-	    usage();
+	    usage(false);
 	    exit(0);
 	    break;
 
 	  case HELP_DATA_OPT:
-	    usage_data();
+	    usage(true);
 	    exit(0);
 	    break;
 
