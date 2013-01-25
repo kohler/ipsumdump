@@ -16,7 +16,6 @@ subdir = .
 conf_auxdir = @conf_auxdir@
 
 AUTOCONF = @AUTOCONF@
-ACLOCAL = aclocal -I $(libclick)/m4
 INSTALL = @INSTALL@
 INSTALL_IF_CHANGED = @INSTALL_IF_CHANGED@
 INSTALL_DATA = @INSTALL@ -m 644
@@ -81,7 +80,7 @@ always:
 	@:
 
 $(srcdir)/configure: $(srcdir)/configure.ac
-	cd $(srcdir) && $(ACLOCAL) && $(AUTOCONF)
+	cd $(srcdir) && $(AUTOCONF)
 config.status: $(srcdir)/configure
 	$(SHELL) $(srcdir)/configure @ac_configure_args@
 Makefile: config.status $(srcdir)/Makefile.in
