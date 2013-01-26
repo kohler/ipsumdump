@@ -34,6 +34,9 @@ INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL@ -m 644
 mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 
+DEPDIR = .deps
+DEPSTAMP = $(DEPDIR)/stamp
+
 .SUFFIXES:
 .SUFFIXES: .c .cc .o .ii
 
@@ -80,7 +83,7 @@ IPAGGMANIP_OBJS = aggtree.o aggwtree.o ipaggmanip.o
 CPPFLAGS = @CPPFLAGS@ -g -DCLICK_USERLEVEL
 CFLAGS = @CFLAGS@
 CXXFLAGS = @CXXFLAGS@
-DEPCFLAGS = @DEPCFLAGS@
+DEPCFLAGS = @DEPCFLAGS@ @DEPDIRFLAG@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@ @CLICKLIB@ `$(CLICK_BUILDTOOL) --otherlibs`
 DEFS = @DEFS@ `$(CLICK_BUILDTOOL) --cflags`
@@ -114,39 +117,45 @@ sd_elements.conf: $(CLICK_BUILDTOOL)
 	(for i in $(IPSUMDUMP_ELEMENT_OBJS); do echo "$(srcdir)/$$i" | sed 's/\.o/\.cc/'; done) | $(CLICK_BUILDTOOL) findelem -r userlevel -S > sd_elements.conf
 sd_elements.cc: sd_elements.conf $(CLICK_BUILDTOOL)
 	$(CLICK_BUILDTOOL) elem2export -S < sd_elements.conf > sd_elements.cc
-	@rm -f sd_elements.d
+	@rm -f $(DEPDIR)/sd_elements.d
 ac_elements.conf: $(CLICK_BUILDTOOL)
 	(for i in $(IPAGGCREATE_ELEMENT_OBJS); do echo "$(srcdir)/$$i" | sed 's/\.o/\.cc/'; done) | $(CLICK_BUILDTOOL) findelem -r userlevel -S > ac_elements.conf
 ac_elements.cc: ac_elements.conf $(CLICK_BUILDTOOL)
 	$(CLICK_BUILDTOOL) elem2export -S < ac_elements.conf > ac_elements.cc
-	@rm -f ac_elements.d
-
-install: ipsumdump ipaggcreate ipaggmanip always
-	$(mkinstalldirs) $(DESTDIR)$(bindir)
-	$(INSTALL) ipsumdump $(DESTDIR)$(bindir)/ipsumdump
-	$(INSTALL) ipaggcreate $(DESTDIR)$(bindir)/ipaggcreate
-	$(INSTALL) ipaggmanip $(DESTDIR)$(bindir)/ipaggmanip
-
-uninstall: always
-	-rm -f $(DESTDIR)$(bindir)/ipsumdump
-	-rm -f $(DESTDIR)$(bindir)/ipaggcreate
-	-rm -f $(DESTDIR)$(bindir)/ipaggmanip
-
-always:
-	@:
+	@rm -f $(DEPDIR)/ac_elements.d
 
 #!gmake
-DEPFILES := $(wildcard *.d)
+DEPFILES := $(wildcard $(DEPDIR)/*.d)
 ifneq ($(DEPFILES),)
 include $(DEPFILES)
 endif
 #!end gmake
 
+$(IPSUMDUMP_OBJS) $(IPAGGCREATE_OBJS) $(IPAGGMANIP_OBJS): $(DEPSTAMP)
+$(DEPSTAMP):
+	@-mkdir $(DEPDIR) >/dev/null 2>&1
+	@touch $@
+
+install: ipsumdump ipaggcreate ipaggmanip
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	$(INSTALL) ipsumdump $(DESTDIR)$(bindir)/ipsumdump
+	$(INSTALL) ipaggcreate $(DESTDIR)$(bindir)/ipaggcreate
+	$(INSTALL) ipaggmanip $(DESTDIR)$(bindir)/ipaggmanip
+uninstall:
+	-rm -f $(DESTDIR)$(bindir)/ipsumdump
+	-rm -f $(DESTDIR)$(bindir)/ipaggcreate
+	-rm -f $(DESTDIR)$(bindir)/ipaggmanip
+
 clean:
-	-rm -f *.d *.o sd_elements.mk sd_elements.cc sd_elements.conf \
-	ac_elements.mk ac_elements.cc ac_elements.conf ipsumdump
+	-rm -rf $(DEPDIR)
+	-rm -f *.o sd_elements.mk sd_elements.cc sd_elements.conf \
+	ac_elements.mk ac_elements.cc ac_elements.conf \
+	ipsumdump ipaggcreate ipaggmanip
 distclean: clean
 	-rm -f Makefile
 
-.PHONY: all always clean distclean elemlist \
+always:
+	@:
+
+.PHONY: all all-local always clean distclean elemlist \
 	install uninstall

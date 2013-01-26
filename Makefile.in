@@ -36,13 +36,13 @@ all: @LIBCLICK_TARGET@ src Makefile
 
 $(libclick): always
 	@cd $(libclick) && $(MAKE) all
-src: always stamp-h
+src: $(libclick) always stamp-h
 	@cd src && $(MAKE) all-local
-ipsumdump: always stamp-h
+ipsumdump: $(libclick) always stamp-h
 	@cd src && $(MAKE) ipsumdump
-ipaggcreate: always stamp-h
+ipaggcreate: $(libclick) always stamp-h
 	@cd src && $(MAKE) ipaggcreate
-ipaggmanip: always stamp-h
+ipaggmanip: $(libclick) always stamp-h
 	@cd src && $(MAKE) ipaggmanip
 
 install: always @LIBCLICK_TARGET@ stamp-h
