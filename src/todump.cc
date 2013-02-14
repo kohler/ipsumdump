@@ -221,9 +221,8 @@ ToDump::write_packet(Packet *p)
     ph.caplen = to_write;
 
     // XXX writing to pipe?
-    std::size_t ph_size = sizeof(ph);
-    if ( (fwrite(&ph, ph_size, 1, _fp) == 0 && ph_size > 0)
-	|| (fwrite(p->data(), 1, to_write, _fp) == 0 && to_write > 0) ) {
+    if (fwrite(&ph, sizeof(ph), 1, _fp) == 0
+	|| (to_write > 0 && fwrite(p->data(), 1, to_write, _fp) == 0)) {
 	if (errno != EAGAIN) {
 	    _active = false;
 	    click_chatter("ToDump(%s): %s", _filename.c_str(), strerror(errno));
