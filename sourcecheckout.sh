@@ -5,7 +5,7 @@ usage () {
     exit 1
 }
 
-libclick-version () {
+libclickversion () {
     grep 'AC_DEFUN.*AC_LIBCLICK_VERSION' configure.ac | sed 's/^.*\[\([0-9.]*\)\].*/\1/'
 }
 
@@ -24,7 +24,7 @@ if test -n "$1"; then
 	usage
     fi
 
-    my_libclick_version=`libclick-version`
+    my_libclick_version=`libclickversion`
     if [ "$my_libclick_version" != "$version" ]; then
 	cp configure.ac configure.ac~ || exit 1
 	echo "Updating configure.ac to libclick-$version" 1>&2
@@ -68,5 +68,5 @@ if test -n "$1"; then
     done
 fi
 
-aclocal -I libclick-`libclick-version`/m4
+aclocal -I libclick-`libclickversion`/m4
 autoconf
