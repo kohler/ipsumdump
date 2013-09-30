@@ -42,13 +42,12 @@ class Handler { public:
 	h_button = 0x2000,	///< @brief Write handler ignores data.
 	h_checkbox = 0x4000,	///< @brief Read/write handler is boolean and
 				///  should be rendered as a checkbox.
-	h_driver_flag_shift = 20,
-	h_driver_flag_0 = 1 << h_driver_flag_shift,
-				///< @brief First uninterpreted handler flag
-				///  available for drivers.  Equals 1 <<
-				///  h_driver_flag_shift.
-	h_user_flag_shift = 25,
-	h_user_flag_0 = 1 << h_user_flag_shift,
+	h_driver_flag_0 = 1U << 26,
+        h_driver_flag_1 = 1U << 27,
+				///< @brief Uninterpreted handler flags
+				///  available for drivers.
+	h_user_flag_shift = 28,
+	h_user_flag_0 = 1U << h_user_flag_shift,
 				///< @brief First uninterpreted handler flag
 				///  available for element-specific use.
 				///  Equals 1 << h_user_flag_shift.
@@ -94,18 +93,18 @@ class Handler { public:
     /** @endcond never */
 
 
-    /** @brief Check if this is a valid read handler. */
+    /** @brief Test if this is a valid read handler. */
     inline bool readable() const {
 	return _flags & h_read;
     }
 
-    /** @brief Check if this is a valid read handler that may accept
+    /** @brief Test if this is a valid read handler that may accept
      * parameters. */
     inline bool read_param() const {
 	return _flags & h_read_param;
     }
 
-    /** @brief Check if this is a public read handler.
+    /** @brief Test if this is a public read handler.
      *
      * Private handlers may be not called from outside the router
      * configuration.  Handlers are public by default; to make a read handler
@@ -114,12 +113,12 @@ class Handler { public:
 	return (_flags & (h_read | h_read_private)) == h_read;
     }
 
-    /** @brief Check if this is a valid write handler. */
+    /** @brief Test if this is a valid write handler. */
     inline bool writable() const {
 	return _flags & h_write;
     }
 
-    /** @brief Check if this is a public write handler.
+    /** @brief Test if this is a public write handler.
      *
      * Private handlers may not be called from outside the router
      * configuration.  Handlers are public by default; to make a write handler
@@ -128,23 +127,24 @@ class Handler { public:
 	return (_flags & (h_write | h_write_private)) == h_write;
     }
 
-    /** @brief Check if this is a public read or write handler. */
+    /** @brief Test if this is a public read or write handler. */
     inline bool visible() const {
 	return read_visible() || write_visible();
     }
 
-    /** @brief Check if this handler is exclusive.
-     *
-     * Exclusive handlers are mutually exclusive with all other router
-     * processing.  In the Linux kernel module driver, reading or writing an
-     * exclusive handler using the Click filesystem will first lock all router
-     * threads and handlers.  Handlers are exclusive by default.  Exclusivity
-     * is cleared by the h_nonexclusive flag.  */
-    inline bool exclusive() const {
-	return !(_flags & h_nonexclusive);
+    /** @brief Test if this handler can execute concurrently with other
+     *         handlers. */
+    inline bool allow_concurrent_handlers() const {
+        return (_flags & h_nonexclusive);
     }
 
-    /** @brief Check if spaces should be preserved when calling this handler.
+    /** @brief Test if this handler can execute concurrently with
+     *         router threads. */
+    inline bool allow_concurrent_threads() const {
+        return (_flags & h_nonexclusive);
+    }
+
+    /** @brief Test if spaces should be preserved when calling this handler.
      *
      * Some Click drivers perform some convenience processing on handler
      * values, for example by removing a terminating newline from write
@@ -231,8 +231,6 @@ class Handler { public:
 	OP_READ = h_read,
 	OP_WRITE = h_write,
 	READ_PARAM = h_read_param,
-	EXCLUSIVE = h_exclusive,
-	NONEXCLUSIVE = h_nonexclusive,
 	RAW = h_raw,
 	READ_PRIVATE = h_read_private,
 	WRITE_PRIVATE = h_write_private,
@@ -242,10 +240,12 @@ class Handler { public:
 	EXPENSIVE = h_expensive,
 	BUTTON = h_button,
 	CHECKBOX = h_checkbox,
-	DRIVER_FLAG_SHIFT = h_driver_flag_shift,
-	DRIVER_FLAG_0 = h_driver_flag_0,
 	USER_FLAG_SHIFT = h_user_flag_shift,
 	USER_FLAG_0 = h_user_flag_0
+    };
+    enum CLICK_DEPRECATED {
+	EXCLUSIVE = h_exclusive,
+	NONEXCLUSIVE = h_nonexclusive
     };
     /** @endcond never */
 

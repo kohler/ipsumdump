@@ -105,7 +105,7 @@ clicksrcdir = @clicksrcdir@
 clickbuilddir = @clickbuilddir@
 fetch-click:
 	@[ $(clickbuilddir) != NONE ] || (echo "Reconfigure with --with-click-build!"; exit 1)
-	cd $(top_srcdir); sh ./sourcecheckout.sh "$(clickbuilddir)"
+	cd $(top_srcdir); sh ./bootstrap.sh "$(clickbuilddir)"
 
 
 distdir = $(PACKAGE)-$(VERSION)
