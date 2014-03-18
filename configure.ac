@@ -2,11 +2,11 @@ dnl -*- mode: shell-script; -*-
 dnl the usual 'configure.in' boilerplate
 dnl
 
-AC_INIT(config.h.in)
-AC_CONFIG_HEADER(config.h)
+AC_INIT([config.h.in])
+AC_CONFIG_HEADER([config.h])
 AC_SUBST(ac_configure_args)
 
-IPSUMDUMP_VERSION=1.82
+IPSUMDUMP_VERSION=1.83
 AC_DEFINE_UNQUOTED([IPSUMDUMP_VERSION], ["$IPSUMDUMP_VERSION"], [Version of ipsumdump binary.])
 AC_SUBST(IPSUMDUMP_VERSION)
 

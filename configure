@@ -2143,7 +2143,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 
 
-IPSUMDUMP_VERSION=1.82
+IPSUMDUMP_VERSION=1.83
 
 cat >>confdefs.h <<_ACEOF
 #define IPSUMDUMP_VERSION "$IPSUMDUMP_VERSION"

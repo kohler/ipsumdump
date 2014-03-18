@@ -1,3 +1,21 @@
+/*
+ * ipaggmanip.cc -- driver for the ipaggmanip program
+ * Eddie Kohler
+ *
+ * Copyright (c) 2001-2004 International Computer Science Institute
+ * Copyright (c) 2004-2008 Regents of the University of California
+ * Copyright (c) 2001-2014 Eddie Kohler
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, subject to the conditions
+ * listed in the Click LICENSE file. These conditions include: you must
+ * preserve this copyright notice, and you cannot mention the copyright
+ * holders in advertising related to the Software without their permission.
+ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
+ * notice is a summary of the Click LICENSE file; the license in that file is
+ * legally binding.
+ */
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -947,9 +965,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("ipaggmanip %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
-	    printf("Copyright (c) 2001-2003 International Computer Science Institute\n\
-Copyright (c) 2004-2006 Regents of the University of California\n\
-Copyright (c) 2001-2011 Eddie Kohler\n\
+	    printf("Copyright (c) 2001-2014 Eddie Kohler and others\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");
@@ -1184,7 +1200,7 @@ particular purpose.\n");
 	  AggregateTree tree;
 	  read_next_file(tree, errh);
 	  if (more_files())
-	      errh->fatal("supply '--and', '--or', or '--each' with multiple files");
+	      errh->fatal("supply %<--and%>, %<--or%>, or %<--each%> with multiple files");
 	  process_actions(tree, errh);
 	  break;
       }
