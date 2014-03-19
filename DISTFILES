@@ -1,6 +1,6 @@
 Makefile.in
 NEWS
-README
+README.md
 configure
 configure.ac
 config.h.in
