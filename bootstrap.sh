@@ -1,7 +1,7 @@
 #! /bin/bash
 
 usage () {
-    echo "Usage: ./sourcecheckout.sh [CLICKBUILDDIR]" 1>&2
+    echo "Usage: ./bootstrap.sh [CLICKBUILDDIR]" 1>&2
     exit 1
 }
 
