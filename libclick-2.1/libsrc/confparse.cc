@@ -1872,9 +1872,9 @@ cp_ethernet_address(const String &str, unsigned char *result
 		    CP_CONTEXT)
 {
 #if !CLICK_TOOL
-    return EtherAddressArg::parse(str, *reinterpret_cast<EtherAddress *>(result), Args(context));
+    return EtherAddressArg().parse(str, *reinterpret_cast<EtherAddress*>(result), Args(context));
 #else
-    return EtherAddressArg::parse(str, *reinterpret_cast<EtherAddress *>(result));
+    return EtherAddressArg().parse(str, *reinterpret_cast<EtherAddress*>(result));
 #endif
 }
 
@@ -2225,7 +2225,6 @@ const CpVaParseCmd
   cpElement		= "element",
   cpElementCast		= "element_cast",
   cpHandlerName		= "handler_name",
-  cpHandler		= "handler",
   cpHandlerCallRead	= "handler_call_read",
   cpHandlerCallWrite	= "handler_call_write",
   cpHandlerCallPtrRead	= "handler_call_ptr_read",
@@ -2235,7 +2234,9 @@ const CpVaParseCmd
   cpIP6PrefixLen	= "ip6_prefix_len",
   cpIP6AddressOrPrefix	= "ip6_addr_or_prefix",
   cpFilename		= "filename",
+#if !CLICK_TOOL
   cpAnno		= "anno",
+#endif
   cpInterval		= cpTimeval,
   cpReadHandlerCall	= cpHandlerCallPtrRead,
   cpWriteHandlerCall	= cpHandlerCallPtrWrite;

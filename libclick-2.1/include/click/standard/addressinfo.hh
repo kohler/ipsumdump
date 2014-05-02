@@ -77,24 +77,25 @@ C<NAME:ipnet> by setting the lowest-order bit in the network address.
 
 =head1 DEFAULT ADDRESSES
 
-If you do not define an address for a given name, AddressInfo will use the
+If you do not define an address for a given NAME, AddressInfo will use the
 default, if any.  Defaults are as follows:
 
 =over 2
 
 =item *
 
-If DEVNAME is the name of an Ethernet device, then C<DEVNAME:eth> defaults to
-DEVNAME's Ethernet address.  (At userlevel, this works only on BSD and Linux.)
+For Ethernet addresses, Click checks for an Ethernet device named NAME, and
+uses its address. (At userlevel, this works only on BSD and Linux.)
 
 =item *
 
-C<DEVNAME:ip> defaults to the first primary IPv4 address associated with the
-device DEVNAME.
+For IPv4 addresses, Click checks for a network device named NAME, and uses
+its primary IPv4 address.
 
 =item *
 
-C<DEVNAME:gw> defaults to the device DEVNAME's default gateway.
+For C<NAME:gw>, Click checks for a network device named NAME, and uses its
+default gateway.
 
 =back
 
@@ -113,17 +114,20 @@ class AddressInfo : public Element { public:
     int configure_phase() const		{ return CONFIGURE_PHASE_FIRST; }
     int configure(Vector<String> &conf, ErrorHandler *errh);
 
-    static bool query_ip(const String &s, unsigned char *store, const Element *context);
-    static bool query_ip_prefix(String s, unsigned char *store_addr, unsigned char *store_mask, const Element *context);
+    enum {
+        f_nodevice = 1
+    };
+    static bool query_ip(const String &s, unsigned char *store, const Element *context, int flags = 0);
+    static bool query_ip_prefix(String s, unsigned char *store_addr, unsigned char *store_mask, const Element *context, int flags = 0);
 #if HAVE_IP6
-    static bool query_ip6(String s, unsigned char *store, const Element *context);
-    static bool query_ip6_prefix(String s, unsigned char *store_addr, int *store_prefixlen, const Element *context);
+    static bool query_ip6(String s, unsigned char *store, const Element *context, int flags = 0);
+    static bool query_ip6_prefix(String s, unsigned char *store_addr, int *store_prefixlen, const Element *context, int flags = 0);
 #endif
-    static bool query_ethernet(String s, unsigned char *store, const Element *context);
+    static bool query_ethernet(String s, unsigned char *store, const Element *context, int flags = 0);
 
   private:
 
-    static bool query_netdevice(const String &name, unsigned char *store, int type, int len, const Element *context);
+    static bool query_netdevice(const String &name, unsigned char *store, int type, int len, const Element *context, int flags);
 
 };
 

@@ -278,10 +278,24 @@ Router::element(const Router *router, int eindex)
 const String &
 Router::ename(int eindex) const
 {
-    if (eindex < 0 || eindex >= nelements())
-	return String::make_empty();
-    else
+    if ((unsigned) eindex < (unsigned) nelements())
 	return _element_names[eindex];
+    else
+	return String::make_empty();
+}
+
+/** @brief  Returns element index @a eindex's name context.
+ *  @param  eindex  element index
+ *
+ *  The result is the context prefix for the element's name. This is the
+ *  string up to, and including, the last slash in the element's name.
+ *  Returns the empty string if @a eindex is out of range. */
+String
+Router::ename_context(int eindex) const
+{
+    String s = ename(eindex);
+    int slash = s.find_right('/');
+    return slash < 0 ? String() : s.substring(0, slash + 1);
 }
 
 /** @brief  Returns element index @a eindex's configuration string.
@@ -852,7 +866,7 @@ Router::set_flow_code_override(int eindex, const String &flow_code)
 
 /** @brief Traverse the router configuration from one of @a e's ports.
  * @param e element to start search
- * @param isoutput true to search down from outputs, false to search up from
+ * @param forward true to search down from outputs, false to search up from
  *   inputs
  * @param port port (or -1 to search all ports)
  * @param visitor RouterVisitor traversal object
@@ -863,8 +877,11 @@ Router::set_flow_code_override(int eindex, const String &flow_code)
  * traverses inside elements from port to port by Element::flow_code().  The
  * visitor can stop a traversal path by returning false from visit().
  *
+ * @a visitor ->@link RouterVisitor::visit visit() is called on input
+ * ports if @a forward is true and output ports if @a forward is false.
+ *
  * Equivalent to either visit_downstream() or visit_upstream(), depending on
- * @a isoutput.
+ * @a forward.
  *
  * @sa visit_downstream(), visit_upstream()
  */

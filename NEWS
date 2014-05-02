@@ -1,5 +1,10 @@
 Ipsumdump NEWS
 
+Version 1.84   2.May.2014
+
+* Compile fix.
+
+
 Version 1.83   19.Mar.2014
 
 * Correct binary output of Ethernet addresses (Romain Fontugne report).
