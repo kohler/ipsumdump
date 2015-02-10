@@ -236,7 +236,6 @@ FromDump::initialize(ErrorHandler *errh)
     if (fh->magic != FAKE_PCAP_MAGIC && fh->magic != FAKE_PCAP_MAGIC_NANO && fh->magic != FAKE_MODIFIED_PCAP_MAGIC)
 	return _ff.error(errh, "not a tcpdump file (bad magic number)");
     // compensate for extra crap appended to packet headers
-    _extra_pkthdr_crap = ((fh->magic == FAKE_PCAP_MAGIC || fh->magic == FAKE_PCAP_MAGIC_NANO) ? 0 : sizeof(fake_modified_pcap_pkthdr) - sizeof(fake_pcap_pkthdr));
     if (fh->magic == FAKE_PCAP_MAGIC || fh->magic == FAKE_PCAP_MAGIC_NANO)
 	_extra_pkthdr_crap = 0;
     else
@@ -373,10 +372,7 @@ FromDump::read_packet(ErrorHandler *errh)
 
     // check times
   check_times:
-    if (_have_nanosecond_timestamps)
-	ts = Timestamp::make_nsec(ph->ts.tv.tv_sec, ph->ts.tv.tv_usec);
-    else
-	ts = fake_bpf_timeval_union::make_timestamp(&ph->ts);
+    ts = fake_bpf_timeval_union::make_timestamp(&ph->ts, _have_nanosecond_timestamps);
     if (!_have_any_times)
 	prepare_times(ts);
     if (_have_first_time) {

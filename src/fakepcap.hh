@@ -52,9 +52,9 @@ struct fake_bpf_timeval {
 };
 
 union fake_bpf_timeval_union {
-	struct fake_bpf_timeval tv;
-	Timestamp::rep_t timestamp_rep;
-	inline static Timestamp make_timestamp(const fake_bpf_timeval_union *x);
+    struct fake_bpf_timeval tv;
+    Timestamp::rep_t timestamp_rep;
+    inline static Timestamp make_timestamp(const fake_bpf_timeval_union* x, bool nano);
 };
 
 /*
@@ -97,13 +97,21 @@ fake_pcap_force_ip(WritablePacket*& p, int dlt)
 }
 
 inline Timestamp
-fake_bpf_timeval_union::make_timestamp(const fake_bpf_timeval_union *x)
+fake_bpf_timeval_union::make_timestamp(const fake_bpf_timeval_union* x, bool nano)
 {
-#if TIMESTAMP_REP_BIG_ENDIAN && !TIMESTAMP_NANOSEC
-    return Timestamp(x->timestamp_rep);
+    if (nano) {
+#if TIMESTAMP_REP_BIG_ENDIAN && TIMESTAMP_NANOSEC
+        return Timestamp(x->timestamp_rep);
 #else
-    return Timestamp::make_usec(x->tv.tv_sec, x->tv.tv_usec);
+        return Timestamp::make_nsec(x->tv.tv_sec, x->tv.tv_usec);
 #endif
+    } else {
+#if TIMESTAMP_REP_BIG_ENDIAN && !TIMESTAMP_NANOSEC
+        return Timestamp(x->timestamp_rep);
+#else
+        return Timestamp::make_usec(x->tv.tv_sec, x->tv.tv_usec);
+#endif
+    }
 }
 
 CLICK_ENDDECLS
