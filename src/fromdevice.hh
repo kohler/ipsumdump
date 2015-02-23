@@ -113,6 +113,11 @@ Boolean. If true, then emit packets that the kernel sends to the given
 interface, as well as packets that the kernel receives from it. Default is
 false.
 
+=item PROTOCOL
+
+Integer. If set and nonzero, then only emit packets with this link-level
+protocol. Only affects METHOD LINUX. Default is 0.
+
 =item HEADROOM
 
 Integer. Amount of bytes of headroom to leave before the packet data. Defaults
@@ -185,7 +190,7 @@ class FromDevice : public Element { public:
 
 #if FROMDEVICE_ALLOW_PCAP
     pcap_t *pcap() const		{ return _pcap; }
-    static const char *pcap_error(pcap_t *pcap, const char *ebuf);
+    static const char* fetch_pcap_error(pcap_t* pcap, const char* ebuf);
     static pcap_t *open_pcap(String ifname, int snaplen, bool promisc, ErrorHandler *errh);
 #endif
 
@@ -224,9 +229,6 @@ class FromDevice : public Element { public:
     int _pcap_complaints;
     friend void FromDevice_get_packet(u_char*, const struct pcap_pkthdr*,
 				      const u_char*);
-    const char *pcap_error(const char *ebuf) {
-	return pcap_error(_pcap, ebuf);
-    }
 #endif
 #if FROMDEVICE_ALLOW_NETMAP
     NetmapInfo _netmap;
@@ -234,6 +236,9 @@ class FromDevice : public Element { public:
 #endif
 
     bool _force_ip;
+#if FROMDEVICE_ALLOW_PCAP && TIMESTAMP_NANOSEC && defined(PCAP_TSTAMP_PRECISION_NANO)
+    bool _pcap_nanosec;
+#endif
     int _burst;
     int _datalink;
 
@@ -251,6 +256,7 @@ class FromDevice : public Element { public:
     bool _timestamp : 1;
     int _was_promisc : 2;
     int _snaplen;
+    uint16_t _protocol;
     unsigned _headroom;
     enum { method_default, method_netmap, method_pcap, method_linux };
     int _method;

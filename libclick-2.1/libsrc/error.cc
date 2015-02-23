@@ -29,7 +29,7 @@
 #include <click/timestamp.hh>
 #include <click/confparse.hh>
 #include <click/algorithm.hh>
-#if CLICK_USERLEVEL || CLICK_TOOL
+#if CLICK_USERLEVEL || CLICK_TOOL || CLICK_MINIOS
 # include <unistd.h>
 #endif
 CLICK_DECLS
@@ -458,6 +458,7 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 	    s++;
 	    goto width_flags;
 	case 'z':
+	case 't':
 	    if (width_flag)
 		break;
 	    width_flag = *s++;
@@ -616,6 +617,9 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 #if SIZEOF_SIZE_T == 4
 	    case 'z':
 #endif
+#if SIZEOF_PTRDIFF_T == 4
+	    case 't':
+#endif
 		num = va_arg(val, unsigned);
 		if ((flags & cf_signed) && (int) num < 0)
 		    num = -(int) num, flags |= cf_negative;
@@ -629,6 +633,9 @@ ErrorHandler::vxformat(int default_flags, const char *s, va_list val)
 # endif
 # if SIZEOF_SIZE_T == 8
 	    case 'z':
+# endif
+# if SIZEOF_PTRDIFF_T == 8
+	    case 't':
 # endif
 	    case -64: {
 		uint64_t qnum = va_arg(val, uint64_t);
@@ -922,7 +929,7 @@ ErrorHandler::emit(const String &, void *user_data, bool)
 }
 
 
-#if defined(CLICK_USERLEVEL) || defined(CLICK_TOOL)
+#if defined(CLICK_USERLEVEL) || defined(CLICK_TOOL) || defined(CLICK_MINIOS)
 //
 // FILE ERROR HANDLER
 //
@@ -1215,7 +1222,7 @@ LandmarkErrorHandler::decorate(const String &str)
 // BAIL ERROR HANDLER
 //
 
-#if defined(CLICK_USERLEVEL) || defined(CLICK_TOOL)
+#if defined(CLICK_USERLEVEL) || defined(CLICK_TOOL) || defined(CLICK_MINIOS)
 
 BailErrorHandler::BailErrorHandler(ErrorHandler *errh, int l)
     : ErrorVeneer(errh), _level(l)

@@ -29,6 +29,9 @@
 /* Define if the Linux kernel module driver was compiled. */
 #undef HAVE_LINUXMODULE_DRIVER
 
+/* Define if the minios driver was compiled. */
+#undef HAVE_MINIOS_DRIVER
+
 /* Define if the user-level driver was compiled. */
 #undef HAVE_USERLEVEL_DRIVER
 

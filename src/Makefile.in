@@ -56,8 +56,8 @@ IPSUMDUMP_ELEMENT_OBJS = \
 	toipsumdump.o todump.o \
 	anonipaddr.o changeuid.o classification.o classifier.o counter.o \
 	drivermanager.o discard.o fakepcap.o ipfilter.o ipnameinfo.o \
-	progressbar.o randomsample.o script.o switch.o tee.o timefilter.o \
-	timesortedsched.o truncateippayload.o unqueue.o
+	netmapinfo.o progressbar.o randomsample.o script.o switch.o tee.o \
+	timefilter.o timesortedsched.o truncateippayload.o unqueue.o
 
 IPSUMDUMP_OBJS = \
 	$(IPSUMDUMP_ELEMENT_OBJS) ipsumdump.o sd_elements.o

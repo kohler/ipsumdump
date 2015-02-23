@@ -8,6 +8,8 @@ elements/userlevel/fromdevice.cc
 elements/userlevel/fromdevice.hh:s{"elements/userlevel/}{"}
 elements/userlevel/kernelfilter.cc
 elements/userlevel/kernelfilter.hh
+elements/userlevel/netmapinfo.cc
+elements/userlevel/netmapinfo.hh
 elements/userlevel/progressbar.cc
 elements/userlevel/progressbar.hh
 elements/userlevel/changeuid.cc
