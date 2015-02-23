@@ -1,5 +1,14 @@
 Ipsumdump NEWS
 
+Version 1.85   22.Feb.2015
+
+* Support nanosecond-precision tcpdump files and pcap captures.
+
+* Bug fixes with TCP option output.
+
+* Click updates.
+
+
 Version 1.84   2.May.2014
 
 * Compile fix.
