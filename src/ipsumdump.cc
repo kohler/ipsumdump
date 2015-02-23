@@ -6,7 +6,7 @@
  * Copyright (c) 2001-4 International Computer Science Institute
  * Copyright (c) 2004-8 Regents of the University of California
  * Copyright (c) 2008 Meraki, Inc.
- * Copyright (c) 2001-2014 Eddie Kohler
+ * Copyright (c) 2001-2015 Eddie Kohler
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -67,6 +68,7 @@
 #define HELP_DATA_OPT		322
 #define NO_PAYLOAD_OPT		323
 #define SKIP_PACKETS_OPT	324
+#define WRITE_TCPDUMP_NANO_OPT  325
 
 // sources
 #define INTERFACE_OPT		400
@@ -151,6 +153,7 @@ static const Clp_Option options[] = {
     { "tcpdump-text", 0, READ_ASCII_TCPDUMP_OPT, 0, 0 },
 
     { "write-tcpdump", 'w', WRITE_DUMP_OPT, Clp_ValString, 0 },
+    { "tcpdump-nano", 0, WRITE_TCPDUMP_NANO_OPT, 0, Clp_Negate },
     { "filter", 'f', FILTER_OPT, Clp_ValString, 0 },
     { "anonymize", 'A', ANONYMIZE_OPT, 0, Clp_Negate },
     { "binary", 'b', BINARY_OPT, 0, Clp_Negate },
@@ -224,11 +227,15 @@ static Router *router = 0;
 static bool started = false;
 
 void
-die_usage(String specific = String())
+die_usage(const char* format, ...)
 {
     ErrorHandler *errh = ErrorHandler::default_handler();
-    if (specific)
-	errh->error("%s: %s", program_name, specific.c_str());
+    if (format) {
+        va_list val;
+        va_start(val, format);
+        errh->xmessage(ErrorHandler::e_error, String(program_name) + ": " + errh->vformat(format, val));
+        va_end(val);
+    }
     errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
 Try %<%s --help%> or %<%s --help-data%> for more information.",
 		program_name, program_name);
@@ -319,6 +326,7 @@ Other options:\n\
   -o, --output FILE          Write summary dump to FILE (default stdout).\n\
   -b, --binary               Create binary output file.\n\
   -w, --write-tcpdump FILE   Also dump packets to FILE in tcpdump(1) format.\n\
+      --no-tcpdump-nano      --write-tcpdump uses microsecond precision.\n\
       --no-payload           Drop payloads from tcpdump output.\n\
   -f, --filter FILTER        Apply tcpdump(1) filter FILTER to data.\n\
   -A, --anonymize            Anonymize IP addresses (preserves prefix & class).\n\
@@ -535,6 +543,7 @@ main(int argc, char *argv[])
     bool binary = false;
     bool header = true;
     bool write_dump_payload = true;
+    bool write_dump_nano = true;
     Vector<String> files;
     const char *record_drops = 0;
     unsigned skip_packets = 0;
@@ -553,7 +562,7 @@ main(int argc, char *argv[])
 
 	  case OUTPUT_OPT:
 	    if (output)
-		die_usage("'--output' already specified");
+		die_usage("%<--output%> already specified");
 	    output = clp->vstr;
 	    break;
 
@@ -585,14 +594,14 @@ main(int argc, char *argv[])
 	    if (options.ipsumdump_format)
 		die_usage("IP summary dump format already specified");
 	    else if (action && action != READ_IPSUMDUMP_OPT)
-		die_usage("'--format' only useful with '--ipsumdump'");
+		die_usage("%<--format%> only useful with %<--ipsumdump%>");
 	    action = READ_IPSUMDUMP_OPT;
 	    options.ipsumdump_format = clp->vstr;
 	    break;
 
 	  case WRITE_DUMP_OPT:
 	    if (write_dump)
-		die_usage("'--write-tcpdump' already specified");
+		die_usage("%<--write-tcpdump%> already specified");
 	    write_dump = clp->vstr;
 	    break;
 
@@ -600,9 +609,13 @@ main(int argc, char *argv[])
 	    write_dump_payload = false;
 	    break;
 
+        case WRITE_TCPDUMP_NANO_OPT:
+            write_dump_nano = !clp->negated;
+            break;
+
 	  case FILTER_OPT:
 	    if (options.filter)
-		die_usage("'--filter' already specified");
+		die_usage("%<--filter%> already specified");
 	    options.filter = clp->vstr;
 	    options.force_ip = true;
 	    break;
@@ -650,7 +663,7 @@ main(int argc, char *argv[])
 	      for (int i = 0; i < v.size(); i++) {
 		  IPAddress addr, mask;
 		  if (!cp_ip_prefix(v[i], &addr, &mask, true))
-		      die_usage("can't parse '" + v[i] + "' as an IP address (" + String(Clp_CurOptionName(clp)) + ")");
+		      die_usage("can%,t parse %<%s%> as an IP address (%s)", v[i].c_str(), Clp_CurOptionName(clp));
 		  map_prefixes.push_back(addr.addr());
 		  map_prefixes.push_back(mask.addr());
 	      }
@@ -665,7 +678,7 @@ main(int argc, char *argv[])
 	    else {
 		options.do_sample = true;
 		if (clp->val.d < 0 || clp->val.d > 1)
-		    die_usage("'--sample' probability must be between 0 and 1");
+		    die_usage("%<--sample%> probability must be between 0 and 1");
 		options.sample = clp->val.d;
 	    }
 	    break;
@@ -732,7 +745,7 @@ particular purpose.\n");
 	    break;
 
 	  case Clp_BadOption:
-	    die_usage();
+	    die_usage(0);
 	    break;
 
 	  case Clp_Done:
@@ -849,7 +862,8 @@ particular purpose.\n");
 	sa << "  -> ToDump(" << write_dump << ", USE_ENCAP_FROM";
 	for (int i = 0; i < files.size(); i++)
 	    sa << " src" << i;
-	sa << ", SNAPLEN " << options.snaplen << ")\n";
+	sa << ", NANO " << write_dump_nano
+           << ", SNAPLEN " << options.snaplen << ")\n";
     }
 
     // elements to dump summary log

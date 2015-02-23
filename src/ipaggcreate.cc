@@ -5,7 +5,7 @@
  *
  * Copyright (c) 2001-2004 International Computer Science Institute
  * Copyright (c) 2004-2008 Regents of the University of California
- * Copyright (c) 2001-2014 Eddie Kohler
+ * Copyright (c) 2001-2015 Eddie Kohler
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -155,11 +155,15 @@ static const Clp_Option options[] = {
 static const char *program_name;
 
 void
-die_usage(String specific = String())
+die_usage(const char* format, ...)
 {
     ErrorHandler *errh = ErrorHandler::default_handler();
-    if (specific)
-	errh->error("%s: %s", program_name, specific.c_str());
+    if (format) {
+        va_list val;
+        va_start(val, format);
+        errh->xmessage(ErrorHandler::e_error, String(program_name) + ": " + errh->vformat(format, val));
+        va_end(val);
+    }
     errh->fatal("Usage: %s [-i | -r] [CONTENT OPTIONS] [DEVNAMES or FILES]...\n\
 Try %<%s --help%> for more information.",
 		program_name, program_name);
@@ -639,14 +643,14 @@ particular purpose.\n");
 	    break;
 
 	  case Clp_BadOption:
-	    die_usage();
+	    die_usage(0);
 	    break;
 
 	  case Clp_Done:
 	    goto done;
 
 	  default:
-	    die_usage();
+	    die_usage(0);
 	    break;
 
 	}
@@ -719,7 +723,7 @@ particular purpose.\n");
 	if (agg.substring(0, 6) == "ip src" || agg.substring(0, 6) == "ip dst")
 	    options.ipsumdump_format = "ip_" + agg.substring(3, 3);
 	else
-	    die_usage("can%,t aggregate %<" + agg + "%> with %<--ip-addresses%>");
+	    die_usage("can%,t aggregate %<%s%> with %<--ip-addresses%>", agg.c_str());
 	action = READ_IPSUMDUMP_OPT;
     } else if (action == READ_BROCONN_OPT) {
 	options.ipsumdump_format = "timestamp ip_src ip_dst direction";

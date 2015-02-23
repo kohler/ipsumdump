@@ -451,6 +451,11 @@ summary output.  Options including B<--filter> and dump contents require
 IP; in the presence of these options, the output tcpdump(1) I<file> will
 contain only IP packets.  (ARP packets, for example, will not be written.)
 
+=item B<--no-tcpdump-nano>
+
+The file written for B<--write-tcpdump> will use microsecond-precision
+timestamps, rather than nonsecond-precision timestamps (the default).
+
 =item B<--no-payload>
 
 Do not include IP packet payloads in any B<--write-tcpdump> output.

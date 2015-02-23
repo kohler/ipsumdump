@@ -84,13 +84,10 @@ $(srcdir)/configure: $(srcdir)/configure.ac
 config.status: $(srcdir)/configure
 	$(SHELL) $(srcdir)/configure @ac_configure_args@
 Makefile: config.status $(srcdir)/Makefile.in
-	cd $(top_builddir) && \
-	  CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+	cd $(top_builddir) && $(SHELL) ./config.status Makefile
 config.h: stamp-h
 stamp-h: $(srcdir)/config.h.in config.status
-	cd $(top_builddir) && \
-	  CONFIG_FILES= CONFIG_HEADERS='config.h' $(SHELL) ./config.status
-	echo > stamp-h
+	cd $(top_builddir) && $(SHELL) ./config.status config.h
 
 clean:
 	@-for d in $(libclick) src; do (cd $$d && $(MAKE) clean); done

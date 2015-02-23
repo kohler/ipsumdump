@@ -107,8 +107,7 @@ ipaggmanip: $(IPAGGMANIP_OBJS) @CLICKLIBFILE@
 	$(CXXLINK) -rdynamic $(IPAGGMANIP_OBJS) $(LIBS)
 
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
-	cd $(top_builddir) && \
-	  CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+	cd $(top_builddir) && $(SHELL) ./config.status src/Makefile
 
 elemlist: always
 	@rm -f sd_elements.conf ac_elements.conf

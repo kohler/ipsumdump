@@ -2,9 +2,12 @@ dnl -*- mode: shell-script; -*-
 dnl the usual 'configure.in' boilerplate
 dnl
 
-AC_INIT([config.h.in])
-AC_CONFIG_HEADER([config.h])
-AC_SUBST(ac_configure_args)
+AC_INIT([ipsumdump], [1.84])
+AC_PREREQ(2.60)
+AC_CONFIG_HEADERS([config.h:config.h.in], [echo > stamp-h])
+AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([src/Makefile])
+AC_SUBST([ac_configure_args])
 
 IPSUMDUMP_VERSION=1.84
 AC_DEFINE_UNQUOTED([IPSUMDUMP_VERSION], ["$IPSUMDUMP_VERSION"], [Version of ipsumdump binary.])
@@ -104,7 +107,4 @@ dnl
 dnl Output
 dnl
 
-AC_OUTPUT_COMMANDS(for ac_file in $CONFIG_FILES; do
-  test -z "$GMAKE" && echo $ac_file | grep Makefile >/dev/null && $ac_given_srcdir/libclick-AC_LIBCLICK_VERSION/missing gmake $ac_file
-done, [GMAKE="$GMAKE"; LIBCLICK_VERSION="]AC_LIBCLICK_VERSION["])
-AC_OUTPUT(Makefile src/Makefile)
+AC_OUTPUT
