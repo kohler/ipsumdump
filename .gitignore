@@ -1,3 +1,4 @@
+*.dSYM
 *.o
 /Makefile
 /ipaggcreate.1

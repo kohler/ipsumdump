@@ -15,7 +15,6 @@ extern "C" {
 # if HAVE_PCAP_SETNONBLOCK && !HAVE_DECL_PCAP_SETNONBLOCK
 int pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf);
 # endif
-void FromDevice_get_packet(u_char*, const struct pcap_pkthdr*, const u_char*);
 }
 #endif
 
@@ -26,6 +25,9 @@ void FromDevice_get_packet(u_char*, const struct pcap_pkthdr*, const u_char*);
 
 #if FROMDEVICE_ALLOW_NETMAP || FROMDEVICE_ALLOW_PCAP
 # include <click/task.hh>
+extern "C" {
+void FromDevice_get_packet(u_char*, const struct pcap_pkthdr*, const u_char*);
+}
 #endif
 
 CLICK_DECLS
@@ -218,21 +220,20 @@ class FromDevice : public Element { public:
 #if FROMDEVICE_ALLOW_NETMAP || FROMDEVICE_ALLOW_PCAP
     Task _task;
 #endif
-#if FROMDEVICE_ALLOW_LINUX
-    unsigned char *_linux_packetbuf;
-#endif
 #if FROMDEVICE_ALLOW_PCAP || FROMDEVICE_ALLOW_NETMAP
     void emit_packet(WritablePacket *p, int extra_len, const Timestamp &ts);
 #endif
 #if FROMDEVICE_ALLOW_PCAP
     pcap_t *_pcap;
     int _pcap_complaints;
-    friend void FromDevice_get_packet(u_char*, const struct pcap_pkthdr*,
-				      const u_char*);
 #endif
 #if FROMDEVICE_ALLOW_NETMAP
     NetmapInfo _netmap;
     int netmap_dispatch();
+#endif
+#if FROMDEVICE_ALLOW_PCAP || FROMDEVICE_ALLOW_NETMAP
+    friend void FromDevice_get_packet(u_char*, const struct pcap_pkthdr*,
+                                      const u_char*);
 #endif
 
     bool _force_ip;
