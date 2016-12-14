@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2001-2004 International Computer Science Institute
  * Copyright (c) 2004-2008 Regents of the University of California
- * Copyright (c) 2001-2014 Eddie Kohler
+ * Copyright (c) 2001-2016 Eddie Kohler
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -965,7 +965,7 @@ main(int argc, char *argv[])
 
 	  case VERSION_OPT:
 	    printf("ipaggmanip %s (libclick-%s)\n", IPSUMDUMP_VERSION, CLICK_VERSION);
-	    printf("Copyright (c) 2001-2014 Eddie Kohler and others\n\
+	    printf("Copyright (c) 2001-2016 Eddie Kohler and others\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty, not even for merchantability or fitness for a\n\
 particular purpose.\n");

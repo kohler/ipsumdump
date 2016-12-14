@@ -71,7 +71,7 @@ kohler@seas.harvard.edu
 Copyright (c) 2001-2003 International Computer Science Institute
 Copyright (c) 2004-2011 Regents of the University of California
 Copyright (c) 2008 Meraki, Inc.
-Copyright (c) 2001-2014 Eddie Kohler
+Copyright (c) 2001-2016 Eddie Kohler
 
    The anonymization algorithm was borrowed from tcpdpriv by Greg Minshall.
 

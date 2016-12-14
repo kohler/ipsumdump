@@ -2,14 +2,14 @@ dnl -*- mode: shell-script; -*-
 dnl the usual 'configure.in' boilerplate
 dnl
 
-AC_INIT([ipsumdump], [1.85])
+AC_INIT([ipsumdump], [1.86])
 AC_PREREQ(2.60)
 AC_CONFIG_HEADERS([config.h:config.h.in], [echo > stamp-h])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_SUBST([ac_configure_args])
 
-IPSUMDUMP_VERSION=1.85
+IPSUMDUMP_VERSION=1.86
 AC_DEFINE_UNQUOTED([IPSUMDUMP_VERSION], ["$IPSUMDUMP_VERSION"], [Version of ipsumdump binary.])
 AC_SUBST(IPSUMDUMP_VERSION)
 
