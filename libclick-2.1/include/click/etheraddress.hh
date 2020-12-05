@@ -4,6 +4,13 @@
 #include <click/string.hh>
 #include <click/glue.hh>
 #include <click/type_traits.hh>
+#ifndef SIOCGSTAMP
+#ifdef SIOCGSTAMP_OLD
+#define SIOCGSTAMP SIOCGSTAMP_OLD
+#else
+#include <linux/sockios.h>
+#endif
+#endif
 CLICK_DECLS
 
 class EtherAddress { public:
