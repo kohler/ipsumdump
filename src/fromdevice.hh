@@ -5,6 +5,7 @@
 
 #ifdef __linux__
 # define FROMDEVICE_ALLOW_LINUX 1
+#include <linux/sockios.h>
 #endif
 
 #if HAVE_PCAP
